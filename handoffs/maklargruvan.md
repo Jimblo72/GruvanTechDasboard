@@ -26,6 +26,7 @@ AI-marknadsföringsplattform för svenska mäklare, distribuerad via Prowebb med
 - [ ] **Mspecs-integration** — Adapter-lager med fromMspecs()/toMspecs() — ej strukturell omskrivning
 - [ ] **Planritningsverktyg** — Konva.js i separat planritning.html, post-launch
 - [ ] **Spotify-integration** — Mini-player + stämningsanpassade spellistor (Fas 2)
+- [ ] **AI-inspelningsfunktion** — Whisper-baserad inspelning och transkribering av röstmemon och kundsamtal med automatisk renskrivning och integration i systemet
 
 ## Klart
 
