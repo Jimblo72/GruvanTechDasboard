@@ -6,15 +6,14 @@
 //   GH_TOKEN     = ghp_...   (NY token med repo-skrivrättigheter)
 //   GH_USER      = Jimblo72
 //   GH_REPO      = GruvanTechDasboard
-//   WRITE_SECRET = <valfri hemlig sträng — måste matcha den i dashboarden>
 //
-// Skyddet: dashboarden måste skicka rätt WRITE_SECRET i headern, annars 401.
-// Det hindrar att vem som helst som hittar din Netlify-URL kan skriva till repot.
+// Skydd: hela Netlify-siten är låst med site-lösenord. Endast inloggade
+// besökare når dashboarden, så ingen delad hemlighet behövs i frontend.
 
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Write-Secret',
+    'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json',
   };
@@ -23,12 +22,8 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // Skyddskontroll
-  const secret = process.env.WRITE_SECRET;
-  const provided = event.headers['x-write-secret'] || event.headers['X-Write-Secret'];
-  if (secret && provided !== secret) {
-    return { statusCode: 401, headers, body: JSON.stringify({ error: 'Ogiltig skrivtoken' }) };
-  }
+  // Skydd: hela Netlify-siten är låst med site-lösenord, så endast
+  // autentiserade besökare kan nå dashboarden som anropar denna funktion.
 
   const token = process.env.GH_TOKEN;
   const user = process.env.GH_USER || 'Jimblo72';
