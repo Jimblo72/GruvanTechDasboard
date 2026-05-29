@@ -261,7 +261,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .chat-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--accent2);border:1px solid var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:var(--shadow);z-index:900;transition:all 0.2s;}
 .chat-fab:hover{background:var(--accent);transform:translateY(-2px) scale(1.04);}
 .chat-fab.hidden{display:none;}
-.chat-panel{position:fixed;bottom:24px;right:24px;width:400px;max-width:calc(100vw - 32px);height:600px;max-height:calc(100vh - 48px);background:var(--bg2);border:1px solid var(--border2);border-radius:16px;box-shadow:var(--shadow);z-index:901;display:none;flex-direction:column;overflow:hidden;}
+.chat-panel{position:fixed;bottom:24px;right:24px;width:520px;max-width:calc(100vw - 32px);height:680px;max-height:calc(100vh - 48px);background:var(--bg2);border:1px solid var(--border2);border-radius:16px;box-shadow:var(--shadow);z-index:901;display:none;flex-direction:column;overflow:hidden;}
 .chat-panel.open{display:flex;animation:chatIn 0.22s ease;}
 @keyframes chatIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .chat-head{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg4);flex-shrink:0;}
@@ -282,7 +282,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .chat-avatar{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Cormorant Garamond',serif;}
 .chat-avatar.ai{background:var(--accent-glow);color:var(--accent);}
 .chat-avatar.user{background:var(--surface2);color:var(--text3);}
-.chat-bubble{padding:9px 13px;border-radius:12px;font-size:12.5px;line-height:1.6;color:var(--text2);max-width:300px;word-wrap:break-word;overflow-wrap:break-word;}
+.chat-bubble{padding:11px 15px;border-radius:12px;font-size:14px;line-height:1.65;color:var(--text2);max-width:400px;word-wrap:break-word;overflow-wrap:break-word;}
 .chat-msg.ai .chat-bubble{background:var(--surface);border:1px solid var(--border);border-top-left-radius:3px;}
 .chat-msg.user .chat-bubble{background:var(--accent-glow);border:1px solid rgba(200,133,74,0.25);color:var(--text);border-top-right-radius:3px;}
 .chat-bubble strong{color:var(--text);font-weight:600;}
@@ -298,7 +298,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .chat-suggest-actions .btn{flex:1;justify-content:center;padding:6px;font-size:11px;}
 .chat-foot{border-top:1px solid var(--border);padding:11px 13px;flex-shrink:0;background:var(--bg4);}
 .chat-input-row{display:flex;gap:8px;align-items:flex-end;}
-.chat-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:12.5px;padding:9px 11px;resize:none;max-height:120px;line-height:1.5;}
+.chat-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 13px;resize:none;max-height:140px;line-height:1.5;}
 .chat-input:focus{outline:none;border-color:var(--accent2);}
 .chat-send{width:36px;height:36px;border-radius:9px;background:var(--accent2);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:all 0.15s;}
 .chat-send:hover{background:var(--accent);}
@@ -309,6 +309,37 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .chat-typing span:nth-child(3){animation-delay:0.4s;}
 @keyframes typing{0%,60%,100%{opacity:0.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 @media(max-width:480px){.chat-panel{width:100vw;height:100vh;max-height:100vh;bottom:0;right:0;border-radius:0;}}
+
+/* ── KONTAKTNÄTVERK ────────────────────────────────────────── */
+.contacts-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap;}
+.contacts-search{flex:1;min-width:200px;background:var(--bg4);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 13px;}
+.contacts-search:focus{outline:none;border-color:var(--accent2);}
+.contacts-filter{background:var(--bg4);border:1px solid var(--border);color:var(--text2);font-family:inherit;font-size:12px;border-radius:8px;padding:9px 11px;cursor:pointer;}
+.contacts-filter:focus{outline:none;border-color:var(--accent2);}
+.contacts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.contact-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px;transition:all 0.2s;position:relative;}
+.contact-card:hover{background:var(--surface2);border-color:var(--line-warm);}
+.contact-card-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:11px;}
+.contact-avatar{width:42px;height:42px;border-radius:10px;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;flex-shrink:0;}
+.contact-id{flex:1;min-width:0;}
+.contact-name{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--text);line-height:1.15;}
+.contact-role{font-size:11.5px;color:var(--text3);margin-top:2px;line-height:1.4;}
+.contact-card-actions{display:flex;gap:4px;flex-shrink:0;}
+.contact-rel{display:inline-block;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:4px;margin-bottom:10px;border:1px solid;}
+.rel-strong{color:var(--green);background:var(--green-bg);border-color:rgba(78,203,141,0.25);}
+.rel-medium{color:var(--accent);background:var(--accent-glow);border-color:rgba(200,133,74,0.3);}
+.rel-weak{color:var(--text4);background:var(--surface);border-color:var(--border);}
+.contact-meta-row{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);margin-bottom:5px;}
+.contact-meta-row .ic{color:var(--text4);flex-shrink:0;width:14px;text-align:center;}
+.contact-meta-row a{color:var(--accent);text-decoration:none;}
+.contact-meta-row a:hover{text-decoration:underline;}
+.contact-notes{font-size:11.5px;color:var(--text3);line-height:1.55;margin-top:9px;padding-top:9px;border-top:1px solid var(--border);}
+.contact-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:9px;}
+.contacts-empty{border:1px dashed var(--border2);border-radius:12px;padding:50px 30px;text-align:center;color:var(--text4);grid-column:1/-1;}
+.contacts-empty-icon{font-size:30px;opacity:0.4;margin-bottom:12px;}
+.contacts-stats{display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap;}
+.contacts-stat{font-size:11px;color:var(--text4);}
+.contacts-stat strong{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);font-weight:600;display:block;}
 </style>
 </head>
 <body>
@@ -328,7 +359,63 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
   </div>
 </div>
 
-<div class="layout">
+<!-- KONTAKT-MODAL (lägg till / redigera) -->
+<div class="modal-overlay" id="contact-modal" onclick="closeContactModal(event)">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-icon" style="background:var(--accent-glow);color:var(--accent)">✦</div>
+      <div class="modal-title-wrap">
+        <div class="modal-title" id="contact-modal-title">Ny kontakt</div>
+        <div class="modal-subtitle">Sparas versionerat i GitHub</div>
+      </div>
+      <button class="modal-close" onclick="closeContactModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="contact-id">
+      <div class="field">
+        <label class="field-label">Namn *</label>
+        <input class="input" id="contact-name" placeholder="För- och efternamn">
+      </div>
+      <div class="field">
+        <label class="field-label">Roll / titel</label>
+        <input class="input" id="contact-role" placeholder="t.ex. VD, inköpschef, marknadsansvarig">
+      </div>
+      <div class="field">
+        <label class="field-label">Bolag / organisation</label>
+        <input class="input" id="contact-company" placeholder="t.ex. Nordea, Prowebb">
+      </div>
+      <div class="field">
+        <label class="field-label">Relationsstyrka</label>
+        <div class="seg">
+          <button type="button" class="seg-btn" id="rel-strong" onclick="setRel('strong')">Stark</button>
+          <button type="button" class="seg-btn" id="rel-medium" onclick="setRel('medium')">Medel</button>
+          <button type="button" class="seg-btn" id="rel-weak" onclick="setRel('weak')">Svag</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">E-post</label>
+        <input class="input" id="contact-email" placeholder="namn@bolag.se">
+      </div>
+      <div class="field">
+        <label class="field-label">Telefon</label>
+        <input class="input" id="contact-phone" placeholder="+46…">
+      </div>
+      <div class="field">
+        <label class="field-label">Taggar (kommaseparerade)</label>
+        <input class="input" id="contact-tags" placeholder="t.ex. fastighet, investerare, potentiell kund">
+      </div>
+      <div class="field">
+        <label class="field-label">Anteckningar</label>
+        <textarea class="textarea" id="contact-notes" style="min-height:90px;font-family:inherit;font-size:13px" placeholder="Hur ni känns, möjliga samarbeten, kontext…"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-solid" style="flex:1;justify-content:center" id="contact-save-btn" onclick="saveContact()">Spara kontakt</button>
+        <button class="btn" id="contact-delete-btn" style="display:none" onclick="deleteContact()">Ta bort</button>
+      </div>
+      <div class="hint" id="contact-save-status"></div>
+    </div>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -345,6 +432,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <div class="nav-group-label">Vyer</div>
       <button class="nav-item active" onclick="showSection('overview',this)"><div class="nav-dot" style="background:var(--accent)"></div>Översikt</button>
       <button class="nav-item" onclick="showSection('review',this)"><div class="nav-dot" style="background:var(--accent)"></div>AI-granskning</button>
+      <button class="nav-item" onclick="showSection('contacts',this)"><div class="nav-dot" style="background:var(--accent)"></div>Nätverk</button>
       <button class="nav-item" onclick="showSection('github',this)"><div class="nav-dot" style="background:var(--text3)"></div>GitHub</button>
       <button class="nav-item" onclick="showSection('memory',this)"><div class="nav-dot" style="background:var(--text3)"></div>Minne & MCP</button>
     </div>
@@ -610,6 +698,30 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     </div>
   </div>
 
+  <!-- NÄTVERK / KONTAKTER -->
+  <div class="section" id="sec-contacts">
+    <div class="topbar">
+      <div><div class="page-title">Nätverk</div><div class="page-sub">Ditt kontaktnät · underlag för att analysera affärsmöjligheter</div></div>
+      <button class="btn btn-solid" onclick="openContactModal()">+ Ny kontakt</button>
+    </div>
+
+    <div class="contacts-stats" id="contacts-stats"></div>
+
+    <div class="contacts-toolbar">
+      <input class="contacts-search" id="contacts-search" placeholder="Sök namn, bolag, roll, tagg…" oninput="renderContacts()">
+      <select class="contacts-filter" id="contacts-filter-rel" onchange="renderContacts()">
+        <option value="">Alla relationer</option>
+        <option value="strong">Stark</option>
+        <option value="medium">Medel</option>
+        <option value="weak">Svag</option>
+      </select>
+    </div>
+
+    <div class="contacts-grid" id="contacts-grid">
+      <div class="contacts-empty"><div class="contacts-empty-icon">⬡</div><div>Laddar kontakter…</div></div>
+    </div>
+  </div>
+
   <!-- GITHUB -->
   <div class="section" id="sec-github">
     <div class="topbar">
@@ -678,7 +790,8 @@ const FN = {
   githubFile:'/.netlify/functions/github-file',   // hämtar filinnehåll säkert
   githubCommits:'/.netlify/functions/github-commits', // commits utan exponerad token
   githubWrite:'/.netlify/functions/github-write',  // skriver tillbaka till handoff-filer
-  chat:      '/.netlify/functions/ai-chat'        // konversation med Claude/GPT
+  chat:      '/.netlify/functions/ai-chat',       // konversation med Claude/GPT
+  contacts:  '/.netlify/functions/contacts'        // läs/skriv kontaktnätverk (data/contacts.json)
 };
 const GH_USER = 'Jimblo72';
 
@@ -1146,7 +1259,7 @@ async function addFeature() {
 }
 function closeModal(e) { if (e.target === document.getElementById('modal')) closeModalBtn(); }
 function closeModalBtn() { document.getElementById('modal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalBtn(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModalBtn(); closeContactModalBtn(); } });
 
 // ── NAV ───────────────────────────────────────────────────────
 function showSection(id, btn) {
@@ -1155,6 +1268,7 @@ function showSection(id, btn) {
   document.getElementById('sec-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (id === 'github') loadAllGitHub();
+  if (id === 'contacts' && !contactsLoaded) loadContacts();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
 
@@ -1362,6 +1476,213 @@ async function saveSuggestion(btn, idx){
     const meta = btn.closest('.chat-suggest').querySelector('.chat-suggest-meta');
     meta.innerHTML = `<span style="color:var(--red-bright)">Kunde inte spara: ${esc(e.message)}</span>`;
   }
+}
+
+// ── KONTAKTNÄTVERK ────────────────────────────────────────────
+// Kontakter lagras som JSON i GitHub (data/contacts.json) via
+// contacts-funktionen — versionerat och analyserbart av chatt/agenter.
+let contacts = [];          // [{id,name,role,company,rel,email,phone,tags:[],notes}]
+let contactsLoaded = false;
+let currentRel = 'medium';  // vald relationsstyrka i modalen
+
+const REL_LABEL = { strong:'Stark', medium:'Medel', weak:'Svag' };
+
+async function loadContacts(){
+  const grid = document.getElementById('contacts-grid');
+  if (!contactsLoaded) {
+    grid.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon"><span class="spinner"></span></div><div>Laddar kontakter…</div></div>';
+  }
+  try {
+    const r = await fetch(`${FN.githubFile}?repo=${encodeURIComponent(HANDOFF_REPO)}&path=${encodeURIComponent('data/contacts.json')}`);
+    if (r.ok) {
+      const data = await r.json();
+      try { contacts = JSON.parse(data.content || '[]'); }
+      catch { contacts = []; }
+    } else if (r.status === 404) {
+      contacts = [];   // filen finns inte än — tom lista
+    } else {
+      throw new Error(`HTTP ${r.status}`);
+    }
+    contactsLoaded = true;
+    renderContacts();
+  } catch(e) {
+    grid.innerHTML = `<div class="contacts-empty"><div class="contacts-empty-icon">⚠</div><div>Kunde inte ladda kontakter: ${esc(e.message)}.<br>Kräver github-file-funktionen driftsatt.</div></div>`;
+  }
+}
+
+function renderContacts(){
+  const grid = document.getElementById('contacts-grid');
+  const statsEl = document.getElementById('contacts-stats');
+  const q = (document.getElementById('contacts-search').value || '').toLowerCase().trim();
+  const relFilter = document.getElementById('contacts-filter-rel').value;
+
+  // Statistik
+  const counts = { strong:0, medium:0, weak:0 };
+  contacts.forEach(c => { if (counts[c.rel]!==undefined) counts[c.rel]++; });
+  statsEl.innerHTML = `
+    <div class="contacts-stat"><strong>${contacts.length}</strong> kontakter totalt</div>
+    <div class="contacts-stat"><strong style="color:var(--green)">${counts.strong}</strong> starka</div>
+    <div class="contacts-stat"><strong style="color:var(--accent)">${counts.medium}</strong> medel</div>
+    <div class="contacts-stat"><strong style="color:var(--text3)">${counts.weak}</strong> svaga</div>`;
+
+  let list = contacts.slice();
+  if (relFilter) list = list.filter(c => c.rel === relFilter);
+  if (q) list = list.filter(c => {
+    const hay = [c.name, c.role, c.company, c.notes, (c.tags||[]).join(' ')].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+
+  if (!contacts.length) {
+    grid.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">⬡</div><div>Inga kontakter än. Klicka <strong>+ Ny kontakt</strong> för att lägga till den första.</div></div>';
+    return;
+  }
+  if (!list.length) {
+    grid.innerHTML = '<div class="contacts-empty"><div class="contacts-empty-icon">⬡</div><div>Inga kontakter matchar filtret.</div></div>';
+    return;
+  }
+
+  // Sortera: starka först, sedan namn
+  const relOrder = { strong:0, medium:1, weak:2 };
+  list.sort((a,b)=> (relOrder[a.rel]??3)-(relOrder[b.rel]??3) || (a.name||'').localeCompare(b.name||'','sv'));
+
+  grid.innerHTML = list.map(c => {
+    const initials = (c.name||'?').split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const roleCompany = [c.role, c.company].filter(Boolean).join(' · ');
+    const tags = (c.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('');
+    let meta = '';
+    if (c.email) meta += `<div class="contact-meta-row"><span class="ic">✉</span><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></div>`;
+    if (c.phone) meta += `<div class="contact-meta-row"><span class="ic">☎</span>${esc(c.phone)}</div>`;
+    return `<div class="contact-card">
+      <div class="contact-card-top">
+        <div class="contact-avatar">${esc(initials)}</div>
+        <div class="contact-id">
+          <div class="contact-name">${esc(c.name||'Namnlös')}</div>
+          ${roleCompany?`<div class="contact-role">${esc(roleCompany)}</div>`:''}
+        </div>
+        <div class="contact-card-actions">
+          <button class="icon-btn" title="Redigera" onclick="editContact('${esc(c.id)}')">✎</button>
+        </div>
+      </div>
+      <span class="contact-rel rel-${c.rel||'medium'}">${REL_LABEL[c.rel]||'Medel'} relation</span>
+      ${meta}
+      ${c.notes?`<div class="contact-notes">${esc(c.notes)}</div>`:''}
+      ${tags?`<div class="contact-tags">${tags}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── Modal: lägg till / redigera ───────────────────────────────
+function setRel(rel){
+  currentRel = rel;
+  ['strong','medium','weak'].forEach(r =>
+    document.getElementById('rel-'+r).classList.toggle('active', r===rel));
+}
+
+function openContactModal(){
+  document.getElementById('contact-modal-title').textContent = 'Ny kontakt';
+  document.getElementById('contact-id').value = '';
+  ['name','role','company','email','phone','tags','notes'].forEach(f =>
+    document.getElementById('contact-'+f).value = '');
+  document.getElementById('contact-save-status').textContent = '';
+  document.getElementById('contact-delete-btn').style.display = 'none';
+  setRel('medium');
+  document.getElementById('contact-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('contact-name').focus(), 100);
+}
+
+function editContact(id){
+  const c = contacts.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('contact-modal-title').textContent = 'Redigera kontakt';
+  document.getElementById('contact-id').value = c.id;
+  document.getElementById('contact-name').value = c.name || '';
+  document.getElementById('contact-role').value = c.role || '';
+  document.getElementById('contact-company').value = c.company || '';
+  document.getElementById('contact-email').value = c.email || '';
+  document.getElementById('contact-phone').value = c.phone || '';
+  document.getElementById('contact-tags').value = (c.tags||[]).join(', ');
+  document.getElementById('contact-notes').value = c.notes || '';
+  document.getElementById('contact-save-status').textContent = '';
+  document.getElementById('contact-delete-btn').style.display = '';
+  setRel(c.rel || 'medium');
+  document.getElementById('contact-modal').classList.add('open');
+}
+
+function closeContactModal(e){ if (e.target === document.getElementById('contact-modal')) closeContactModalBtn(); }
+function closeContactModalBtn(){ document.getElementById('contact-modal').classList.remove('open'); }
+
+function readContactForm(){
+  const tags = (document.getElementById('contact-tags').value || '')
+    .split(',').map(t=>t.trim()).filter(Boolean);
+  return {
+    name: document.getElementById('contact-name').value.trim(),
+    role: document.getElementById('contact-role').value.trim(),
+    company: document.getElementById('contact-company').value.trim(),
+    rel: currentRel,
+    email: document.getElementById('contact-email').value.trim(),
+    phone: document.getElementById('contact-phone').value.trim(),
+    tags,
+    notes: document.getElementById('contact-notes').value.trim(),
+  };
+}
+
+async function saveContact(){
+  const status = document.getElementById('contact-save-status');
+  const form = readContactForm();
+  if (!form.name) { status.textContent = 'Ange minst ett namn.'; return; }
+
+  const id = document.getElementById('contact-id').value;
+  // Bygg ny lista (lägg till eller uppdatera)
+  let next = contacts.slice();
+  if (id) {
+    next = next.map(c => c.id === id ? { ...c, ...form, id } : c);
+  } else {
+    const newId = 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    next.push({ id: newId, ...form });
+  }
+
+  const btn = document.getElementById('contact-save-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sparar…';
+  try {
+    await persistContacts(next);
+    contacts = next;
+    renderContacts();
+    closeContactModalBtn();
+  } catch(e) {
+    status.textContent = `Kunde inte spara: ${e.message}. (Kräver contacts-funktionen driftsatt.)`;
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Spara kontakt';
+  }
+}
+
+async function deleteContact(){
+  const id = document.getElementById('contact-id').value;
+  if (!id) return;
+  const c = contacts.find(x=>x.id===id);
+  if (!confirm(`Ta bort ${c?c.name:'kontakten'}? Detta går inte att ångra.`)) return;
+  const next = contacts.filter(x => x.id !== id);
+  const btn = document.getElementById('contact-delete-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await persistContacts(next);
+    contacts = next;
+    renderContacts();
+    closeContactModalBtn();
+  } catch(e) {
+    document.getElementById('contact-save-status').textContent = `Kunde inte ta bort: ${e.message}.`;
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Ta bort';
+  }
+}
+
+// Skriver hela kontaktlistan till GitHub via contacts-funktionen
+async function persistContacts(list){
+  const r = await fetch(FN.contacts, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contacts: list })
+  });
+  if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.error || `HTTP ${r.status}`); }
+  return r.json();
 }
 
 // ── INIT ──────────────────────────────────────────────────────
