@@ -28,6 +28,7 @@ AI-marknadsföringsplattform för svenska mäklare, distribuerad via Prowebb med
 - [ ] **Spotify-integration** — Mini-player + stämningsanpassade spellistor (Fas 2)
 - [ ] **AI-inspelningsfunktion** — Whisper-baserad inspelning och transkribering av röstmemon och kundsamtal med automatisk renskrivning och integration i systemet
 - [ ] **Offertgenerator** — Offertmallar som genereras som både html fil och pdf.
+- [ ] **Juridiskt Beslutstöd** — Koppla mot Sveriges lagar, samla avgöranden från FMI, mäklarsamfundets ansvarsnämnd och FRN.  Samarbeta med juristbyrå.
 
 ## Klart
 
