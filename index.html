@@ -594,11 +594,10 @@ const GH_USER = 'Jimblo72';
 
 // Handoff-filer: levande feature-listor i GitHub (handoffs/<id>.md).
 // Modalen hämtar dem live; faller tillbaka på hårdkodad APPS-data om filen saknas.
-const HANDOFF_REPO = 'gruvan-dashboard';   // repot där handoffs/ ligger — ändra vid behov
+const HANDOFF_REPO = 'GruvanTechDasboard';   // repot där handoffs/ ligger
 const HANDOFF_DIR  = 'handoffs';
-// Skrivskydd: måste matcha WRITE_SECRET i Netlify. Detta är INTE en hemlighet i sig
-// (den skyddar bara skriv-endpointen från slumpmässiga anrop). Byt till din egen sträng.
-const WRITE_SECRET = 'gruvan-w7k2-q9mx-4p3v-ha8n';
+// Skrivskydd sker numera via Netlify site-lösenord (hela siten är låst).
+// Ingen delad hemlighet behövs i frontend.
 const REPOS = [
   { name: 'maklargruvan-pilot', display: 'Mäklargruvan' },
   { name: 'TradingOracle', display: 'TradingOracle' },
@@ -1042,7 +1041,7 @@ async function addFeature() {
   try {
     const r = await fetch(FN.githubWrite, {
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Write-Secret':WRITE_SECRET},
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ appId: currentModalApp, title, desc })
     });
     if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.error || `HTTP ${r.status}`); }
@@ -1052,7 +1051,7 @@ async function addFeature() {
     await loadHandoff(currentModalApp);
     toggleAddFeature(false);
   } catch(e) {
-    status.textContent = `Kunde inte spara: ${e.message}. (Kräver github-write-funktionen driftsatt med WRITE_SECRET.)`;
+    status.textContent = `Kunde inte spara: ${e.message}. (Kräver github-write-funktionen driftsatt.)`;
   }
 }
 function closeModal(e) { if (e.target === document.getElementById('modal')) closeModalBtn(); }
