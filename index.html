@@ -263,6 +263,10 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .chat-fab.hidden{display:none;}
 .chat-panel{position:fixed;bottom:24px;right:24px;width:520px;max-width:calc(100vw - 32px);height:680px;max-height:calc(100vh - 48px);background:var(--bg2);border:1px solid var(--border2);border-radius:16px;box-shadow:var(--shadow);z-index:901;display:none;flex-direction:column;overflow:hidden;}
 .chat-panel.open{display:flex;animation:chatIn 0.22s ease;}
+.chat-resize{position:absolute;top:0;left:0;width:22px;height:22px;cursor:nwse-resize;z-index:5;display:flex;align-items:flex-start;justify-content:flex-start;padding:5px;}
+.chat-resize::before{content:'';width:9px;height:9px;border-top:2px solid var(--text4);border-left:2px solid var(--text4);border-top-left-radius:3px;opacity:0.6;transition:opacity 0.15s;}
+.chat-resize:hover::before{opacity:1;border-color:var(--accent);}
+.chat-panel.resizing{transition:none;user-select:none;}
 @keyframes chatIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .chat-head{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg4);flex-shrink:0;}
 .chat-head-icon{width:32px;height:32px;border-radius:8px;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -413,6 +417,59 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
         <button class="btn" id="contact-delete-btn" style="display:none" onclick="deleteContact()">Ta bort</button>
       </div>
       <div class="hint" id="contact-save-status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT-MODAL (vCard / CSV) -->
+<div class="modal-overlay" id="import-modal" onclick="closeImportModal(event)">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-icon" style="background:var(--accent-glow);color:var(--accent)">↓</div>
+      <div class="modal-title-wrap">
+        <div class="modal-title">Importera kontakter</div>
+        <div class="modal-subtitle">Från telefon (vCard) eller Google Kontakter (CSV)</div>
+      </div>
+      <button class="modal-close" onclick="closeImportModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="import-step-pick">
+        <div class="config-note" style="background:var(--surface);border-color:var(--border)">
+          <strong style="color:var(--accent)">Så exporterar du från telefonen:</strong><br>
+          <strong>iPhone:</strong> Kontakter → markera → Dela → "Exportera vCard" (.vcf)<br>
+          <strong>Android:</strong> Kontakter → Inställningar → Exportera → .vcf<br>
+          <strong>Google:</strong> contacts.google.com → Exportera → Google CSV
+        </div>
+        <div class="field">
+          <label class="field-label">Välj fil (.vcf eller .csv)</label>
+          <input class="input" type="file" id="import-file" accept=".vcf,.csv,text/vcard,text/csv" onchange="handleImportFile(event)" style="padding:8px">
+        </div>
+        <div class="hint" id="import-pick-status"></div>
+      </div>
+
+      <div id="import-step-preview" style="display:none">
+        <div class="status-row" style="justify-content:space-between;align-items:center">
+          <div style="font-size:12px;color:var(--text2)" id="import-summary"></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn" style="padding:4px 10px;font-size:11px" onclick="importSelectAll(true)">Markera alla</button>
+            <button class="btn" style="padding:4px 10px;font-size:11px" onclick="importSelectAll(false)">Avmarkera</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Sätt relationsstyrka för importerade</label>
+          <div class="seg">
+            <button type="button" class="seg-btn" id="imp-rel-strong" onclick="setImportRel('strong')">Stark</button>
+            <button type="button" class="seg-btn" id="imp-rel-medium" onclick="setImportRel('medium')">Medel</button>
+            <button type="button" class="seg-btn" id="imp-rel-weak" onclick="setImportRel('weak')">Svag</button>
+          </div>
+        </div>
+        <div id="import-preview-list" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px;margin-bottom:14px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-solid" style="flex:1;justify-content:center" id="import-confirm-btn" onclick="confirmImport()">Importera valda</button>
+          <button class="btn" onclick="resetImport()">Välj annan fil</button>
+        </div>
+        <div class="hint" id="import-confirm-status"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -704,7 +761,10 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
   <div class="section" id="sec-contacts">
     <div class="topbar">
       <div><div class="page-title">Nätverk</div><div class="page-sub">Ditt kontaktnät · underlag för att analysera affärsmöjligheter</div></div>
-      <button class="btn btn-solid" onclick="openContactModal()">+ Ny kontakt</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="openImportModal()">↓ Importera</button>
+        <button class="btn btn-solid" onclick="openContactModal()">+ Ny kontakt</button>
+      </div>
     </div>
 
     <div class="contacts-stats" id="contacts-stats"></div>
@@ -753,6 +813,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 </button>
 
 <div class="chat-panel" id="chat-panel">
+  <div class="chat-resize" id="chat-resize" title="Dra för att ändra storlek"></div>
   <div class="chat-head">
     <div class="chat-head-icon">
       <svg width="18" height="18" viewBox="0 0 36 36"><polygon points="18,2 34,10 34,26 18,34 2,26 2,10" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -1261,7 +1322,7 @@ async function addFeature() {
 }
 function closeModal(e) { if (e.target === document.getElementById('modal')) closeModalBtn(); }
 function closeModalBtn() { document.getElementById('modal').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModalBtn(); closeContactModalBtn(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModalBtn(); closeContactModalBtn(); closeImportModalBtn(); } });
 
 // ── NAV ───────────────────────────────────────────────────────
 function showSection(id, btn) {
@@ -1685,6 +1746,278 @@ async function persistContacts(list){
   });
   if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.error || `HTTP ${r.status}`); }
   return r.json();
+}
+
+// ── CHATT: DRA FÖR ATT ÄNDRA STORLEK ──────────────────────────
+// Panelen är förankrad nere till höger. Handtaget sitter uppe till
+// vänster — att dra det åt vänster/upp gör panelen större.
+(function initChatResize(){
+  const handle = document.getElementById('chat-resize');
+  const panel = document.getElementById('chat-panel');
+  if (!handle || !panel) return;
+  let startX, startY, startW, startH;
+
+  function onMove(e){
+    const pt = e.touches ? e.touches[0] : e;
+    // Förankrad höger+botten: bredd ökar när vi drar vänster, höjd när vi drar upp
+    let w = startW + (startX - pt.clientX);
+    let h = startH + (startY - pt.clientY);
+    w = Math.max(320, Math.min(w, window.innerWidth - 32));
+    h = Math.max(360, Math.min(h, window.innerHeight - 48));
+    panel.style.width = w + 'px';
+    panel.style.height = h + 'px';
+  }
+  function onUp(){
+    panel.classList.remove('resizing');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+  function onDown(e){
+    e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX; startY = pt.clientY;
+    const r = panel.getBoundingClientRect();
+    startW = r.width; startH = r.height;
+    panel.classList.add('resizing');
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('touchend', onUp);
+  }
+  handle.addEventListener('mousedown', onDown);
+  handle.addEventListener('touchstart', onDown, {passive:false});
+})();
+
+// ── KONTAKTIMPORT (vCard .vcf / CSV) ──────────────────────────
+let importCandidates = [];   // [{name,role,company,email,phone, _dup:bool, _sel:bool}]
+let importRel = 'medium';
+
+function openImportModal(){
+  resetImport();
+  document.getElementById('import-modal').classList.add('open');
+}
+function closeImportModal(e){ if (e.target === document.getElementById('import-modal')) closeImportModalBtn(); }
+function closeImportModalBtn(){ document.getElementById('import-modal').classList.remove('open'); }
+
+function resetImport(){
+  importCandidates = [];
+  importRel = 'medium';
+  document.getElementById('import-step-pick').style.display = '';
+  document.getElementById('import-step-preview').style.display = 'none';
+  document.getElementById('import-file').value = '';
+  document.getElementById('import-pick-status').textContent = '';
+  document.getElementById('import-confirm-status').textContent = '';
+  setImportRel('medium');
+}
+
+function setImportRel(rel){
+  importRel = rel;
+  ['strong','medium','weak'].forEach(r =>
+    document.getElementById('imp-rel-'+r).classList.toggle('active', r===rel));
+}
+
+function handleImportFile(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('import-pick-status');
+  status.innerHTML = '<span class="spinner"></span> Läser fil…';
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const text = reader.result;
+      const isCsv = /\.csv$/i.test(file.name) || (!/BEGIN:VCARD/i.test(text) && text.includes(','));
+      let parsed = isCsv ? parseCsvContacts(text) : parseVCard(text);
+      // Filtrera bort helt tomma och markera dubbletter mot befintliga
+      parsed = parsed.filter(c => c.name || c.email || c.phone);
+      parsed.forEach(c => {
+        c._dup = isDuplicate(c);
+        c._sel = !c._dup;   // välj allt utom dubbletter som default
+      });
+      importCandidates = parsed;
+      if (!parsed.length) {
+        status.textContent = 'Hittade inga kontakter i filen. Kontrollera formatet (.vcf eller .csv).';
+        return;
+      }
+      status.textContent = '';
+      renderImportPreview();
+      document.getElementById('import-step-pick').style.display = 'none';
+      document.getElementById('import-step-preview').style.display = '';
+    } catch(err) {
+      status.textContent = 'Kunde inte läsa filen: ' + err.message;
+    }
+  };
+  reader.onerror = () => { status.textContent = 'Kunde inte läsa filen.'; };
+  reader.readAsText(file);
+}
+
+// Dubblett = samma namn (skiftlägesokänsligt) ELLER samma telefon/e-post som befintlig
+function isDuplicate(c){
+  const name = (c.name||'').toLowerCase().trim();
+  const phone = normalizePhone(c.phone);
+  const email = (c.email||'').toLowerCase().trim();
+  return contacts.some(x =>
+    (name && (x.name||'').toLowerCase().trim() === name) ||
+    (phone && normalizePhone(x.phone) === phone) ||
+    (email && (x.email||'').toLowerCase().trim() === email)
+  );
+}
+function normalizePhone(p){ return (p||'').replace(/[\s\-()]/g,''); }
+
+// ── vCard-parser (hanterar 2.1, 3.0, 4.0 i grova drag) ────────
+function parseVCard(text){
+  const out = [];
+  const cards = text.split(/BEGIN:VCARD/i).slice(1);
+  cards.forEach(card => {
+    const body = card.split(/END:VCARD/i)[0];
+    // Veckla ut radbrytningar (vCard tillåter fortsättningsrader som börjar med blanksteg)
+    const unfolded = body.replace(/\r?\n[ \t]/g, '');
+    const lines = unfolded.split(/\r?\n/);
+    const c = { name:'', role:'', company:'', email:'', phone:'' };
+    let fn = '', n = '';
+    lines.forEach(line => {
+      const idx = line.indexOf(':');
+      if (idx === -1) return;
+      const rawKey = line.slice(0, idx);
+      const val = line.slice(idx+1).trim();
+      const key = rawKey.split(';')[0].toUpperCase();
+      if (key === 'FN') fn = val;
+      else if (key === 'N' && !fn) {
+        // N: efternamn;förnamn;...
+        const parts = val.split(';');
+        n = [parts[1], parts[0]].filter(Boolean).join(' ').trim();
+      }
+      else if (key === 'EMAIL' && !c.email) c.email = val;
+      else if (key === 'TEL' && !c.phone) c.phone = val;
+      else if (key === 'ORG' && !c.company) c.company = val.split(';')[0].trim();
+      else if (key === 'TITLE' && !c.role) c.role = val;
+    });
+    c.name = fn || n || '';
+    out.push(c);
+  });
+  return out;
+}
+
+// ── CSV-parser (Google Contacts-format m.fl.) ─────────────────
+function parseCsvContacts(text){
+  const rows = parseCsvRows(text);
+  if (rows.length < 2) return [];
+  const header = rows[0].map(h => h.toLowerCase().trim());
+  // Hitta kolumnindex flexibelt (Google, Outlook, generiska)
+  const col = (names) => header.findIndex(h => names.some(n => h === n || h.includes(n)));
+  const iName  = col(['name','full name','display name','namn']);
+  const iFirst = col(['first name','given name','förnamn']);
+  const iLast  = col(['last name','family name','efternamn']);
+  const iEmail = col(['e-mail 1 - value','email 1','email address','e-mail','email','e-post']);
+  const iPhone = col(['phone 1 - value','phone 1','mobile','phone','telefon','tel']);
+  const iOrg   = col(['organization 1 - name','organization name','company','organization','bolag','företag']);
+  const iTitle = col(['organization 1 - title','job title','title','roll','titel']);
+
+  const out = [];
+  for (let r = 1; r < rows.length; r++){
+    const row = rows[r];
+    if (!row || !row.length) continue;
+    let name = iName >= 0 ? (row[iName]||'').trim() : '';
+    if (!name) {
+      const fn = iFirst >= 0 ? (row[iFirst]||'').trim() : '';
+      const ln = iLast >= 0 ? (row[iLast]||'').trim() : '';
+      name = [fn, ln].filter(Boolean).join(' ').trim();
+    }
+    out.push({
+      name,
+      email: iEmail >= 0 ? (row[iEmail]||'').trim() : '',
+      phone: iPhone >= 0 ? (row[iPhone]||'').trim() : '',
+      company: iOrg >= 0 ? (row[iOrg]||'').trim() : '',
+      role: iTitle >= 0 ? (row[iTitle]||'').trim() : '',
+    });
+  }
+  return out;
+}
+
+// Robust CSV-radparser som hanterar citattecken och kommatecken i fält
+function parseCsvRows(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++){
+    const ch = text[i], next = text[i+1];
+    if (inQuotes){
+      if (ch === '"' && next === '"'){ field += '"'; i++; }
+      else if (ch === '"'){ inQuotes = false; }
+      else field += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ','){ row.push(field); field = ''; }
+      else if (ch === '\r'){ /* ignorera */ }
+      else if (ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else field += ch;
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => c && c.trim()));
+}
+
+function renderImportPreview(){
+  const sel = importCandidates.filter(c => c._sel).length;
+  const dups = importCandidates.filter(c => c._dup).length;
+  document.getElementById('import-summary').innerHTML =
+    `<strong>${importCandidates.length}</strong> hittade · <strong>${sel}</strong> valda` +
+    (dups ? ` · <span style="color:var(--amber)">${dups} möjliga dubbletter</span>` : '');
+
+  const list = document.getElementById('import-preview-list');
+  list.innerHTML = importCandidates.map((c, i) => {
+    const meta = [c.role, c.company].filter(Boolean).join(' · ');
+    const sub = [meta, c.email, c.phone].filter(Boolean).join('  ·  ');
+    return `<label style="display:flex;align-items:flex-start;gap:9px;padding:8px 9px;border-radius:7px;cursor:pointer;${c._sel?'background:var(--accent-glow)':''}" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${c._sel?'var(--accent-glow)':''}'">
+      <input type="checkbox" ${c._sel?'checked':''} onchange="toggleImportSel(${i}, this.checked)" style="margin-top:3px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:var(--text);font-weight:500">${esc(c.name||'(namnlös)')}${c._dup?' <span style="font-size:9px;color:var(--amber);border:1px solid rgba(218,176,128,0.4);border-radius:3px;padding:0 5px;margin-left:4px">redan i listan?</span>':''}</div>
+        ${sub?`<div style="font-size:11px;color:var(--text4);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sub)}</div>`:''}
+      </div>
+    </label>`;
+  }).join('');
+}
+
+function toggleImportSel(i, checked){
+  if (importCandidates[i]) importCandidates[i]._sel = checked;
+  renderImportPreview();
+}
+function importSelectAll(val){
+  importCandidates.forEach(c => c._sel = val);
+  renderImportPreview();
+}
+
+async function confirmImport(){
+  const chosen = importCandidates.filter(c => c._sel);
+  const status = document.getElementById('import-confirm-status');
+  if (!chosen.length){ status.textContent = 'Inga kontakter valda.'; return; }
+
+  const btn = document.getElementById('import-confirm-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Importerar…';
+
+  // Bygg nya kontaktobjekt och slå ihop med befintliga
+  const additions = chosen.map(c => ({
+    id: 'c_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name: c.name || '',
+    role: c.role || '',
+    company: c.company || '',
+    rel: importRel,
+    email: c.email || '',
+    phone: c.phone || '',
+    tags: ['importerad'],
+    notes: '',
+  }));
+  const next = contacts.concat(additions);
+
+  try {
+    await persistContacts(next);
+    contacts = next;
+    renderContacts();
+    closeImportModalBtn();
+  } catch(e) {
+    btn.disabled = false; btn.innerHTML = 'Importera valda';
+    status.textContent = `Kunde inte spara: ${e.message}. (Kräver contacts-funktionen driftsatt.)`;
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────
