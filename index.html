@@ -256,6 +256,59 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .modal{animation:modalIn 0.2s ease;}
 
 @media(max-width:920px){.review-layout{grid-template-columns:1fr;}.review-panel{position:static;}}
+
+/* ── FLYTANDE CHATT-WIDGET ─────────────────────────────────── */
+.chat-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--accent2);border:1px solid var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:var(--shadow);z-index:900;transition:all 0.2s;}
+.chat-fab:hover{background:var(--accent);transform:translateY(-2px) scale(1.04);}
+.chat-fab.hidden{display:none;}
+.chat-panel{position:fixed;bottom:24px;right:24px;width:400px;max-width:calc(100vw - 32px);height:600px;max-height:calc(100vh - 48px);background:var(--bg2);border:1px solid var(--border2);border-radius:16px;box-shadow:var(--shadow);z-index:901;display:none;flex-direction:column;overflow:hidden;}
+.chat-panel.open{display:flex;animation:chatIn 0.22s ease;}
+@keyframes chatIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.chat-head{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg4);flex-shrink:0;}
+.chat-head-icon{width:32px;height:32px;border-radius:8px;background:var(--accent-glow);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chat-head-icon svg{display:block;}
+.chat-head-meta{flex:1;min-width:0;}
+.chat-head-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--text);line-height:1.1;}
+.chat-head-sub{font-size:10px;color:var(--text4);margin-top:1px;}
+.chat-model-select{background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-family:inherit;font-size:10px;border-radius:5px;padding:3px 6px;cursor:pointer;}
+.chat-model-select:focus{outline:none;border-color:var(--accent2);}
+.chat-close{width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:all 0.15s;}
+.chat-close:hover{border-color:var(--red-bright);color:var(--red-bright);}
+.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-welcome{text-align:center;color:var(--text4);font-size:12px;line-height:1.6;padding:24px 12px;}
+.chat-welcome strong{color:var(--text3);}
+.chat-msg{display:flex;gap:9px;max-width:100%;animation:fadeUp 0.25s ease both;}
+.chat-msg.user{flex-direction:row-reverse;}
+.chat-avatar{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Cormorant Garamond',serif;}
+.chat-avatar.ai{background:var(--accent-glow);color:var(--accent);}
+.chat-avatar.user{background:var(--surface2);color:var(--text3);}
+.chat-bubble{padding:9px 13px;border-radius:12px;font-size:12.5px;line-height:1.6;color:var(--text2);max-width:300px;word-wrap:break-word;overflow-wrap:break-word;}
+.chat-msg.ai .chat-bubble{background:var(--surface);border:1px solid var(--border);border-top-left-radius:3px;}
+.chat-msg.user .chat-bubble{background:var(--accent-glow);border:1px solid rgba(200,133,74,0.25);color:var(--text);border-top-right-radius:3px;}
+.chat-bubble strong{color:var(--text);font-weight:600;}
+.chat-bubble code{font-size:11px;background:var(--bg4);padding:1px 5px;border-radius:3px;border:1px solid var(--border);}
+.chat-bubble pre{background:var(--bg4);border:1px solid var(--border);border-radius:7px;padding:10px;margin:6px 0;overflow-x:auto;font-size:11px;line-height:1.5;}
+.chat-bubble pre code{background:none;border:none;padding:0;}
+.chat-suggest{margin-top:9px;background:var(--bg4);border:1px solid var(--line-warm);border-radius:9px;padding:11px 13px;}
+.chat-suggest-label{font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.chat-suggest-row{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:9px;}
+.chat-suggest-row strong{color:var(--text);}
+.chat-suggest-meta{font-size:10px;color:var(--text4);margin-bottom:9px;}
+.chat-suggest-actions{display:flex;gap:6px;}
+.chat-suggest-actions .btn{flex:1;justify-content:center;padding:6px;font-size:11px;}
+.chat-foot{border-top:1px solid var(--border);padding:11px 13px;flex-shrink:0;background:var(--bg4);}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end;}
+.chat-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:inherit;font-size:12.5px;padding:9px 11px;resize:none;max-height:120px;line-height:1.5;}
+.chat-input:focus{outline:none;border-color:var(--accent2);}
+.chat-send{width:36px;height:36px;border-radius:9px;background:var(--accent2);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:all 0.15s;}
+.chat-send:hover{background:var(--accent);}
+.chat-send:disabled{opacity:0.4;cursor:not-allowed;}
+.chat-typing{display:flex;gap:4px;padding:4px 0;}
+.chat-typing span{width:6px;height:6px;border-radius:50%;background:var(--text4);animation:typing 1.2s infinite;}
+.chat-typing span:nth-child(2){animation-delay:0.2s;}
+.chat-typing span:nth-child(3){animation-delay:0.4s;}
+@keyframes typing{0%,60%,100%{opacity:0.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+@media(max-width:480px){.chat-panel{width:100vw;height:100vh;max-height:100vh;bottom:0;right:0;border-radius:0;}}
 </style>
 </head>
 <body>
@@ -580,6 +633,42 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 </main>
 </div>
 
+<!-- FLYTANDE CHATT-WIDGET -->
+<button class="chat-fab" id="chat-fab" onclick="toggleChat(true)" title="Öppna assistent">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+</button>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-head">
+    <div class="chat-head-icon">
+      <svg width="18" height="18" viewBox="0 0 36 36"><polygon points="18,2 34,10 34,26 18,34 2,26 2,10" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    </div>
+    <div class="chat-head-meta">
+      <div class="chat-head-title">Gruvan-assistenten</div>
+      <div class="chat-head-sub">Resonera · bygg · lägg till i roadmap</div>
+    </div>
+    <select class="chat-model-select" id="chat-model" title="Välj modell">
+      <option value="claude">Claude</option>
+      <option value="gpt">GPT</option>
+    </select>
+    <button class="chat-close" onclick="toggleChat(false)">✕</button>
+  </div>
+  <div class="chat-body" id="chat-body">
+    <div class="chat-welcome">
+      <strong>Hej Jimmy!</strong><br>
+      Fråga vad som helst, be om kod eller idéer — eller säg t.ex.<br>
+      <em>"lägg till en punkt om Stripe i Qvickr"</em><br>
+      så föreslår jag en rad du kan spara till roadmappen.
+    </div>
+  </div>
+  <div class="chat-foot">
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chat-input" rows="1" placeholder="Skriv ett meddelande…" onkeydown="chatKeydown(event)" oninput="chatAutogrow(this)"></textarea>
+      <button class="chat-send" id="chat-send" onclick="sendChat()">↑</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── KONFIG ────────────────────────────────────────────────────
 // Inga hemligheter i frontend. Allt går via Netlify-funktioner som
@@ -588,7 +677,8 @@ const FN = {
   review:    '/.netlify/functions/ai-review',     // Claude- + GPT-granskning
   githubFile:'/.netlify/functions/github-file',   // hämtar filinnehåll säkert
   githubCommits:'/.netlify/functions/github-commits', // commits utan exponerad token
-  githubWrite:'/.netlify/functions/github-write'  // skriver tillbaka till handoff-filer
+  githubWrite:'/.netlify/functions/github-write',  // skriver tillbaka till handoff-filer
+  chat:      '/.netlify/functions/ai-chat'        // konversation med Claude/GPT
 };
 const GH_USER = 'Jimblo72';
 
@@ -1107,6 +1197,171 @@ async function loadAllGitHub() {
     }
   }));
   grid.innerHTML = cards.join('');
+}
+
+// ── FLYTANDE CHATT ────────────────────────────────────────────
+// Konversation mot Claude/GPT via ai-chat-funktionen. Kan föreslå
+// roadmap-punkter som du bekräftar och sparar via github-write.
+let chatHistory = [];   // {role:'user'|'assistant', content:'...'}
+let chatBusy = false;
+
+// Lista över appar så modellen vet vilka id:n som finns för roadmap-tillägg
+const APP_LIST = Object.keys(APPS).map(id => ({ id, title: APPS[id].title }));
+
+function chatSystemPrompt(){
+  const appLines = APP_LIST.map(a => `- ${a.id} (${a.title})`).join('\n');
+  return `Du är Gruvan-assistenten, en hjälpsam teknisk medbyggare för Jimmy Blomgren på Gruvan Tech. Du hjälper till med kod, idéer, resonemang och planering. Svara på svenska, koncist och konkret.
+
+Jimmys portfölj (app-id och namn):
+${appLines}
+
+VIKTIGT — roadmap-tillägg: Om användaren ber dig lägga till en punkt/feature i en apps roadmap, svara helt normalt i text MEN inkludera också ett maskinläsbart block på EN egen rad i exakt detta format:
+[[ADD_FEATURE app="<app-id>" title="<kort titel>" desc="<beskrivning>"]]
+Använd ett av app-id:na ovan. Hitta inte på nya id:n. Lägg blocket sist i ditt svar. Föreslå bara — användaren bekräftar själv genom att klicka en knapp. Om du är osäker på vilken app, fråga först istället för att gissa.`;
+}
+
+function toggleChat(open){
+  document.getElementById('chat-panel').classList.toggle('open', open);
+  document.getElementById('chat-fab').classList.toggle('hidden', open);
+  if (open) setTimeout(()=>document.getElementById('chat-input').focus(), 100);
+}
+
+function chatAutogrow(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+function chatKeydown(e){
+  if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); }
+}
+
+function chatFormat(t){
+  // enkel markdown: escape, **fet**, `kod`, ```block```, radbrytning
+  let s = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s = s.replace(/```([\s\S]*?)```/g, (m,c)=>`<pre><code>${c.trim()}</code></pre>`);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
+// Plockar ut [[ADD_FEATURE ...]]-block och returnerar {clean, suggestion}
+function parseSuggestion(text){
+  const re = /\[\[ADD_FEATURE\s+app="([^"]*)"\s+title="([^"]*)"\s+desc="([^"]*)"\]\]/;
+  const m = text.match(re);
+  if (!m) return { clean: text, suggestion: null };
+  const clean = text.replace(re, '').trim();
+  return { clean, suggestion: { app: m[1], title: m[2], desc: m[3] } };
+}
+
+function addChatMessage(role, html){
+  const body = document.getElementById('chat-body');
+  const welcome = body.querySelector('.chat-welcome');
+  if (welcome) welcome.remove();
+  const wrap = document.createElement('div');
+  wrap.className = `chat-msg ${role}`;
+  const avatar = role === 'user' ? 'J' : 'G';
+  const avatarCls = role === 'user' ? 'user' : 'ai';
+  wrap.innerHTML = `<div class="chat-avatar ${avatarCls}">${avatar}</div><div class="chat-bubble">${html}</div>`;
+  body.appendChild(wrap);
+  body.scrollTop = body.scrollHeight;
+  return wrap;
+}
+
+function showTyping(){
+  const body = document.getElementById('chat-body');
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-msg ai';
+  wrap.id = 'chat-typing-row';
+  wrap.innerHTML = `<div class="chat-avatar ai">G</div><div class="chat-bubble"><div class="chat-typing"><span></span><span></span><span></span></div></div>`;
+  body.appendChild(wrap);
+  body.scrollTop = body.scrollHeight;
+}
+function removeTyping(){
+  const t = document.getElementById('chat-typing-row');
+  if (t) t.remove();
+}
+
+async function sendChat(){
+  if (chatBusy) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  chatAutogrow(input);
+  addChatMessage('user', chatFormat(text));
+  chatHistory.push({ role:'user', content:text });
+
+  chatBusy = true;
+  document.getElementById('chat-send').disabled = true;
+  showTyping();
+
+  const provider = document.getElementById('chat-model').value;
+  try {
+    const r = await fetch(FN.chat, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ provider, system: chatSystemPrompt(), messages: chatHistory })
+    });
+    if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.error || `HTTP ${r.status}`); }
+    const data = await r.json();
+    const reply = data.text || '(tomt svar)';
+    chatHistory.push({ role:'assistant', content:reply });
+
+    removeTyping();
+    const { clean, suggestion } = parseSuggestion(reply);
+    const msgEl = addChatMessage('ai', chatFormat(clean));
+    if (suggestion) renderSuggestion(msgEl, suggestion);
+  } catch(e){
+    removeTyping();
+    addChatMessage('ai', `<em style="color:var(--text4)">Kunde inte nå assistenten (${e.message}). Kräver att <code>ai-chat</code>-funktionen är driftsatt.</em>`);
+  } finally {
+    chatBusy = false;
+    document.getElementById('chat-send').disabled = false;
+    document.getElementById('chat-input').focus();
+  }
+}
+
+// Renderar förslagskortet med spara-knapp under ett AI-meddelande
+let pendingSuggestions = [];
+function renderSuggestion(msgEl, s){
+  const known = APP_LIST.find(a => a.id === s.app);
+  const appTitle = known ? known.title : s.app;
+  const idx = pendingSuggestions.push(s) - 1;   // lagra, referera per index
+  const bubble = msgEl.querySelector('.chat-bubble');
+  const box = document.createElement('div');
+  box.className = 'chat-suggest';
+  box.innerHTML = `
+    <div class="chat-suggest-label">Förslag till roadmap</div>
+    <div class="chat-suggest-row"><strong>${esc(s.title)}</strong>${s.desc?` — ${esc(s.desc)}`:''}</div>
+    <div class="chat-suggest-meta">Sparas i: ${esc(appTitle)}${known?'':' ⚠ okänt app-id'}</div>
+    <div class="chat-suggest-actions">
+      <button class="btn btn-solid" onclick="saveSuggestion(this, ${idx})">✓ Spara till ${esc(appTitle)}</button>
+      <button class="btn" onclick="this.closest('.chat-suggest').remove()">Avfärda</button>
+    </div>`;
+  bubble.appendChild(box);
+  document.getElementById('chat-body').scrollTop = document.getElementById('chat-body').scrollHeight;
+}
+
+async function saveSuggestion(btn, idx){
+  const s = pendingSuggestions[idx];
+  if (!s) return;
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Sparar…';
+  try {
+    const r = await fetch(FN.githubWrite, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ appId: s.app, title: s.title, desc: s.desc })
+    });
+    if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.error || `HTTP ${r.status}`); }
+    const box = btn.closest('.chat-suggest');
+    box.innerHTML = `<div class="chat-suggest-label" style="color:var(--green)">✓ Sparat till roadmap</div><div class="chat-suggest-row"><strong>${esc(s.title)}</strong></div>`;
+  } catch(e){
+    btn.disabled = false;
+    btn.innerHTML = orig;
+    const meta = btn.closest('.chat-suggest').querySelector('.chat-suggest-meta');
+    meta.innerHTML = `<span style="color:var(--red-bright)">Kunde inte spara: ${esc(e.message)}</span>`;
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────
