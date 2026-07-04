@@ -854,6 +854,7 @@ const FN = {
   githubCommits:'/.netlify/functions/github-commits', // commits utan exponerad token
   githubWrite:'/.netlify/functions/github-write',  // skriver tillbaka till handoff-filer
   githubIssues:'/.netlify/functions/github-issues', // granskningsissues (ui-scan/cleanup)
+  githubDispatch:'/.netlify/functions/github-dispatch', // triggar scan (kräver workflow-scope)
   chat:      '/.netlify/functions/ai-chat',       // konversation med Claude/GPT
   contacts:  '/.netlify/functions/contacts'        // läs/skriv kontaktnätverk (data/contacts.json)
 };
@@ -1219,6 +1220,11 @@ function openModal(id) {
   if (app.reviewRepo) {
     html += `<div class="modal-section" id="reviews-section">
       <div class="modal-section-title">Granskningar <span id="reviews-state" style="font-size:9px;color:var(--text4);font-style:italic;margin-left:auto"></span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${app.reviewRepo}','ui-scan.yml',this)">▶ Kör UI-granskning</button>
+        <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${app.reviewRepo}','cleanup.yml',this)">▶ Kör kodstädning</button>
+        <span id="scan-status" style="font-size:10px;color:var(--text4)"></span>
+      </div>
       <div id="reviews-list"><div class="hint">Hämtar…</div></div>
     </div>`;
   }
@@ -1318,6 +1324,24 @@ async function loadReviews(repo) {
   } catch (e) {
     listEl.innerHTML = `<div class="hint">Kunde inte hämta granskningar (${esc(e.message)}) — kräver github-issues-funktionen driftsatt.</div>`;
     if (stateEl) stateEl.textContent = '○ ej tillgänglig';
+  }
+}
+
+// Triggar en granskningsworkflow (kräver workflow-scope på dashboardens GH_TOKEN).
+async function triggerScan(repo, workflow, btn) {
+  const status = document.getElementById('scan-status');
+  const label = workflow === 'ui-scan.yml' ? 'UI-granskning' : 'Kodstädning';
+  if (btn) btn.disabled = true;
+  if (status) { status.style.color = 'var(--text4)'; status.textContent = `Startar ${label}…`; }
+  try {
+    const r = await fetch(FN.githubDispatch, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ repo, workflow }) });
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.needsScope ? 'kräver workflow-scope på GH_TOKEN' : (d.error || `HTTP ${r.status}`));
+    if (status) { status.style.color = 'var(--green)'; status.textContent = `✓ ${label} startad — resultatet dyker upp här om några minuter`; }
+  } catch (e) {
+    if (status) { status.style.color = 'var(--text3)'; status.textContent = `Kunde inte starta: ${e.message}`; }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
