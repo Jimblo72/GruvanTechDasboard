@@ -853,6 +853,8 @@ const FN = {
   githubFile:'/.netlify/functions/github-file',   // hämtar filinnehåll säkert
   githubCommits:'/.netlify/functions/github-commits', // commits utan exponerad token
   githubWrite:'/.netlify/functions/github-write',  // skriver tillbaka till handoff-filer
+  githubIssues:'/.netlify/functions/github-issues', // granskningsissues (ui-scan/cleanup)
+  githubDispatch:'/.netlify/functions/github-dispatch', // triggar scan (kräver workflow-scope)
   chat:      '/.netlify/functions/ai-chat',       // konversation med Claude/GPT
   contacts:  '/.netlify/functions/contacts'        // läs/skriv kontaktnätverk (data/contacts.json)
 };
@@ -1003,6 +1005,7 @@ const APPS = {
     icon: 'Mk', iconStyle: 'background:var(--accent-glow);color:#c8854a',
     title: 'Mäklargruvan', subtitle: 'Aktiv · Netlify · Prowebb-distribution',
     status: 'active',
+    reviewRepo: 'Maklargruvan-PeakFast', // repot där CI-granskningsverktygen (ui-scan/cleanup) bor
     about: 'AI-marknadsföringsplattform för svenska mäklare, distribuerad via Prowebb med 25% provision. Inkluderar textgenerator, broschyrgenerator (3 mallar: Editorial, Minimal, Classic) och sociala medier-modul med Meta API-integration.',
     planned: [
       { t: 'Brand Pack-integration', d: 'Hexagon-logotyp + wordmark i alla moduler' },
@@ -1213,6 +1216,19 @@ function openModal(id) {
   let html = `<div class="status-row"><span class="badge ${statusColors[app.status]}">${statusLabels[app.status]}</span></div>`;
   html += `<div class="modal-section"><div class="modal-section-title">Om produkten</div><div class="modal-text"><p>${app.about}</p></div></div>`;
 
+  // Granskningar — live från CI-verktygen (ui-scan/cleanup) för appens reviewRepo.
+  if (app.reviewRepo) {
+    html += `<div class="modal-section" id="reviews-section">
+      <div class="modal-section-title">Granskningar <span id="reviews-state" style="font-size:9px;color:var(--text4);font-style:italic;margin-left:auto"></span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${app.reviewRepo}','ui-scan.yml',this)">▶ Kör UI-granskning</button>
+        <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${app.reviewRepo}','cleanup.yml',this)">▶ Kör kodstädning</button>
+        <span id="scan-status" style="font-size:10px;color:var(--text4)"></span>
+      </div>
+      <div id="reviews-list"><div class="hint">Hämtar…</div></div>
+    </div>`;
+  }
+
   // Planerat-sektionen får ett eget id så live-laddningen kan ersätta den.
   // Initialt renderas hårdkodad data (instant), sedan hämtas handoff-filen.
   html += `<div class="modal-section" id="planned-section">
@@ -1240,6 +1256,7 @@ function openModal(id) {
 
   // Hämta live handoff-fil och ersätt listan om den finns
   loadHandoff(id);
+  if (app.reviewRepo) loadReviews(app.reviewRepo);
 }
 
 let currentModalApp = null;
@@ -1274,6 +1291,57 @@ async function loadHandoff(id) {
   } catch(e) {
     // Filen finns inte / funktion ej driftsatt — behåll fallback tyst
     stateEl.textContent = '○ lokal data';
+  }
+}
+
+// Granskningar — läser öppna ui-scan/cleanup-issues för appens reviewRepo via proxyn.
+async function loadReviews(repo) {
+  const stateEl = document.getElementById('reviews-state');
+  const listEl = document.getElementById('reviews-list');
+  if (!listEl) return;
+  try {
+    const r = await fetch(`${FN.githubIssues}?repo=${encodeURIComponent(repo)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    const reviews = (data.issues || []).filter(i => i.isReview);
+    if (!reviews.length) {
+      listEl.innerHTML = `<div class="hint">Inga öppna granskningsfynd i ${esc(repo)}.</div>`;
+      if (stateEl) { stateEl.textContent = '● live'; stateEl.style.color = 'var(--green)'; }
+      return;
+    }
+    const icon = { ui: '🎨', cleanup: '🧹' };
+    listEl.innerHTML = reviews.map(rv =>
+      `<a href="${rv.url}" target="_blank" style="display:flex;gap:10px;align-items:flex-start;padding:9px 11px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-decoration:none" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:15px;line-height:1.2;flex-shrink:0">${icon[rv.kind] || '📋'}</span>
+        <span style="flex:1;min-width:0">
+          <strong style="display:block;color:var(--text);font-size:12px">${esc(rv.title)}</strong>
+          ${rv.summary ? `<span style="display:block;color:var(--text3);font-size:10.5px;margin-top:2px;line-height:1.4">${esc(rv.summary)}</span>` : ''}
+        </span>
+        <span style="color:var(--text4);font-size:9.5px;white-space:nowrap;flex-shrink:0">#${rv.number} · ${timeAgo(rv.updated_at)}</span>
+      </a>`
+    ).join('');
+    if (stateEl) { stateEl.textContent = '● live från GitHub'; stateEl.style.color = 'var(--green)'; }
+  } catch (e) {
+    listEl.innerHTML = `<div class="hint">Kunde inte hämta granskningar (${esc(e.message)}) — kräver github-issues-funktionen driftsatt.</div>`;
+    if (stateEl) stateEl.textContent = '○ ej tillgänglig';
+  }
+}
+
+// Triggar en granskningsworkflow (kräver workflow-scope på dashboardens GH_TOKEN).
+async function triggerScan(repo, workflow, btn) {
+  const status = document.getElementById('scan-status');
+  const label = workflow === 'ui-scan.yml' ? 'UI-granskning' : 'Kodstädning';
+  if (btn) btn.disabled = true;
+  if (status) { status.style.color = 'var(--text4)'; status.textContent = `Startar ${label}…`; }
+  try {
+    const r = await fetch(FN.githubDispatch, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ repo, workflow }) });
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.needsScope ? 'kräver workflow-scope på GH_TOKEN' : (d.error || `HTTP ${r.status}`));
+    if (status) { status.style.color = 'var(--green)'; status.textContent = `✓ ${label} startad — resultatet dyker upp här om några minuter`; }
+  } catch (e) {
+    if (status) { status.style.color = 'var(--text3)'; status.textContent = `Kunde inte starta: ${e.message}`; }
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
