@@ -493,6 +493,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" onclick="showSection('review',this)"><div class="nav-dot" style="background:var(--accent)"></div>AI-granskning</button>
       <button class="nav-item" onclick="showSection('contacts',this)"><div class="nav-dot" style="background:var(--accent)"></div>Nätverk</button>
       <button class="nav-item" onclick="showSection('github',this)"><div class="nav-dot" style="background:var(--text3)"></div>GitHub</button>
+      <button class="nav-item" onclick="showSection('prs',this)"><div class="nav-dot" style="background:var(--accent)"></div>Öppna PR:ar</button>
       <button class="nav-item" onclick="showSection('memory',this)"><div class="nav-dot" style="background:var(--text3)"></div>Minne & MCP</button>
       <button class="nav-item" onclick="showSection('flode',this)"><div class="nav-dot" style="background:var(--accent)"></div>Systemflöde</button>
     </div>
@@ -794,6 +795,14 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     <div class="gh-grid" id="gh-grid"><div class="loading">Klicka "Hämta commits" för att ladda GitHub-data…</div></div>
   </div>
 
+  <div class="section" id="sec-prs">
+    <div class="topbar">
+      <div><div class="page-title">Öppna PR:ar</div><div class="page-sub">Alla öppna pull requests över dina repon</div></div>
+      <button class="btn btn-accent" onclick="loadPRs()">↺ Uppdatera</button>
+    </div>
+    <div id="prs-list"><div class="loading">Hämtar öppna PR:ar…</div></div>
+  </div>
+
   <!-- MEMORY -->
   <div class="section" id="sec-memory">
     <div class="topbar"><div><div class="page-title">Minne & MCP</div><div class="page-sub">Lokala MCP-servrar på denna dator</div></div></div>
@@ -862,7 +871,8 @@ const FN = {
   githubIssues:'/.netlify/functions/github-issues', // granskningsissues (ui-scan/cleanup)
   githubDispatch:'/.netlify/functions/github-dispatch', // triggar scan (kräver workflow-scope)
   chat:      '/.netlify/functions/ai-chat',       // konversation med Claude/GPT
-  contacts:  '/.netlify/functions/contacts'        // läs/skriv kontaktnätverk (data/contacts.json)
+  contacts:  '/.netlify/functions/contacts',       // läs/skriv kontaktnätverk (data/contacts.json)
+  githubPrs: '/.netlify/functions/github-prs'      // öppna PR:er över alla repon
 };
 const GH_USER = 'Jimblo72';
 
@@ -1405,9 +1415,34 @@ function showSection(id, btn) {
   document.getElementById('sec-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   if (id === 'github') loadAllGitHub();
+  if (id === 'prs' && !prsLoaded) loadPRs();
   if (id === 'contacts' && !contactsLoaded) loadContacts();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
+
+// Öppna PR:ar över alla repon (via github-prs-proxyn).
+let prsLoaded = false;
+async function loadPRs() {
+  const el = document.getElementById('prs-list');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Hämtar öppna PR:ar…</div>';
+  try {
+    const r = await fetch(FN.githubPrs);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const prs = (await r.json()).prs || [];
+    prsLoaded = true;
+    if (!prs.length) { el.innerHTML = '<div class="loading">Inga öppna PR:ar. 🎉</div>'; return; }
+    el.innerHTML = prs.map(p =>
+      `<a href="${p.url}" target="_blank" style="display:flex;gap:12px;align-items:center;padding:11px 14px;margin-bottom:7px;background:var(--surface);border:1px solid var(--border);border-radius:10px;text-decoration:none" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-glow);padding:3px 8px;border-radius:6px;white-space:nowrap">${esc(p.repo)}</span>
+        <span style="flex:1;min-width:0;color:var(--text);font-size:13px;font-weight:600">${esc(p.title)}${p.draft ? ' <span style="color:var(--text4);font-weight:400">(utkast)</span>' : ''}</span>
+        <span style="color:var(--text4);font-size:10px;white-space:nowrap">#${p.number} · ${timeAgo(p.updated_at)}</span>
+      </a>`
+    ).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="loading">Kunde inte hämta PR:ar (${esc(e.message)}) — kräver github-prs-funktionen driftsatt.</div>`;
+  }
+}
 
 // ── GITHUB (commits via säker funktion, fallback till publik API) ──
 async function fetchCommits(repo) {
