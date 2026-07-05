@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gruvan Tech — Systemflöde</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f1e35;--bg2:#152540;--bg3:#1a2d4a;
+  --surface:rgba(255,255,255,0.05);--surface2:rgba(255,255,255,0.09);
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.18);
+  --text:#edf2f8;--text2:#a8bcd4;--text3:#6a82a0;
+  --accent:#8fb5d2;--accent-glow:rgba(143,181,210,0.13);
+  --gold:#f2c14e;--gold-glow:rgba(242,193,78,0.18);
+  --copper:#c17a45;--copper-glow:rgba(193,122,69,0.2);
+  --silver:#a9bccf;--silver-glow:rgba(169,188,207,0.16);
+  --alert:#e05a5a;--alert-glow:rgba(224,90,90,0.2);
+  --muted:#3a4a68;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:36px 20px 60px;overflow-x:hidden;
+}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 40% at 50% -5%,rgba(143,181,210,0.08) 0%,transparent 70%);pointer-events:none;z-index:0;}
+
+.header{text-align:center;margin-bottom:4px;position:relative;z-index:1;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.title-row{display:flex;align-items:center;justify-content:center;gap:10px;}
+.title{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--text);}
+.subtitle{font-size:13px;color:var(--text3);margin-top:6px;max-width:460px;line-height:1.6;}
+.hud{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);margin-top:12px;letter-spacing:0.02em;}
+.hud b{color:var(--text);font-weight:500;}
+
+.stage{position:relative;z-index:1;width:100%;max-width:760px;margin-top:24px;}
+svg{width:100%;height:auto;display:block;overflow:visible;}
+
+.hex-fill{transition:fill 0.4s ease, filter 0.4s ease;}
+.hex-stroke{transition:stroke 0.4s ease, stroke-width 0.3s ease;fill:none;}
+.node-label{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;fill:var(--text2);text-anchor:middle;transition:fill 0.4s ease;}
+.node-sub{font-family:'JetBrains Mono',monospace;font-size:7.5px;fill:var(--text3);text-anchor:middle;letter-spacing:0.04em;text-transform:uppercase;}
+
+.hex-node{cursor:pointer;}
+.hex-node:hover .hex-stroke{stroke:var(--border2);stroke-width:1.4;}
+
+.flow-line{fill:none;stroke:var(--muted);stroke-width:1;opacity:0.35;stroke-dasharray:4 5;animation:drift 3.5s linear infinite;}
+@keyframes drift{to{stroke-dashoffset:-18;}}
+.flow-line.pulse{stroke-width:1.6;opacity:1;stroke-dasharray:5 4;animation:drift-fast 0.5s linear infinite;}
+@keyframes drift-fast{to{stroke-dashoffset:-27;}}
+
+.hex-node.active .hex-fill{filter:drop-shadow(0 0 10px currentColor);}
+.hex-node.active .node-label{fill:var(--text);}
+
+.pulse-ring{fill:none;stroke-width:1.5;opacity:0;pointer-events:none;}
+.pulse-ring.firing{animation:ring 0.9s ease-out;}
+@keyframes ring{0%{opacity:0.8;transform:scale(1);}100%{opacity:0;transform:scale(1.9);}}
+
+/* uppmärksamhet — diskret röd andning, inte hektiskt blink */
+.hex-node.alert{animation:breathe 1.8s ease-in-out infinite;}
+.hex-node.alert .hex-stroke{stroke:var(--alert);stroke-width:1.8;}
+.hex-node.alert .hex-fill{fill:var(--alert-glow);}
+.hex-node.alert .node-label{fill:var(--text);}
+@keyframes breathe{0%,100%{opacity:1;}50%{opacity:0.62;}}
+
+.alert-badge{opacity:0;transition:opacity 0.3s ease;}
+.hex-node.alert .alert-badge{opacity:1;}
+.alert-badge circle{fill:var(--alert);stroke:var(--bg2);stroke-width:1.5;}
+
+.hub .hex-stroke{stroke:var(--accent);stroke-width:1.6;}
+.hub .hex-fill{fill:var(--accent-glow);}
+.hub .node-label{fill:var(--accent);font-weight:700;font-family:'Syne',sans-serif;font-size:12px;}
+.hub .node-sub{fill:var(--text3);}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:30px;position:relative;z-index:1;max-width:640px;}
+.leg-btn{
+  background:var(--surface);border:1px solid var(--border);color:var(--text2);
+  padding:7px 13px;border-radius:7px;font-size:11px;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:6px;
+}
+.leg-btn:hover{border-color:var(--border2);background:var(--surface2);}
+.leg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.legend-hint{font-size:10.5px;color:var(--text3);text-align:center;margin-top:10px;max-width:420px;line-height:1.5;position:relative;z-index:1;}
+
+.integration{
+  margin-top:36px;width:100%;max-width:640px;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;padding:20px 22px;position:relative;z-index:1;
+}
+.integration-title{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.integration-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.integration pre{
+  font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;color:var(--text2);
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;
+  overflow-x:auto;white-space:pre;
+}
+.integration pre .k{color:var(--accent);}
+.integration pre .s{color:var(--gold);}
+.integration pre .c{color:var(--text3);}
+.integration p{font-size:11.5px;color:var(--text3);line-height:1.6;margin-top:10px;}
+
+@media (prefers-reduced-motion: reduce){
+  .flow-line, .flow-line.pulse, .hex-node.alert{animation:none;opacity:0.6;}
+  .pulse-ring.firing{animation:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="eyebrow">Gruvan Tech · Prototyp</div>
+  <div class="title-row">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <line x1="6" y1="20" x2="16" y2="8" stroke="#8fb5d2" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M11 4 C15 3, 20 5, 21 9 C17 8.5, 13 8, 11 4 Z" stroke="#f2c14e" stroke-width="1.4" fill="none" stroke-linejoin="round"/>
+    </svg>
+    <div class="title">Systemflöde</div>
+  </div>
+  <div class="subtitle">Silver är rådata, koppar är maskineriet, guld är det förädlade resultatet. Klicka en nod för att simulera en händelse — en röd, andande nod betyder att något väntar på dig.</div>
+  <div class="hud">⛏ Malm bearbetat idag: <b id="ore-count">0</b></div>
+</div>
+
+<div class="stage">
+  <svg id="graph" viewBox="0 0 760 560"></svg>
+</div>
+
+<div class="legend" id="legend"></div>
+<div class="legend-hint">Klicka direkt på en nod i grafen för att kvittera en väntande händelse (röd puls). Knapparna ovan simulerar normala flöden.</div>
+
+<div class="integration">
+  <div class="integration-title">Koppla till riktiga funktioner</div>
+  <pre><span class="c">// Flöde — en händelse passerar genom systemet</span>
+<span class="k">window</span>.GruvanFlow.<span class="k">trigger</span>(<span class="s">'outlook'</span>);
+
+<span class="c">// Uppmärksamhet — något väntar på godkännande</span>
+<span class="c">// (t.ex. mailutkast redo, SMS med känsligt innehåll flaggat)</span>
+<span class="k">window</span>.GruvanFlow.<span class="k">attention</span>(<span class="s">'outlook'</span>, <span class="k">true</span>);
+<span class="c">// … och när det kvitterats/skickats:</span>
+<span class="k">window</span>.GruvanFlow.<span class="k">attention</span>(<span class="s">'outlook'</span>, <span class="k">false</span>);
+
+<span class="c">// Exempel: Supabase Realtime styr båda automatiskt</span>
+supabase
+  .channel(<span class="s">'pipeline'</span>)
+  .on(<span class="s">'postgres_changes'</span>, { event: <span class="s">'INSERT'</span>, table: <span class="s">'mail_events'</span> },
+      () => <span class="k">window</span>.GruvanFlow.<span class="k">trigger</span>(<span class="s">'outlook'</span>))
+  .on(<span class="s">'postgres_changes'</span>, { event: <span class="s">'INSERT'</span>, table: <span class="s">'pending_approvals'</span> },
+      row => <span class="k">window</span>.GruvanFlow.<span class="k">attention</span>(row.new.node, <span class="k">true</span>))
+  .subscribe();</pre>
+  <p>Nod-id: <code>claude-code</code>, <code>gemini</code>, <code>github</code>, <code>netlify</code>, <code>outlook</code>, <code>sms</code>, <code>supabase</code>, <code>maklargruvan</code>. <code>attention()</code> är avsiktligt icke-automatisk — den rensas bara av <code>attention(id, false)</code> eller ett klick i grafen, aldrig av en timer. Precis som godkännandeflödet i övrigt ska inget kvitteras av sig självt.</p>
+</div>
+
+<script>
+const NODES = [
+  { id:'claude-code',   label:'Claude Code',  sub:'agent · guld',    tier:'gold'   },
+  { id:'gemini',        label:'Gemini',       sub:'agent · guld',    tier:'gold'   },
+  { id:'github',        label:'GitHub',       sub:'källa · silver',  tier:'silver' },
+  { id:'netlify',       label:'Netlify Fn',   sub:'motor · koppar',  tier:'copper' },
+  { id:'outlook',       label:'Outlook',      sub:'källa · silver',  tier:'silver' },
+  { id:'sms',           label:'SMS',          sub:'källa · silver',  tier:'silver' },
+  { id:'supabase',      label:'Supabase',     sub:'lager · koppar',  tier:'copper' },
+  { id:'maklargruvan',  label:'Mäklargruvan', sub:'app · guld',      tier:'gold'   },
+];
+const TIER_COLOR = { gold:'var(--gold)', copper:'var(--copper)', silver:'var(--silver)' };
+
+const CX = 380, CY = 280, RING = 210, HEX_R = 46, HUB_R = 56;
+const svgNS = 'http://www.w3.org/2000/svg';
+
+function hexPoints(cx, cy, r) {
+  const pts = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 180) * (60 * i - 90);
+    pts.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+
+const svg = document.getElementById('graph');
+const legend = document.getElementById('legend');
+let svgHTML = '';
+
+NODES.forEach((n, i) => {
+  const angle = (Math.PI / 180) * (360 / NODES.length * i - 90);
+  n.x = CX + RING * Math.cos(angle);
+  n.y = CY + RING * Math.sin(angle);
+  n.color = TIER_COLOR[n.tier];
+  svgHTML += `<path id="line-${n.id}" class="flow-line" d="M ${CX} ${CY} L ${n.x.toFixed(1)} ${n.y.toFixed(1)}" style="animation-delay:${(i*0.3).toFixed(2)}s"/>`;
+});
+
+svgHTML += `<g class="hex-node hub" id="node-hub">
+  <polygon class="hex-fill" points="${hexPoints(CX, CY, HUB_R)}"/>
+  <polygon class="hex-stroke" points="${hexPoints(CX, CY, HUB_R)}"/>
+  <text class="node-label" x="${CX}" y="${CY-1}">Kärnan</text>
+  <text class="node-sub" x="${CX}" y="${CY+13}">smältverk</text>
+</g>`;
+
+NODES.forEach(n => {
+  const bx = n.x + HEX_R * 0.62, by = n.y - HEX_R * 0.62;
+  svgHTML += `<g id="node-${n.id}" class="hex-node" style="color:${n.color}" data-id="${n.id}">
+    <circle class="pulse-ring" id="ring-${n.id}" cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${HEX_R}" stroke="${n.color}"/>
+    <polygon class="hex-fill" points="${hexPoints(n.x, n.y, HEX_R)}" fill="rgba(255,255,255,0.04)"/>
+    <polygon class="hex-stroke" points="${hexPoints(n.x, n.y, HEX_R)}" stroke="var(--border2)"/>
+    <text class="node-label" x="${n.x.toFixed(1)}" y="${n.y.toFixed(1)-2}">${n.label}</text>
+    <text class="node-sub" x="${n.x.toFixed(1)}" y="${n.y.toFixed(1)+12}">${n.sub}</text>
+    <g class="alert-badge"><circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="5"/></g>
+  </g>`;
+});
+
+svg.innerHTML = svgHTML;
+
+NODES.forEach(n => {
+  const btn = document.createElement('button');
+  btn.className = 'leg-btn';
+  btn.innerHTML = `<span class="leg-dot" style="background:${n.color}"></span>${n.label}`;
+  btn.onclick = () => trigger(n.id);
+  legend.appendChild(btn);
+});
+
+// Noder med granskningsverktyg: nod-id → repo (utöka när fler appar får dem).
+const REVIEW_REPOS = { maklargruvan: 'Maklargruvan-PeakFast' };
+
+document.querySelectorAll('.hex-node[data-id]').forEach(g => {
+  g.addEventListener('click', () => {
+    const id = g.dataset.id;
+    // Granskningsnod med öppna fynd → öppna issues (kvittera aldrig bort en röd nod blint).
+    if (REVIEW_REPOS[id] && g.classList.contains('alert')) {
+      window.open(`https://github.com/Jimblo72/${REVIEW_REPOS[id]}/issues`, '_blank');
+      return;
+    }
+    if (g.classList.contains('alert')) {
+      attention(id, false);
+      const n = NODES.find(x => x.id === id);
+      sparkBurst(n.x, n.y, 'var(--gold)');
+    } else {
+      trigger(id);
+    }
+  });
+});
+
+const timers = {};
+let oreCount = 0;
+const oreEl = document.getElementById('ore-count');
+
+function trigger(id) {
+  const node = document.getElementById(`node-${id}`);
+  const line = document.getElementById(`line-${id}`);
+  const ring = document.getElementById(`ring-${id}`);
+  const n = NODES.find(x => x.id === id);
+  if (!node || !line || !n) return;
+
+  node.classList.add('active');
+  line.classList.add('pulse');
+  ring.classList.remove('firing');
+  void ring.getBBox();
+  ring.classList.add('firing');
+  sparkBurst(n.x, n.y, n.color);
+
+  oreCount++;
+  oreEl.textContent = oreCount;
+
+  clearTimeout(timers[id]);
+  timers[id] = setTimeout(() => {
+    node.classList.remove('active');
+    line.classList.remove('pulse');
+  }, 1000);
+}
+
+function attention(id, on) {
+  const node = document.getElementById(`node-${id}`);
+  if (!node) return;
+  node.classList.toggle('alert', !!on);
+}
+
+function sparkBurst(cx, cy, color) {
+  const group = document.createElementNS(svgNS, 'g');
+  const chips = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 60 + Math.random() * 45;
+    const chip = document.createElementNS(svgNS, 'polygon');
+    chip.setAttribute('points', '0,-3 2.5,2 -2.5,2');
+    chip.setAttribute('fill', color);
+    group.appendChild(chip);
+    chips.push({ el: chip, angle, speed, rot: Math.random() * 360 });
+  }
+  svg.appendChild(group);
+  const start = performance.now();
+  const DUR = 550;
+  function frame(t) {
+    const elapsed = t - start;
+    const p = Math.min(elapsed / DUR, 1);
+    chips.forEach(c => {
+      const dist = c.speed * (elapsed / 1000);
+      const x = cx + Math.cos(c.angle) * dist;
+      const y = cy + Math.sin(c.angle) * dist;
+      const scale = 1 - p * 0.7;
+      c.el.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${c.rot.toFixed(0)}) scale(${scale.toFixed(2)})`);
+      c.el.setAttribute('opacity', String((1 - p).toFixed(2)));
+    });
+    if (p < 1) requestAnimationFrame(frame); else group.remove();
+  }
+  requestAnimationFrame(frame);
+}
+
+window.GruvanFlow = { trigger, attention };
+
+// Engångs-svep vid laddning — visuell "systemet lever", inte fejkad data.
+NODES.forEach((n, i) => setTimeout(() => trigger(n.id), 300 + i * 240));
+
+// RIKTIG data: tänd granskningsnoder som har öppna fynd (via dashboardens proxy).
+// Ingen fejkad timer — pollar faktiska issues var 2:e minut.
+async function refreshAttention() {
+  for (const [nodeId, repo] of Object.entries(REVIEW_REPOS)) {
+    try {
+      const r = await fetch(`/.netlify/functions/github-issues?repo=${encodeURIComponent(repo)}`);
+      if (!r.ok) continue;
+      const data = await r.json();
+      attention(nodeId, (data.issues || []).some(i => i.isReview));
+    } catch (e) { /* proxy ej nåbar (t.ex. lokalt) — hoppa tyst */ }
+  }
+}
+refreshAttention();
+setInterval(refreshAttention, 120000);
+</script>
+
+</body>
+</html>
