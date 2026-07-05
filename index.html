@@ -1043,7 +1043,7 @@ const APPS = {
     icon: 'Mk', iconStyle: 'background:var(--accent-glow);color:#c8854a',
     title: 'Mäklargruvan', subtitle: 'Aktiv · Netlify · Prowebb-distribution',
     status: 'active',
-    reviewRepo: 'Maklargruvan-PeakFast', // repot där CI-granskningsverktygen (ui-scan/cleanup) bor
+    reviewRepos: ['maklargruvan-pilot', 'Maklargruvan-PeakFast'], // granskningsrepon: prod-piloten + PeakFast-editionen (CI-verktygen ui-scan/cleanup bor i båda)
     about: 'AI-marknadsföringsplattform för svenska mäklare, distribuerad via Prowebb med 25% provision. Inkluderar textgenerator, broschyrgenerator (3 mallar: Editorial, Minimal, Classic) och sociala medier-modul med Meta API-integration.',
     planned: [
       { t: 'Brand Pack-integration', d: 'Hexagon-logotyp + wordmark i alla moduler' },
@@ -1238,6 +1238,10 @@ const APPS = {
   },
 };
 
+// Ett app kan ha flera granskningsrepon (prod-pilot + edition). Bakåtkompatibelt med reviewRepo.
+function getReviewRepos(app) { return app.reviewRepos || (app.reviewRepo ? [app.reviewRepo] : []); }
+function repoKey(repo) { return String(repo).replace(/[^a-z0-9]/gi, '_'); }
+
 function openModal(id) {
   const app = APPS[id];
   if (!app) return;
@@ -1254,17 +1258,26 @@ function openModal(id) {
   let html = `<div class="status-row"><span class="badge ${statusColors[app.status]}">${statusLabels[app.status]}</span></div>`;
   html += `<div class="modal-section"><div class="modal-section-title">Om produkten</div><div class="modal-text"><p>${app.about}</p></div></div>`;
 
-  // Granskningar — live från CI-verktygen (ui-scan/cleanup) för appens reviewRepo.
-  if (app.reviewRepo) {
-    html += `<div class="modal-section" id="reviews-section">
-      <div class="modal-section-title">Granskningar <span id="reviews-state" style="font-size:9px;color:var(--text4);font-style:italic;margin-left:auto"></span></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-        <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${app.reviewRepo}','ui-scan.yml',this)">▶ Kör UI-granskning</button>
-        <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${app.reviewRepo}','cleanup.yml',this)">▶ Kör kodstädning</button>
-        <span id="scan-status" style="font-size:10px;color:var(--text4)"></span>
-      </div>
-      <div id="reviews-list"><div class="hint">Hämtar…</div></div>
-    </div>`;
+  // Granskningar — live från CI-verktygen (ui-scan/cleanup). Ett block per granskningsrepo.
+  const revRepos = getReviewRepos(app);
+  if (revRepos.length) {
+    html += `<div class="modal-section" id="reviews-section"><div class="modal-section-title">Granskningar</div>`;
+    for (const repo of revRepos) {
+      const k = repoKey(repo);
+      html += `<div style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+          <span style="font-size:11px;font-weight:700;color:var(--text2)">${esc(repo)}</span>
+          <span id="reviews-state-${k}" style="font-size:9px;color:var(--text4);font-style:italic"></span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+          <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${repo}','ui-scan.yml',this)">▶ Kör UI-granskning</button>
+          <button class="btn" style="font-size:10.5px;padding:5px 10px" onclick="triggerScan('${repo}','cleanup.yml',this)">▶ Kör kodstädning</button>
+          <span id="scan-status-${k}" style="font-size:10px;color:var(--text4)"></span>
+        </div>
+        <div id="reviews-list-${k}"><div class="hint">Hämtar…</div></div>
+      </div>`;
+    }
+    html += `</div>`;
   }
 
   // Planerat-sektionen får ett eget id så live-laddningen kan ersätta den.
@@ -1294,7 +1307,7 @@ function openModal(id) {
 
   // Hämta live handoff-fil och ersätt listan om den finns
   loadHandoff(id);
-  if (app.reviewRepo) loadReviews(app.reviewRepo);
+  getReviewRepos(app).forEach(r => loadReviews(r));
 }
 
 let currentModalApp = null;
@@ -1341,8 +1354,9 @@ async function fetchReviews(repo) {
 }
 
 async function loadReviews(repo) {
-  const stateEl = document.getElementById('reviews-state');
-  const listEl = document.getElementById('reviews-list');
+  const k = repoKey(repo);
+  const stateEl = document.getElementById('reviews-state-' + k);
+  const listEl = document.getElementById('reviews-list-' + k);
   if (!listEl) return;
   try {
     const reviews = await fetchReviews(repo);
@@ -1382,9 +1396,10 @@ async function loadReviewOverview(force) {
   // Unika granskningsrepon från APPS (flera appar kan dela repo).
   const repos = [], seen = new Set();
   for (const [id, app] of Object.entries(APPS)) {
-    if (app.reviewRepo && !seen.has(app.reviewRepo)) {
-      seen.add(app.reviewRepo);
-      repos.push({ repo: app.reviewRepo, appId: id, appTitle: app.title });
+    for (const repo of getReviewRepos(app)) {
+      if (seen.has(repo)) continue;
+      seen.add(repo);
+      repos.push({ repo, appId: id, appTitle: app.title });
     }
   }
   if (!repos.length) {
@@ -1457,10 +1472,10 @@ async function loadReviewOverview(force) {
 // Triggar en granskningsworkflow (kräver workflow-scope på dashboardens GH_TOKEN)
 // och BEVAKAR sedan issuet tills det uppdaterats → fräschar korten automatiskt.
 async function triggerScan(repo, workflow, btn) {
-  const status = document.getElementById('scan-status');
   const label = workflow === 'ui-scan.yml' ? 'UI-granskning' : 'Kodstädning';
   const kind = workflow === 'ui-scan.yml' ? 'ui' : 'cleanup';
-  const setStatus = (txt, col) => { const s = document.getElementById('scan-status'); if (s) { s.style.color = col; s.textContent = txt; } };
+  const sid = 'scan-status-' + repoKey(repo);
+  const setStatus = (txt, col) => { const s = document.getElementById(sid); if (s) { s.style.color = col; s.textContent = txt; } };
 
   if (btn) btn.disabled = true;
   setStatus(`Startar ${label}…`, 'var(--text4)');
@@ -1624,7 +1639,7 @@ async function loadHealth() {
     const repo = decodeURIComponent((ghLink.getAttribute('href').split('/Jimblo72/')[1] || '').split(/[/?#]/)[0]);
     if (!repo) continue;
     const m = (card.getAttribute('onclick') || '').match(/openModal\('([^']+)'\)/);
-    const reviewRepo = (m && typeof APPS !== 'undefined' && APPS[m[1]]) ? APPS[m[1]].reviewRepo : null;
+    const reviewRepos = (m && typeof APPS !== 'undefined' && APPS[m[1]]) ? getReviewRepos(APPS[m[1]]) : [];
 
     const strip = document.createElement('div');
     strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 0';
@@ -1636,10 +1651,13 @@ async function loadHealth() {
       if (Array.isArray(c) && c[0]) chips.push(chip(`⎇ ${timeAgo(c[0].commit.author.date)}`));
     } catch (e) { /* tyst */ }
     if (prsByRepo[repo]) chips.push(chip(`⇄ ${prsByRepo[repo]} PR`));
-    if (reviewRepo) {
+    if (reviewRepos.length) {
       try {
-        const g = await (await fetch(`${FN.githubIssues}?repo=${encodeURIComponent(reviewRepo)}`)).json();
-        const n = (g.issues || []).filter(i => i.isReview).length;
+        const counts = await Promise.all(reviewRepos.map(async rr => {
+          const g = await (await fetch(`${FN.githubIssues}?repo=${encodeURIComponent(rr)}`)).json();
+          return (g.issues || []).filter(i => i.isReview).length;
+        }));
+        const n = counts.reduce((a, b) => a + b, 0);
         if (n) chips.push(chip(`🔎 ${n} fynd`, true));
       } catch (e) { /* tyst */ }
     }
