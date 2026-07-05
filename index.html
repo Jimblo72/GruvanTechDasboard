@@ -1311,15 +1311,19 @@ async function loadHandoff(id) {
 }
 
 // Granskningar — läser öppna ui-scan/cleanup-issues för appens reviewRepo via proxyn.
+// Hämtar granskningsissues (ui/cleanup) för ett repo.
+async function fetchReviews(repo) {
+  const r = await fetch(`${FN.githubIssues}?repo=${encodeURIComponent(repo)}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return ((await r.json()).issues || []).filter(i => i.isReview);
+}
+
 async function loadReviews(repo) {
   const stateEl = document.getElementById('reviews-state');
   const listEl = document.getElementById('reviews-list');
   if (!listEl) return;
   try {
-    const r = await fetch(`${FN.githubIssues}?repo=${encodeURIComponent(repo)}`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    const reviews = (data.issues || []).filter(i => i.isReview);
+    const reviews = await fetchReviews(repo);
     if (!reviews.length) {
       listEl.innerHTML = `<div class="hint">Inga öppna granskningsfynd i ${esc(repo)}.</div>`;
       if (stateEl) { stateEl.textContent = '● live'; stateEl.style.color = 'var(--green)'; }
@@ -1343,22 +1347,51 @@ async function loadReviews(repo) {
   }
 }
 
-// Triggar en granskningsworkflow (kräver workflow-scope på dashboardens GH_TOKEN).
+// Triggar en granskningsworkflow (kräver workflow-scope på dashboardens GH_TOKEN)
+// och BEVAKAR sedan issuet tills det uppdaterats → fräschar korten automatiskt.
 async function triggerScan(repo, workflow, btn) {
   const status = document.getElementById('scan-status');
   const label = workflow === 'ui-scan.yml' ? 'UI-granskning' : 'Kodstädning';
+  const kind = workflow === 'ui-scan.yml' ? 'ui' : 'cleanup';
+  const setStatus = (txt, col) => { const s = document.getElementById('scan-status'); if (s) { s.style.color = col; s.textContent = txt; } };
+
   if (btn) btn.disabled = true;
-  if (status) { status.style.color = 'var(--text4)'; status.textContent = `Startar ${label}…`; }
+  setStatus(`Startar ${label}…`, 'var(--text4)');
+
+  // Baseline: issuets tidsstämpel innan körningen — så vi vet när det uppdaterats.
+  let baseline = '';
+  try { baseline = ((await fetchReviews(repo)).find(i => i.kind === kind) || {}).updated_at || ''; } catch (e) { /* tyst */ }
+
   try {
-    const r = await fetch(FN.githubDispatch, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ repo, workflow }) });
-    const d = await r.json().catch(()=>({}));
+    const r = await fetch(FN.githubDispatch, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo, workflow }) });
+    const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.needsScope ? 'kräver workflow-scope på GH_TOKEN' : (d.error || `HTTP ${r.status}`));
-    if (status) { status.style.color = 'var(--green)'; status.textContent = `✓ ${label} startad — resultatet dyker upp här om några minuter`; }
   } catch (e) {
-    if (status) { status.style.color = 'var(--text3)'; status.textContent = `Kunde inte starta: ${e.message}`; }
-  } finally {
     if (btn) btn.disabled = false;
+    setStatus(`Kunde inte starta: ${e.message}`, 'var(--text3)');
+    return;
   }
+
+  if (btn) btn.disabled = false; // lås upp direkt — bevakningen sköts i bakgrunden
+  setStatus(`✓ ${label} startad — bevakar resultatet…`, 'var(--green)');
+
+  // Polla tills issuet uppdaterats (cleanup ~1 min, ui-scan längre pga bild-kvot).
+  // Avbryt om modalen stängs eller byter app.
+  const watchApp = currentModalApp;
+  const maxTries = workflow === 'ui-scan.yml' ? 40 : 15;
+  for (let i = 0; i < maxTries; i++) {
+    await new Promise(res => setTimeout(res, 20000));
+    const modal = document.getElementById('modal');
+    if (!modal || !modal.classList.contains('open') || currentModalApp !== watchApp) return; // avbrutet
+    let cur;
+    try { cur = (await fetchReviews(repo)).find(x => x.kind === kind); } catch (e) { continue; }
+    if (cur && cur.updated_at && cur.updated_at !== baseline) {
+      await loadReviews(repo);
+      setStatus(`✓ ${label} klar — resultatet uppdaterat`, 'var(--green)');
+      return;
+    }
+  }
+  setStatus(`${label} startad — resultatet dröjer, öppna om modalen för att uppdatera`, 'var(--text4)');
 }
 
 // Parsar checkbox-rader: "- [ ] **Titel** — beskrivning"
