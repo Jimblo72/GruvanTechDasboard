@@ -1463,6 +1463,49 @@ function timeAgo(iso) {
   if (d < 86400) return Math.round(d/3600) + 'h';
   return Math.round(d/86400) + 'd';
 }
+// Repo-hälsobrickor på app-korten: senaste commit, öppna PR:ar, granskningsfynd.
+// Repot upptäcks från kortets GitHub-länk; reviewRepo från APPS. Degraderar snällt
+// (utan token 404:ar privata repon → brickan visas bara inte).
+async function loadHealth() {
+  const prsByRepo = {};
+  try {
+    const d = await (await fetch(FN.githubPrs)).json();
+    (d.prs || []).forEach(p => { prsByRepo[p.repo] = (prsByRepo[p.repo] || 0) + 1; });
+  } catch (e) { /* tyst */ }
+
+  const chip = (txt, accent) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:${accent ? 'var(--accent)' : 'var(--text3)'};background:${accent ? 'var(--accent-glow)' : 'var(--surface)'};border:1px solid var(--border);border-radius:6px;padding:2px 7px">${txt}</span>`;
+
+  for (const card of document.querySelectorAll('.app-card')) {
+    const ghLink = card.querySelector('a[href*="github.com/Jimblo72/"]');
+    if (!ghLink) continue;
+    const repo = decodeURIComponent((ghLink.getAttribute('href').split('/Jimblo72/')[1] || '').split(/[/?#]/)[0]);
+    if (!repo) continue;
+    const m = (card.getAttribute('onclick') || '').match(/openModal\('([^']+)'\)/);
+    const reviewRepo = (m && typeof APPS !== 'undefined' && APPS[m[1]]) ? APPS[m[1]].reviewRepo : null;
+
+    const strip = document.createElement('div');
+    strip.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 0';
+    (card.querySelector('.card-footer') || card).insertAdjacentElement('beforebegin', strip);
+
+    const chips = [];
+    try {
+      const c = await (await fetch(`${FN.githubCommits}?repo=${encodeURIComponent(repo)}`)).json();
+      if (Array.isArray(c) && c[0]) chips.push(chip(`⎇ ${timeAgo(c[0].commit.author.date)}`));
+    } catch (e) { /* tyst */ }
+    if (prsByRepo[repo]) chips.push(chip(`⇄ ${prsByRepo[repo]} PR`));
+    if (reviewRepo) {
+      try {
+        const g = await (await fetch(`${FN.githubIssues}?repo=${encodeURIComponent(reviewRepo)}`)).json();
+        const n = (g.issues || []).filter(i => i.isReview).length;
+        if (n) chips.push(chip(`🔎 ${n} fynd`, true));
+      } catch (e) { /* tyst */ }
+    }
+    if (chips.length) strip.innerHTML = chips.join('');
+    else strip.remove();
+  }
+}
+
 async function loadAllGitHub() {
   const grid = document.getElementById('gh-grid');
   grid.innerHTML = '<div class="loading">Hämtar commits…</div>';
@@ -2131,6 +2174,7 @@ async function confirmImport(){
 
 // ── INIT ──────────────────────────────────────────────────────
 renderAgents();
+loadHealth();
 </script>
 </body>
 </html>
