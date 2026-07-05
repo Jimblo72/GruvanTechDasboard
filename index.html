@@ -494,6 +494,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" onclick="showSection('contacts',this)"><div class="nav-dot" style="background:var(--accent)"></div>Nätverk</button>
       <button class="nav-item" onclick="showSection('github',this)"><div class="nav-dot" style="background:var(--text3)"></div>GitHub</button>
       <button class="nav-item" onclick="showSection('memory',this)"><div class="nav-dot" style="background:var(--text3)"></div>Minne & MCP</button>
+      <button class="nav-item" onclick="showSection('flode',this)"><div class="nav-dot" style="background:var(--accent)"></div>Systemflöde</button>
     </div>
     <div class="nav-group">
       <div class="nav-group-label">Gruvan-serien</div>
@@ -802,6 +803,11 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <div class="mem-card"><div class="mem-card-title">⌥ GitHub MCP</div><div style="font-size:12px;color:var(--text2);line-height:1.7;">Push, commits, issues och branches via Claude Desktop.<br><code>Jimblo72</code></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div class="badge b-active">running</div></div></div>
       <div class="mem-card"><div class="mem-card-title">📋 Minnesfil</div><div style="font-size:12px;color:var(--text2);line-height:1.7;">Komplett portföljöversikt extraherad från chatthistorik.<br><code>gruvan_minne_v1.md</code></div><div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div class="badge b-personal">Redo att ladda in</div></div></div>
     </div>
+  </div>
+
+  <div class="section" id="sec-flode">
+    <div class="topbar"><div><div class="page-title">Systemflöde</div><div class="page-sub">Live-vy av pipelinen — röd nod = öppna granskningsfynd (klicka för att öppna dem)</div></div></div>
+    <iframe src="flode.html" title="Systemflöde" style="width:100%;height:calc(100vh - 150px);min-height:620px;border:0;border-radius:14px;background:#0f1e35"></iframe>
   </div>
 
 </main>
