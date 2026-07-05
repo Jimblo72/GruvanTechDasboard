@@ -200,6 +200,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;border:1px solid var(--border);color:var(--text2);}
 
 /* ── AI-GRANSKNING ─────────────────────────────────────────── */
+.review-overview{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:20px;}
+.ov-head{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.ov-title{font-size:13px;font-weight:700;color:var(--text);}
+.ov-sub{font-size:10.5px;color:var(--text4);margin:3px 0 14px;line-height:1.5;}
+.ov-card{background:var(--bg4);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:10px;}
+.ov-card:last-child{margin-bottom:0;}
+.ov-line{display:flex;gap:9px;align-items:center;padding:8px 0;text-decoration:none;border-top:1px solid var(--border);}
+.ov-line:hover strong{color:var(--accent);}
 .review-layout{display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start;}
 .review-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;position:sticky;top:24px;}
 .field{margin-bottom:16px;}
@@ -695,6 +703,20 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
   <div class="section" id="sec-review">
     <div class="topbar">
       <div><div class="page-title">AI-granskning</div><div class="page-sub">Flera modeller granskar kod, UI och struktur · du är orkestreraren</div></div>
+    </div>
+
+    <!-- SAMLAD GRANSKNINGSÖVERSIKT — alla appars CI-fynd (ui-scan/cleanup) på ett ställe -->
+    <div class="review-overview" id="review-overview">
+      <div class="ov-head">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <div class="ov-title">Samlad granskningsöversikt</div>
+          <span id="review-overview-state" style="font-size:10px;color:var(--text4);white-space:nowrap">○ ej laddad</span>
+        </div>
+        <button class="btn" onclick="loadReviewOverview(true)">↺ Uppdatera</button>
+      </div>
+      <div class="ov-sub">Öppna CI-granskningsfynd (kodstädning · UI/UX) samlade från alla appars granskningsrepon. Klicka ett fynd för att öppna GitHub-issuet.</div>
+      <div id="review-overview-summary"></div>
+      <div id="review-overview-list"><div class="hint">Öppna fliken för att hämta.</div></div>
     </div>
 
     <div class="review-layout">
@@ -1347,6 +1369,91 @@ async function loadReviews(repo) {
   }
 }
 
+// ── SAMLAD GRANSKNINGSÖVERSIKT ────────────────────────────────
+// Alla appars CI-granskningsfynd (ui-scan/cleanup) på ett ställe, parallellt hämtat.
+let reviewsOverviewLoaded = false;
+async function loadReviewOverview(force) {
+  const stateEl = document.getElementById('review-overview-state');
+  const sumEl = document.getElementById('review-overview-summary');
+  const listEl = document.getElementById('review-overview-list');
+  if (!listEl) return;
+  if (reviewsOverviewLoaded && !force) return;
+
+  // Unika granskningsrepon från APPS (flera appar kan dela repo).
+  const repos = [], seen = new Set();
+  for (const [id, app] of Object.entries(APPS)) {
+    if (app.reviewRepo && !seen.has(app.reviewRepo)) {
+      seen.add(app.reviewRepo);
+      repos.push({ repo: app.reviewRepo, appId: id, appTitle: app.title });
+    }
+  }
+  if (!repos.length) {
+    sumEl.innerHTML = '';
+    listEl.innerHTML = `<div class="hint">Inga appar har granskningsverktyg (ui-scan/cleanup) ännu.</div>`;
+    if (stateEl) { stateEl.textContent = '○ inga repon'; stateEl.style.color = 'var(--text4)'; }
+    return;
+  }
+
+  if (stateEl) { stateEl.textContent = '⟳ hämtar…'; stateEl.style.color = 'var(--text4)'; }
+  sumEl.innerHTML = '';
+  listEl.innerHTML = `<div class="loading">Hämtar granskningsfynd…</div>`;
+
+  // Parallellt; en repo som failar blir ett fel-kort, inte hela vyns fall.
+  const results = await Promise.all(repos.map(async r => {
+    try { return { ...r, reviews: await fetchReviews(r.repo), ok: true }; }
+    catch (e) { return { ...r, reviews: [], ok: false, error: e.message }; }
+  }));
+
+  // Aggregat
+  let total = 0, uiCount = 0, cleanupCount = 0, failed = 0;
+  results.forEach(res => {
+    if (!res.ok) { failed++; return; }
+    total += res.reviews.length;
+    res.reviews.forEach(rv => { if (rv.kind === 'ui') uiCount++; else if (rv.kind === 'cleanup') cleanupCount++; });
+  });
+
+  const pill = (txt, accent) => `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 11px;border-radius:20px;background:${accent ? 'var(--accent-glow)' : 'var(--bg4)'};border:1px solid var(--border);color:${accent ? 'var(--accent)' : 'var(--text2)'};font-weight:600">${txt}</span>`;
+  sumEl.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+    ${pill(`${total} öppna granskning${total === 1 ? '' : 'ar'}`, total > 0)}
+    ${pill(`${results.length - failed}/${results.length} repo skannade`)}
+    ${uiCount ? pill(`🎨 ${uiCount} UI/UX`) : ''}
+    ${cleanupCount ? pill(`🧹 ${cleanupCount} städning`) : ''}
+    ${failed ? pill(`⚠ ${failed} kunde ej hämtas`) : ''}
+  </div>`;
+
+  const icon = { ui: '🎨', cleanup: '🧹' };
+  const kindLabel = { ui: 'UI/UX', cleanup: 'Kodstädning' };
+  const line = (res, k) => {
+    const rv = res.reviews.find(x => x.kind === k);
+    if (!rv) return `<div class="ov-line" style="color:var(--text4);font-size:11px"><span style="font-size:14px;opacity:0.4;flex-shrink:0">${icon[k]}</span><span>${kindLabel[k]} · inga öppna fynd</span></div>`;
+    return `<a class="ov-line" href="${rv.url}" target="_blank">
+      <span style="font-size:14px;flex-shrink:0">${icon[k]}</span>
+      <span style="flex:1;min-width:0">
+        <strong style="color:var(--text);font-size:11.5px">${kindLabel[k]}</strong>
+        ${rv.summary ? `<span style="color:var(--text3);font-size:10.5px;margin-left:6px">${esc(rv.summary)}</span>` : ''}
+      </span>
+      <span style="color:var(--text4);font-size:9.5px;white-space:nowrap;flex-shrink:0">#${rv.number} · ${timeAgo(rv.updated_at)} →</span>
+    </a>`;
+  };
+
+  listEl.innerHTML = results.map(res => {
+    const head = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px">
+      <div style="display:flex;align-items:center;gap:9px;min-width:0">
+        <strong style="color:var(--text);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(res.repo)}</strong>
+        <span style="font-size:9.5px;color:${res.ok && res.reviews.length ? 'var(--accent)' : 'var(--text4)'};white-space:nowrap">${!res.ok ? '○ ej nådd' : res.reviews.length ? res.reviews.length + ' öppna' : '✓ rent'}</span>
+      </div>
+      <button class="btn" style="font-size:10px;padding:4px 9px;white-space:nowrap" onclick="openModal('${res.appId}')">${esc(res.appTitle)} →</button>
+    </div>`;
+    if (!res.ok) {
+      return `<div class="ov-card">${head}<div style="color:var(--text4);font-size:10.5px;padding-top:8px;border-top:1px solid var(--border);line-height:1.5">Kunde inte hämta (${esc(res.error || 'fel')}) — github-issues svarar bara i produktion (privata repon kräver token).</div></div>`;
+    }
+    return `<div class="ov-card">${head}${line(res, 'cleanup')}${line(res, 'ui')}</div>`;
+  }).join('');
+
+  reviewsOverviewLoaded = true;
+  if (stateEl) { stateEl.textContent = failed ? '◐ delvis (se korten)' : '● live från GitHub'; stateEl.style.color = failed ? 'var(--text4)' : 'var(--green)'; }
+}
+
 // Triggar en granskningsworkflow (kräver workflow-scope på dashboardens GH_TOKEN)
 // och BEVAKAR sedan issuet tills det uppdaterats → fräschar korten automatiskt.
 async function triggerScan(repo, workflow, btn) {
@@ -1387,6 +1494,7 @@ async function triggerScan(repo, workflow, btn) {
     try { cur = (await fetchReviews(repo)).find(x => x.kind === kind); } catch (e) { continue; }
     if (cur && cur.updated_at && cur.updated_at !== baseline) {
       await loadReviews(repo);
+      reviewsOverviewLoaded = false; // invalidera samlade översikten → hämtas färsk nästa besök
       setStatus(`✓ ${label} klar — resultatet uppdaterat`, 'var(--green)');
       return;
     }
@@ -1450,6 +1558,7 @@ function showSection(id, btn) {
   if (id === 'github') loadAllGitHub();
   if (id === 'prs' && !prsLoaded) loadPRs();
   if (id === 'contacts' && !contactsLoaded) loadContacts();
+  if (id === 'review' && !reviewsOverviewLoaded) loadReviewOverview();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
 
