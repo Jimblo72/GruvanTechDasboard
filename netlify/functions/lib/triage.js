@@ -282,13 +282,13 @@ async function classify(message, opts = {}) {
 // ── Claude: utkastgenerering ──────────────────────────────────
 function draftCategoryHint(category) {
   if (category === 'offert_andelsratt') {
-    return 'Detta gäller andelsförsäljning. Nämn kort att PeakFast har ett fast arvode på 37 500 kr (alt. 40 000 kr) inkl. moms för andelsförsäljning, och erbjud dig att skicka en fullständig offert.';
+    return 'Detta gäller andelsförsäljning (avsändaren vill sälja — det är en förfrågan). Nämn kort att PeakFast har ett fast arvode på 37 500 kr (alt. 40 000 kr) inkl. moms för andelsförsäljning, och erbjud dig att skicka en fullständig offert.';
   }
   if (category === 'offert_forsaljning') {
-    return 'Detta gäller en vanlig försäljning/värdering. Tacka kort för förfrågan, erbjud en kostnadsfri värdering och föreslå att boka en tid.';
+    return 'Detta gäller en vanlig försäljning/värdering (avsändaren efterfrågar hjälp). Tacka kort för förfrågan, erbjud en kostnadsfri värdering och föreslå att boka en tid.';
   }
   if (category === 'support') {
-    return 'Detta är en supportfråga. Bekräfta kort att du tagit emot frågan och ge ett hjälpsamt, konkret svar så långt det går utan att gissa fakta du inte har.';
+    return 'Behandla detta enligt återhållsamhetsregeln: svara konkret BARA på det avsändaren uttryckligen frågar om. Om inget frågas (t.ex. de skickar in ett dokument eller bekräftar något) → skriv bara en kort bekräftelse på att du mottagit mejlet + att de är välkomna att höra av sig.';
   }
   if (category === 'abonnemang') {
     return 'Detta gäller ett abonnemangstillägg (Mäklargruvan). Bekräfta kort att du tagit emot önskemålet och att det hanteras. Lova INTE att ändringen redan är gjord — Jimmy måste bekräfta den manuellt.';
@@ -312,13 +312,20 @@ function draftSystemFor(category, styleProfile) {
     'Du skriver ett svarsutkast åt fastighetsmäklaren Jimmy Blomgren (PeakFast), i första person ("jag"), på svenska.\n\n' +
     'SKRIV I JIMMYS RÖST enligt denna stilguide:\n' + guide + '\n\n' +
     (examples ? 'Exempel på hur Jimmy faktiskt skriver (härma tonen, kopiera inte ordagrant):\n' + examples + '\n\n' : '') +
-    'Regler:\n' +
-    '- Var KORT och personlig. Hellre 2–4 korta stycken än en lång utläggning. Fatta dig kort även om du täcker sakinnehållet.\n' +
+    'INNEHÅLL — VAR ÅTERHÅLLSAM (allra viktigast):\n' +
+    '- Standardsvaret är en KORT, artig bekräftelse: att du mottagit mejlet och att de är välkomna att höra av sig vid frågor. Oftast räcker 1–3 meningar.\n' +
+    '- Avgör först: ställer avsändaren en KONKRET fråga eller ber uttryckligen om något? Om NEJ (de skickar in ett dokument, bekräftar, tackar, återkopplar) → skriv BARA bekräftelsen ovan. Lägg INTE till instruktioner, nästa steg, checklistor eller sammanfattningar som de inte bett om.\n' +
+    '- Om JA → svara kort och konkret på just det de frågar om, inget mer.\n' +
+    '- Upprepa ALDRIG instruktioner eller nästa steg som redan står i mejltråden (det som citeras längre ner är oftast sådant Jimmy själv redan skrivit — ta inte om det).\n' +
+    '- Skriv INTE återberättande meningar om vad avsändaren gjort (t.ex. "Jag ser att du skickade..." eller "Jag ser att du mailade vidare från..."). Det är onödigt och får mejlet att kännas som en mall.\n' +
+    '- Hitta inte på fakta, åtgärder eller detaljer du inte har stöd för i mejlet.\n\n' +
+    'STIL/FORM:\n' +
+    '- Var kort och personlig. Hellre få korta meningar än en lång utläggning.\n' +
     '- Hälsning "Hej [Förnamn]" utan kommatecken, sedan blankrad och rakt på sak. Använd mottagarens förnamn om det framgår.\n' +
-    '- Avsluta gärna med en fråga eller ett tydligt nästa steg.\n' +
-    '- INGA fetstilta rubriker och INGA numrerade/punktade listor som dekoration — rena stycken. (Använd bara en lista om innehållet verkligen är konkreta steg.)\n' +
+    '- Avsluta med en öppen inbjudan att höra av sig, eller (om något faktiskt efterfrågats) ett tydligt nästa steg.\n' +
+    '- INGA fetstilta rubriker och INGA numrerade/punktade listor som dekoration — rena stycken. (Använd bara en lista om avsändaren uttryckligen bett om konkreta steg.)\n' +
     '- Undvik stela företagsöppningar som "Tack för att jag får möjligheten…".\n' +
-    (hint ? '- ' + hint + '\n' : '') +
+    (hint ? '\nOm ärendetypen: ' + hint + '\n' : '') +
     '\nAvsluta med denna sign-off (och INGET mer — upprepa INTE titel, telefon eller adress, Outlook lägger till full signatur automatiskt):\n' +
     SIGN_OFF +
     '\n\nSkriv ENDAST själva mejltexten (hälsning, brödtext, sign-off) — ingen ämnesrad, inga meta-kommentarer.'
