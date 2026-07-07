@@ -1,11 +1,11 @@
 // netlify/functions/ai-review.js
 // Säker serverless-funktion: håller API-nycklar i environment variables.
 // Anropas av dashboardens AI-granskningspanel. Stödjer både Anthropic (Claude)
-// och OpenAI (GPT) beroende på "provider" i request-body.
+// och Gemini beroende på "provider" i request-body.
 //
 // SÄTT DESSA I NETLIFY → Site settings → Environment variables:
 //   ANTHROPIC_API_KEY = sk-ant-...
-//   OPENAI_API_KEY    = sk-...
+//   GEMINI_API_KEY    = ...
 //
 // Lägg INTE nycklar i denna fil. De läses från process.env vid körning.
 
@@ -43,8 +43,8 @@ exports.handler = async (event) => {
 
   try {
     let text;
-    if (provider === 'gpt') {
-      text = await callOpenAI(system, userPrompt);
+    if (provider === 'gemini') {
+      text = await callGemini(system, userPrompt);
     } else {
       text = await callAnthropic(system, userPrompt);
     }
@@ -85,30 +85,29 @@ async function callAnthropic(system, userPrompt) {
     .trim() || '(tomt svar)';
 }
 
-// ── OpenAI (GPT) ──────────────────────────────────────────────
-async function callOpenAI(system, userPrompt) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error('OPENAI_API_KEY saknas i Netlify environment variables');
+// ── Gemini ────────────────────────────────────────────────────
+async function callGemini(system, userPrompt) {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error('GEMINI_API_KEY saknas i Netlify environment variables');
 
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      max_tokens: 1200,
-      messages: [
-        { role: 'system', content: system || 'You are a helpful code reviewer. Respond in Swedish.' },
-        { role: 'user', content: userPrompt },
-      ],
-    }),
-  });
+  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system || 'Du är en hjälpsam kodgranskare. Svara på svenska.' }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { maxOutputTokens: 1200, temperature: 0.3 },
+      }),
+    }
+  );
   if (!r.ok) {
     const errText = await r.text();
-    throw new Error(`OpenAI HTTP ${r.status}: ${errText.slice(0, 200)}`);
+    throw new Error(`Gemini HTTP ${r.status}: ${errText.slice(0, 200)}`);
   }
   const data = await r.json();
-  return data.choices?.[0]?.message?.content?.trim() || '(tomt svar)';
+  const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  return text.trim() || '(tomt svar)';
 }
