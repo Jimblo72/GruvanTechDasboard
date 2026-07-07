@@ -9,12 +9,48 @@
 // Modellval:
 //   * Klassificering → Gemini flash (billig, bunden kategorisering, strukturerad
 //     JSON via responseSchema).
-//   * Utkastgenerering → Claude Opus (kundvänd prosa i Jimmys varumärkesröst där
-//     ton och kvalitet är det som räknas).
+//   * Utkastgenerering → Claude Haiku (snabb; ett kort svarsmejl kräver inte Opus,
+//     och Opus var så långsamt att hela kedjan sprängde Netlifys 10 s-timeout).
+//     Modell konfigurerbar via MAIL_DRAFT_MODEL, default claude-haiku-4-5-20251001.
 
 const { graphJson } = require('./graph');
 
 const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
+
+// Default-modell för utkastgenerering. Haiku 4.5 är snabb nog för korta
+// svarsmejl och håller oss väl under funktionens timeout.
+const DEFAULT_DRAFT_MODEL = 'claude-haiku-4-5-20251001';
+
+// ── Retry/backoff för transienta LLM-överbelastningar (429/503) ─
+// Kör fn(); vid HTTP 429/503 (identifierat via err.status eller texten i
+// felmeddelandet) väntas kort och exponentiellt innan nytt försök. Övriga fel
+// kastas direkt. Total extra fördröjning är bunden (~1,7 s) så vi håller oss
+// under funktionens timeout.
+const RETRY_DELAYS = [500, 1200]; // ms → upp till 2 omförsök
+
+function isTransientError(e) {
+  const s = e && e.status;
+  if (s === 429 || s === 503) return true;
+  const msg = String((e && e.message) || '');
+  return /HTTP\s+(429|503)\b/.test(msg);
+}
+
+async function withRetry(fn) {
+  let lastErr;
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < RETRY_DELAYS.length && isTransientError(e)) {
+        await new Promise(res => setTimeout(res, RETRY_DELAYS[attempt]));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
 
 const CATEGORIES = ['offert_andelsratt', 'offert_forsaljning', 'support', 'abonnemang', 'brus'];
 
@@ -63,27 +99,33 @@ async function classify(message) {
     `Från: ${message.fromName || ''} <${message.fromAddress || ''}>\n\n` +
     `Innehåll:\n${(message.text || '').slice(0, 8000)}`;
 
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: CLASSIFY_SYSTEM }] },
-        contents: [{ role: 'user', parts: [{ text: userText }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: CLASSIFY_SCHEMA,
-          temperature: 0.2,
-        },
-      }),
+  // Nätverksanropet retry:as vid transient 429/503; JSON-parsning sker efteråt
+  // (parse-fel ska inte trigga omförsök).
+  const data = await withRetry(async () => {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: CLASSIFY_SYSTEM }] },
+          contents: [{ role: 'user', parts: [{ text: userText }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: CLASSIFY_SCHEMA,
+            temperature: 0.2,
+          },
+        }),
+      }
+    );
+    if (!r.ok) {
+      const errText = await r.text();
+      const err = new Error(`Gemini HTTP ${r.status}: ${errText.slice(0, 200)}`);
+      err.status = r.status;
+      throw err;
     }
-  );
-  if (!r.ok) {
-    const errText = await r.text();
-    throw new Error(`Gemini HTTP ${r.status}: ${errText.slice(0, 200)}`);
-  }
-  const data = await r.json();
+    return r.json();
+  });
   const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
   if (!text) throw new Error('Tomt svar från Gemini vid klassificering.');
   const parsed = JSON.parse(text);
@@ -129,25 +171,32 @@ async function generateDraft(message, category) {
     `Från: ${message.fromName || ''} <${message.fromAddress || ''}>\n\n` +
     `${(message.text || '').slice(0, 6000)}`;
 
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-opus-4-8',
-      max_tokens: 1200,
-      system: draftSystemFor(category),
-      messages: [{ role: 'user', content: userPrompt }],
-    }),
+  const model = process.env.MAIL_DRAFT_MODEL || DEFAULT_DRAFT_MODEL;
+
+  // Nätverksanropet retry:as vid transient 429/503.
+  const data = await withRetry(async () => {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 700,
+        system: draftSystemFor(category),
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      const err = new Error(`Anthropic HTTP ${r.status}: ${errText.slice(0, 200)}`);
+      err.status = r.status;
+      throw err;
+    }
+    return r.json();
   });
-  if (!r.ok) {
-    const errText = await r.text();
-    throw new Error(`Anthropic HTTP ${r.status}: ${errText.slice(0, 200)}`);
-  }
-  const data = await r.json();
   const text = (data.content || [])
     .filter(b => b.type === 'text')
     .map(b => b.text)
