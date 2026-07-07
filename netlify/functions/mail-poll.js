@@ -64,11 +64,13 @@ exports.handler = async () => {
           conversationId: m.conversationId || '',
           text: m.bodyPreview || '',
         };
-        // Pollern har lång timeout → större retry-budget än den synkrona vägen.
+        // Pollern har lång timeout → större retry-budget + full kontext
+        // (inkl. tvärtråds-sökning) än den synkrona on-click-vägen.
         const result = await triageMessage(m.id, {
           message,
           autodraft,
           retryDelays: POLL_RETRY_DELAYS,
+          includeCrossThread: true,
         });
         log.triaged++;
         if (result.draftId) log.drafts++;

@@ -83,42 +83,66 @@ function odataQuote(v) {
 // ── 1) Hela tråden ────────────────────────────────────────────
 // GET /users/{mailbox}/messages?$filter=conversationId eq '{cid}'
 //        &$select=subject,from,receivedDateTime,sentDateTime,body,bodyPreview,isDraft
-//        &$orderby=receivedDateTime asc&$top=25
+//        &$top=25
+//
+// VIKTIGT: INGEN $orderby. Graph avvisar $filter=conversationId KOMBINERAT med
+// $orderby=receivedDateTime som "The restriction or sort order is too complex for
+// this operation" (400) — en dokumenterad begränsning. Vi sorterar därför klient-
+// sidan i stället. Fallback om själva filter-frågan ändå fallerar: hämta de
+// senaste meddelandena utan filter och filtrera på conversationId i JS (fångar
+// även utkast, som ligger i Utkast-mappen men delar conversationId).
 //
 // conversationId enkelfnuttas i filtret och hela filteruttrycket URL-kodas.
-// Returnerar { transcript, messages, latestNonDraft, latestIsFromJimmy, hasDraftReply }.
-async function fetchThread(conversationId) {
+// opts: { maxMessages, maxChars } kapar transkriptionen (on-click hålls lättare).
+// Returnerar { transcript, messages, latestNonDraft, latestIsFromJimmy,
+//              hasDraftReply, ok, threadCount }.
+async function fetchThread(conversationId, opts = {}) {
   const empty = {
     transcript: '',
     messages: [],
     latestNonDraft: null,
     latestIsFromJimmy: false,
     hasDraftReply: false,
+    ok: false,
+    threadCount: 0,
   };
   const cid = String(conversationId || '').trim();
   if (!cid) return empty;
 
+  const maxMessages = opts.maxMessages || MAX_TRANSCRIPT_MESSAGES;
+  const maxChars = opts.maxChars || MAX_TRANSCRIPT_CHARS;
+
   const mailbox = MAILBOX();
   const mailboxLower = mailbox.toLowerCase();
+  const select = 'subject,from,receivedDateTime,sentDateTime,body,bodyPreview,isDraft,conversationId';
   const filter = `conversationId eq '${odataQuote(cid)}'`;
-  const select = 'subject,from,receivedDateTime,sentDateTime,body,bodyPreview,isDraft';
-  const path =
+  const filteredPath =
     `/users/${encodeURIComponent(mailbox)}/messages` +
     `?$filter=${encodeFilter(filter)}` +
     `&$select=${select}` +
-    `&$orderby=receivedDateTime asc` +
     `&$top=25`;
+  // Fallback: senaste 50 meddelanden (utan filter, default-ordning) → filtrera
+  // conversationId i JS. Spänner alla mappar inkl. Utkast.
+  const fallbackPath =
+    `/users/${encodeURIComponent(mailbox)}/messages` +
+    `?$select=${select}` +
+    `&$top=50`;
 
-  let data;
+  let all = null;
   try {
-    data = await graphJson(path);
+    const data = await graphJson(filteredPath);
+    all = (data && data.value) || [];
   } catch (_) {
-    // Degradera tyst → kedjan beter sig som förr (bara senaste meddelandet).
-    return empty;
+    // Filter-frågan avvisad (t.ex. "too complex") → klient-side-fallback.
+    try {
+      const data = await graphJson(fallbackPath);
+      all = ((data && data.value) || []).filter(m => String(m && m.conversationId || '') === cid);
+    } catch (_2) {
+      return empty; // degradera tyst → bara senaste meddelandet, som förr.
+    }
   }
 
-  const all = (data && data.value) || [];
-  if (!all.length) return empty;
+  if (!all || !all.length) return { ...empty, ok: true };
 
   const hasDraftReply = all.some(m => m && m.isDraft === true);
 
@@ -131,9 +155,9 @@ async function fetchThread(conversationId) {
   const latestNonDraft = nonDraft.length ? nonDraft[nonDraft.length - 1] : null;
   const latestIsFromJimmy = !!(latestNonDraft && addrOf(latestNonDraft) === mailboxLower);
 
-  // Bygg transkription: de senaste MAX_TRANSCRIPT_MESSAGES meddelandena, äldst
-  // först, sedan kapa total längd (behåll de senaste).
-  const recent = nonDraft.slice(-MAX_TRANSCRIPT_MESSAGES);
+  // Bygg transkription: de senaste maxMessages meddelandena, äldst först, sedan
+  // kapa total längd (behåll de senaste).
+  const recent = nonDraft.slice(-maxMessages);
   const lines = recent.map(m => {
     const raw = (m.body && m.body.content) || m.bodyPreview || '';
     let t = stripToText(raw, m.body && m.body.contentType);
@@ -145,21 +169,21 @@ async function fetchThread(conversationId) {
   });
 
   // Kapa total teckenbudget: släpp äldsta rader tills vi ryms.
-  while (lines.length > 1 && lines.join('\n\n').length > MAX_TRANSCRIPT_CHARS) {
+  while (lines.length > 1 && lines.join('\n\n').length > maxChars) {
     lines.shift();
   }
   let transcript = lines.join('\n\n');
-  if (transcript.length > MAX_TRANSCRIPT_CHARS) {
-    transcript = transcript.slice(-MAX_TRANSCRIPT_CHARS);
+  if (transcript.length > maxChars) {
+    transcript = transcript.slice(-maxChars);
   }
 
-  return { transcript, messages: all, latestNonDraft, latestIsFromJimmy, hasDraftReply };
+  return { transcript, messages: all, latestNonDraft, latestIsFromJimmy, hasDraftReply, ok: true, threadCount: all.length };
 }
 
 // ── 2) Andra trådar från samma avsändare ──────────────────────
 // GET /users/{mailbox}/messages?$filter=from/emailAddress/address eq '{addr}'
-//        &$select=subject,conversationId,receivedDateTime,bodyPreview
-//        &$orderby=receivedDateTime desc&$top=25
+//        &$select=subject,conversationId,receivedDateTime,bodyPreview&$top=50
+//        (ingen $orderby — sorteras klient-sidan, se not nedan)
 //
 // Dedupe på conversationId, exkludera aktuell tråd, behåll ~5 senaste ANDRA
 // trådar. Returnerar [{ subject, date, preview }]. Tom om adressen saknas/är oss.
@@ -169,14 +193,15 @@ async function fetchOtherThreadsFromSender(senderAddress, excludeConversationId)
   const mailbox = MAILBOX();
   if (addr.toLowerCase() === mailbox.toLowerCase()) return []; // inte oss själva
 
+  // INGEN $orderby (samma "too complex"-begränsning som tråd-frågan när man
+  // filtrerar på ett annat fält än man sorterar). Vi sorterar klient-sidan.
   const filter = `from/emailAddress/address eq '${odataQuote(addr)}'`;
   const select = 'subject,conversationId,receivedDateTime,bodyPreview';
   const path =
     `/users/${encodeURIComponent(mailbox)}/messages` +
     `?$filter=${encodeFilter(filter)}` +
     `&$select=${select}` +
-    `&$orderby=receivedDateTime desc` +
-    `&$top=25`;
+    `&$top=50`;
 
   let data;
   try {
@@ -185,7 +210,9 @@ async function fetchOtherThreadsFromSender(senderAddress, excludeConversationId)
     return [];
   }
 
-  const msgs = (data && data.value) || [];
+  const msgs = ((data && data.value) || [])
+    .slice()
+    .sort((a, b) => new Date(b && b.receivedDateTime || 0) - new Date(a && a.receivedDateTime || 0));
   const exclude = String(excludeConversationId || '');
   const seen = new Set();
   const out = [];
