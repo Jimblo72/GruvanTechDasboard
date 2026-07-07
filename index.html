@@ -499,6 +499,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <div class="nav-group-label">Vyer</div>
       <button class="nav-item active" onclick="showSection('overview',this)"><div class="nav-dot" style="background:var(--accent)"></div>Översikt</button>
       <button class="nav-item" onclick="showSection('review',this)"><div class="nav-dot" style="background:var(--accent)"></div>AI-granskning</button>
+      <button class="nav-item" onclick="showSection('ideer',this)"><div class="nav-dot" style="background:var(--accent)"></div>Idéer</button>
       <button class="nav-item" onclick="showSection('contacts',this)"><div class="nav-dot" style="background:var(--accent)"></div>Nätverk</button>
       <button class="nav-item" onclick="showSection('github',this)"><div class="nav-dot" style="background:var(--text3)"></div>GitHub</button>
       <button class="nav-item" onclick="showSection('prs',this)"><div class="nav-dot" style="background:var(--accent)"></div>Öppna PR:ar</button>
@@ -839,6 +840,19 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="btn btn-accent" onclick="loadPRs()">↺ Uppdatera</button>
     </div>
     <div id="prs-list"><div class="loading">Hämtar öppna PR:ar…</div></div>
+  </div>
+
+  <!-- IDÉER -->
+  <div class="section" id="sec-ideer">
+    <div class="topbar">
+      <div><div class="page-title">Idéer</div><div class="page-sub">Kodbas- och strategimedveten idé-backlog per app · AI-genererad</div></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
+      <select class="select" id="ideer-app" style="min-width:220px"></select>
+      <button class="btn btn-solid" onclick="generateIdeas(document.getElementById('ideer-app').value, document.getElementById('ideas-out-flik'), this)">💡 Generera idéer</button>
+      <span style="font-size:11px;color:var(--text4);max-width:440px;line-height:1.5">Väljer app → en liten, prioriterad backlog byggd på beskrivning, planerat, senaste commits och öppna granskningsfynd.</span>
+    </div>
+    <div id="ideas-out-flik"></div>
   </div>
 
   <!-- MEMORY -->
@@ -1327,6 +1341,13 @@ function openModal(id) {
       <button class="btn btn-accent" id="add-feat-btn" style="margin-top:10px;width:100%;justify-content:center" onclick="toggleAddFeature(true)">+ Lägg till punkt</button>
     </div>`;
 
+  // Idé-generator — kodbas-/strategimedveten backlog via LLM (porterar /ideer).
+  html += `<div class="modal-section">
+      <div class="modal-section-title">Idéer <span style="font-size:9px;color:var(--text4);font-weight:400;font-style:italic;margin-left:auto">AI-genererad backlog</span></div>
+      <button class="btn btn-accent" style="width:100%;justify-content:center" onclick="generateIdeas('${id}', document.getElementById('ideas-out-modal'), this)">💡 Generera idéer</button>
+      <div id="ideas-out-modal" style="margin-top:10px"></div>
+    </div>`;
+
   if (app.links && app.links.length) {
     html += `<div class="modal-section"><div class="modal-section-title">Länkar</div><div class="modal-links">`;
     app.links.forEach(l => { html += `<a href="${l.href}" target="_blank" class="modal-link ${l.cls}">${l.label}</a>`; });
@@ -1594,6 +1615,81 @@ function closeModal(e) { if (e.target === document.getElementById('modal')) clos
 function closeModalBtn() { document.getElementById('modal').classList.remove('open'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModalBtn(); closeContactModalBtn(); closeImportModalBtn(); } });
 
+// ── IDÉ-GENERATOR (porterar /ideer till dashboarden) ──────────
+// Bygger app-kontext (beskrivning + planerat + senaste commits + öppna
+// granskningsfynd) och ber Claude om en liten, prioriterad backlog via ai-chat.
+const IDEAS_SYSTEM = `Du är en kodbas- och affärsstrategimedveten produktrådgivare för Gruvan Tech (Jimmy Blomgrens app-portfölj). Du får kontext om EN app: beskrivning, redan planerade punkter, senaste commits och ev. öppna granskningsfynd. Föreslå en LITEN, PRIORITERAD backlog med NYA idéer eller konkreta förbättringar — aldrig generiska floskler.
+
+Regler:
+- 4–6 idéer, sorterade med högst värde / lägst ansträngning först.
+- Format per idé: "N. **Kort titel** — en menings motivering (varför den är värd det). _(ansträngning: låg/medel/hög)_"
+- Bygg vidare på det som redan finns. Föreslå ALDRIG sådant som redan står under "Redan planerat".
+- Var konkret och app-specifik; knyt an till affärsnyttan där du kan.
+- Svara i markdown (numrerad lista), på svenska. Ingen inledande text, bara listan.`;
+
+// Minimal markdown → HTML (fet/kursiv/kod + numrerade/punktlistor).
+function mdLite(md) {
+  const inline = esc(md).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/(^|[^_])_([^_]+?)_/g, '$1<em>$2</em>').replace(/`(.+?)`/g, '<code>$1</code>');
+  return inline.split(/\n{2,}/).map(block => {
+    const lines = block.split('\n').filter(l => l.trim());
+    if (lines.length && lines.every(l => /^\s*(\d+\.|[-*])\s+/.test(l))) {
+      const ordered = /^\s*\d+\./.test(lines[0]);
+      const items = lines.map(l => `<li style="margin-bottom:7px">${l.replace(/^\s*(\d+\.|[-*])\s+/, '')}</li>`).join('');
+      return `<${ordered ? 'ol' : 'ul'} style="margin:0;padding-left:20px">${items}</${ordered ? 'ol' : 'ul'}>`;
+    }
+    return `<p style="margin:0 0 8px">${block.replace(/\n/g, '<br>')}</p>`;
+  }).join('');
+}
+
+function appRepoName(app) {
+  if (app.reviewRepos && app.reviewRepos[0]) return app.reviewRepos[0];
+  const link = (app.links || []).map(l => l.href).find(h => /github\.com\/Jimblo72\//.test(h));
+  return link ? decodeURIComponent(link.split('/Jimblo72/')[1].split(/[/?#]/)[0]) : null;
+}
+
+async function generateIdeas(appId, outEl, btn) {
+  const app = APPS[appId];
+  if (!app || !outEl) return;
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Genererar…'; }
+  outEl.innerHTML = '<div class="loading">Bygger kontext och frågar Claude…</div>';
+
+  const ctx = [`# App: ${app.title}  (${app.subtitle || ''})`, `\n## Beskrivning\n${app.about || '(saknas)'}`];
+  if (app.planned && app.planned.length) ctx.push(`\n## Redan planerat (föreslå INTE dessa)\n` + app.planned.map(p => `- ${p.t}: ${p.d}`).join('\n'));
+  const repo = appRepoName(app);
+  if (repo) {
+    try {
+      const c = await (await fetch(`${FN.githubCommits}?repo=${encodeURIComponent(repo)}`)).json();
+      if (Array.isArray(c) && c.length) ctx.push(`\n## Senaste commits\n` + c.slice(0, 6).map(x => `- ${(x.commit.message || '').split('\n')[0]}`).join('\n'));
+    } catch (e) { /* best-effort */ }
+  }
+  for (const rr of getReviewRepos(app)) {
+    try {
+      const revs = await fetchReviews(rr);
+      if (revs.length) ctx.push(`\n## Öppna granskningsfynd (${rr})\n` + revs.map(r => `- ${r.title}: ${r.summary || ''}`).join('\n'));
+    } catch (e) { /* best-effort */ }
+  }
+
+  try {
+    const r = await fetch(FN.chat, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: 'claude', system: IDEAS_SYSTEM, messages: [{ role: 'user', content: ctx.join('\n') }] }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    outEl.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:12.5px;line-height:1.65;color:var(--text2)">${mdLite(d.text || '(tomt svar)')}</div>`;
+  } catch (e) {
+    outEl.innerHTML = `<div class="hint">Kunde inte generera idéer (${esc(e.message)}) — kräver ai-chat-funktionen + ANTHROPIC_API_KEY i Netlify (fungerar i produktion).</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+let ideerPickerInit = false;
+function initIdeerPicker() {
+  const sel = document.getElementById('ideer-app');
+  if (!sel || ideerPickerInit) return;
+  sel.innerHTML = Object.entries(APPS).map(([id, a]) => `<option value="${id}">${esc(a.title)}</option>`).join('');
+  ideerPickerInit = true;
+}
+
 // ── NAV ───────────────────────────────────────────────────────
 function showSection(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -1604,6 +1700,7 @@ function showSection(id, btn) {
   if (id === 'prs' && !prsLoaded) loadPRs();
   if (id === 'contacts' && !contactsLoaded) loadContacts();
   if (id === 'review' && !reviewsOverviewLoaded) loadReviewOverview();
+  if (id === 'ideer') initIdeerPicker();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
 
