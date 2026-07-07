@@ -6,3 +6,12 @@
 
 [functions."mail-poll"]
   schedule = "*/10 * * * *"
+
+# mail-triage timeout:
+# Netlify har INGEN per-funktion timeout-nyckel i netlify.toml för synkrona
+# funktioner. Standardtaket är 10 s och kan endast höjas (till max 26 s) på
+# konto-/plannivå via Netlify-support/Enterprise — inte via denna fil. Vi kan
+# INTE göra mail-triage till en background-funktion (den måste returnera
+# klassificering + utkast till UI:t på klick; background ger 202 direkt).
+# Därför löses timeouten i kod istället: byte till snabb Claude Haiku 4.5 för
+# utkastgenerering + retry/backoff på transienta 429/503. Se lib/triage.js.
