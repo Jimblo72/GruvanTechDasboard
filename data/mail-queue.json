@@ -1,4 +1,21 @@
 {
-  "lastSeen": "2026-07-07T10:15:35Z",
-  "items": []
+  "lastSeen": "2026-07-07T15:49:22Z",
+  "items": [
+    {
+      "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsjxAAA=",
+      "category": "support",
+      "subject": "Sv: Spira 194 i Krokom, från Hjältevadshus",
+      "fromName": "Niclas Hasslund",
+      "fromAddress": "niclas@agilkon.se",
+      "reason": "Niclas Hasslund följer upp på ett pågående ärende (Spira 194 i Krokom) och önskar få uppdatering om status. Detta är en support-fråga om ett redan initierat försäljningsärende.",
+      "confidence": 0.85,
+      "suggested_action": "Jimmy bör kontakta Niclas med en statusuppdatering kring bankprocessen för Spira 194 och bekräfta nästa steg i processen.",
+      "needsManualConfirm": false,
+      "draftId": null,
+      "draftWebLink": null,
+      "autodraft": false,
+      "received": "2026-07-07T15:49:22Z",
+      "timestamp": "2026-07-07T15:50:22.193Z"
+    }
+  ]
 }
