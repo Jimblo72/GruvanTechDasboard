@@ -1,6 +1,22 @@
 {
-  "lastSeen": "2026-07-07T19:11:11Z",
+  "lastSeen": "2026-07-07T19:39:35Z",
   "items": [
+    {
+      "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsj0AAA=",
+      "category": "support",
+      "subject": "Sv: Spira 194 i Krokom, från Hjältevadshus",
+      "fromName": "Niclas Hasslund",
+      "fromAddress": "niclas@agilkon.se",
+      "reason": "Mejlet är ett svar från en säljare (Hjältevadshus) gällande ett pågående ärendet \"Spira 194 i Krokom\". Avsändaren bekräftar villkor för ett markbesök och verkar vilja boka in ett besök, vilket är en del av ett aktivt försäljningsärende.",
+      "confidence": 0.75,
+      "suggested_action": "Jimmy bör bekräfta tidpunkt för markbesöket med Hjältevadshus/Niclas Hasslund. Spara referensen \"Spira 194\" för ärendespårning.",
+      "needsManualConfirm": false,
+      "draftId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEPAAAjJbzKsYZbQI7_fAyBjTyUAACOhu_yAAA=",
+      "draftWebLink": "https://outlook.office365.com/owa/?ItemID=AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL%2FeBwAjJbzKsYZbQI7%2BfAyBjTyUAAAAAAEPAAAjJbzKsYZbQI7%2BfAyBjTyUAACOhu%2ByAAA%3D&exvsurl=1&viewmodel=ReadMessageItem",
+      "autodraft": true,
+      "received": "2026-07-07T19:39:35Z",
+      "timestamp": "2026-07-07T19:42:13.119Z"
+    },
     {
       "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsjzAAA=",
       "category": "offert_andelsratt",
