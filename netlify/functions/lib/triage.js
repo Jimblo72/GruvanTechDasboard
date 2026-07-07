@@ -23,6 +23,12 @@
 const { graphJson } = require('./graph');
 const { readJsonFile } = require('./store');
 const { loadAndelMall, buildAndelOffertText, insertOffertBlock, OFFERT_TOKEN } = require('./offert-text');
+const {
+  fetchThread,
+  fetchOtherThreadsFromSender,
+  buildOtherThreadsSummary,
+  buildThreadContextBlock,
+} = require('./thread');
 
 const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
 
@@ -72,7 +78,7 @@ async function withRetry(fn, delays = SYNC_RETRY_DELAYS) {
   throw lastErr;
 }
 
-const CATEGORIES = ['offert_andelsratt', 'offert_forsaljning', 'support', 'abonnemang', 'brus'];
+const CATEGORIES = ['offert_andelsratt', 'offert_forsaljning', 'support', 'abonnemang', 'privat', 'brus'];
 
 // ── Signatur / röstprofil ─────────────────────────────────────
 // VIKTIGT: Outlook lägger själv till Jimmys fullständiga signatur (titel,
@@ -154,6 +160,7 @@ const CLASSIFY_SYSTEM = `Du är en assistent åt fastighetsmäklaren Jimmy Blomg
 - offert_forsaljning: vanlig fastighetsförsäljning — värdering eller offertförfrågan för en bostad/fastighet.
 - support: fråga om ett pågående ärende eller allmän support.
 - abonnemang: en Mäklargruvan-kund vill lägga till eller säga upp ett abonnemangstillägg. FLAGGA endast — vidta ingen åtgärd.
+- privat: personlig/privat korrespondens där Jimmy INTE agerar mäklare (t.ex. Jimmys egna ärenden, familj, privata inköp som eget husbygge). Svara naturligt och personligt.
 - brus: nyhetsbrev, spam, notifieringar eller annat som inte kräver svar.
 
 Regler:
@@ -163,12 +170,15 @@ Regler:
 - suggested_action: kort förslag på nästa steg för Jimmy.
 - Hitta inte på — om osäkert, välj den rimligaste kategorin och sänk confidence.`;
 
-function classifyUserText(message) {
-  return (
+function classifyUserText(message, context) {
+  const base =
     `Ämne: ${message.subject || '(inget ämne)'}\n` +
     `Från: ${message.fromName || ''} <${message.fromAddress || ''}>\n\n` +
-    `Innehåll:\n${(message.text || '').slice(0, 8000)}`
-  );
+    `Innehåll (senaste meddelandet):\n${(message.text || '').slice(0, 8000)}`;
+  const ctx = String(context || '').trim();
+  // Hela tråden + ev. andra trådar från samma avsändare hjälper klassificeringen
+  // (t.ex. känna igen 'privat' från sammanhanget, inte bara det sista mejlet).
+  return ctx ? `${base}\n\n${ctx}` : base;
 }
 
 function normalizeClassification(parsed) {
@@ -210,7 +220,7 @@ async function classifyAnthropic(message, opts = {}) {
         system: CLASSIFY_SYSTEM,
         tools: [CLASSIFY_TOOL],
         tool_choice: { type: 'tool', name: 'report_classification' },
-        messages: [{ role: 'user', content: classifyUserText(message) }],
+        messages: [{ role: 'user', content: classifyUserText(message, opts.context) }],
       }),
     });
     if (!r.ok) {
@@ -250,7 +260,7 @@ async function classifyGemini(message, opts = {}) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: CLASSIFY_SYSTEM }] },
-          contents: [{ role: 'user', parts: [{ text: classifyUserText(message) }] }],
+          contents: [{ role: 'user', parts: [{ text: classifyUserText(message, opts.context) }] }],
           generationConfig: {
             responseMimeType: 'application/json',
             responseSchema: CLASSIFY_SCHEMA,
@@ -304,6 +314,9 @@ function draftCategoryHint(category) {
   if (category === 'abonnemang') {
     return 'Detta gäller ett abonnemangstillägg (Mäklargruvan). Bekräfta kort att du tagit emot önskemålet och att det hanteras. Lova INTE att ändringen redan är gjord — Jimmy måste bekräfta den manuellt.';
   }
+  if (category === 'privat') {
+    return 'Detta är privat korrespondens där Jimmy inte agerar mäklare. Svara naturligt och personligt, som Jimmy själv. Inga mäklar-erbjudanden, ingen värdering, inga priser. Besvara det som faktiskt frågas.';
+  }
   return '';
 }
 
@@ -331,7 +344,12 @@ function draftSystemFor(category, styleProfile) {
     '- Upprepa ALDRIG instruktioner eller nästa steg som redan står i mejltråden (det som citeras längre ner är oftast sådant Jimmy själv redan skrivit — ta inte om det).\n' +
     '- Skriv INTE återberättande meningar om vad avsändaren gjort (t.ex. "Jag ser att du skickade..." eller "Jag ser att du mailade vidare från..."). Det är onödigt och får mejlet att kännas som en mall.\n' +
     '- Hitta inte på fakta, åtgärder eller detaljer du inte har stöd för i mejlet.\n\n' +
-    'EXEMPEL på rätt återhållsamhet:\n' +
+    'KONKRETA FRÅGOR MÅSTE ALLTID BESVARAS (går före återhållsamheten ovan):\n' +
+    '- Om avsändaren ställer en eller flera KONKRETA frågor (tid, plats, pris, ja/nej, datum, adress m.m.) MÅSTE du besvara ALLA i utkastet. Att bara skriva en artig bekräftelse när en konkret fråga ställts är FEL.\n' +
+    '- Återhållsamheten gäller OMBEDDA nästa steg och tillägg — den får ALDRIG få dig att hoppa över en fråga som avsändaren faktiskt ställt.\n' +
+    '- Använd HELA TRÅDEN (om den finns med nedan) för att lösa referenser i frågan — t.ex. VILKEN fredag, VILKEN adress eller tid som åsyftas — så svaret blir konkret.\n' +
+    '- Litet exempel: avsändaren skriver "Funkar kl 10, och är det vid Häste 217 vi ses?" → utkastet MÅSTE bekräfta BÅDE tiden (kl 10) OCH platsen (Häste 217), t.ex. "Ja, kl 10 vid Häste 217 fungerar fint."\n\n' +
+    'EXEMPEL på rätt återhållsamhet (gäller när INGEN konkret fråga ställts):\n' +
     'Inkommande: kunden skickar in ett signerat dokument utan att fråga något (och nästa steg har redan getts tidigare i tråden).\n' +
     'RÄTT svar (bekräfta bara):\n' +
     '"Hej Catrin\n\nTack, jag har mottagit det signerade gåvobrevet! Hör gärna av er om det är något mer jag kan hjälpa till med.\n\nMed vänlig hälsning\nJimmy"\n' +
@@ -363,11 +381,15 @@ async function generateDraft(message, category, opts = {}) {
     isAndelOffert ? loadAndelMall() : Promise.resolve(null),
   ]);
 
+  const ctx = String(opts.context || '').trim();
   const userPrompt =
-    `Inkommande mejl att besvara:\n\n` +
+    `Inkommande mejl att besvara (senaste meddelandet):\n\n` +
     `Ämne: ${message.subject || '(inget ämne)'}\n` +
     `Från: ${message.fromName || ''} <${message.fromAddress || ''}>\n\n` +
-    `${(message.text || '').slice(0, 6000)}`;
+    `${(message.text || '').slice(0, 6000)}` +
+    // Hela tråden + ev. andra trådar från samma avsändare ger utkastet fullt
+    // sammanhang så det kan lösa referenser och besvara konkreta frågor rätt.
+    (ctx ? `\n\n${ctx}` : '');
 
   const model = process.env.MAIL_DRAFT_MODEL || DEFAULT_DRAFT_MODEL;
   const delays = opts.retryDelays || SYNC_RETRY_DELAYS;
@@ -478,8 +500,28 @@ async function triageMessage(messageId, opts = {}) {
   // (snäv, ~0,4 s) så retryerna inte spränger 10 s-gränsen; pollern skickar in
   // POLL_RETRY_DELAYS via opts.retryDelays.
   const retryDelays = opts.retryDelays || SYNC_RETRY_DELAYS;
+  const force = !!opts.force;
   const message = opts.message || (await fetchFullMessage(messageId));
-  const classification = await classify(message, { retryDelays });
+
+  // Hämta hela tråden + andra trådar från samma avsändare PARALLELLT (Promise.all)
+  // så de extra Graph-anropen inte staplar latens. Saknas conversationId →
+  // degradera tyst (bara senaste meddelandet, precis som förr).
+  let thread = { transcript: '', messages: [], latestNonDraft: null, latestIsFromJimmy: false, hasDraftReply: false };
+  let otherThreads = [];
+  if (message.conversationId) {
+    try {
+      const [t, others] = await Promise.all([
+        fetchThread(message.conversationId),
+        fetchOtherThreadsFromSender(message.fromAddress, message.conversationId),
+      ]);
+      if (t) thread = t;
+      otherThreads = others || [];
+    } catch (_) { /* degradera tyst */ }
+  }
+  const contextBlock = buildThreadContextBlock(thread.transcript, buildOtherThreadsSummary(otherThreads));
+
+  // Klassificera MED trådkontext (hjälper t.ex. att känna igen 'privat').
+  const classification = await classify(message, { retryDelays, context: contextBlock });
   const category = classification.category;
   const needsReply = category !== 'brus';
   const needsManualConfirm = category === 'abonnemang';
@@ -499,15 +541,37 @@ async function triageMessage(messageId, opts = {}) {
     draftWebLink: null,
     draftText: null,
     autodraft: !!opts.autodraft,
+    alreadyReplied: false,
+    duplicateDraft: false,
+    skipReason: null,
     timestamp: new Date().toISOString(),
   };
 
   if (!needsReply) return result; // brus → inget utkast
 
-  // Generera alltid utkasttexten (billigt nog och nyttigt i kön), men skapa
-  // bara i Outlook om autodraft är på.
-  const draftText = await generateDraft(message, category, { retryDelays });
+  // Guard 1 — REDAN BESVARAT: om Jimmy redan skickat ett svar efter kundens
+  // senaste meddelande (senaste icke-utkast i tråden är från Jimmy) → skapa
+  // inget utkast. Returnera ändå klassificeringen så kön kan visa den flaggad.
+  // Ingen utkasttext genereras (onödigt LLM-anrop). opts.force kringgår guarden.
+  if (!force && thread.latestIsFromJimmy) {
+    result.alreadyReplied = true;
+    result.skipReason = 'redan besvarat';
+    return result;
+  }
+
+  // Generera utkasttexten MED trådkontext (billigt nog och nyttigt i kön), men
+  // skapa bara i Outlook om autodraft är på OCH ingen guard slår till.
+  const draftText = await generateDraft(message, category, { retryDelays, context: contextBlock });
   result.draftText = draftText;
+
+  // Guard 2 — DUBBLETT-UTKAST: om det redan finns ett osänt svarsutkast i tråden
+  // → skapa inte ännu ett. Visa den genererade texten i kön men hoppa över
+  // createOutlookDraft. opts.force kringgår guarden.
+  if (!force && thread.hasDraftReply) {
+    result.duplicateDraft = true;
+    result.skipReason = 'utkast finns redan';
+    return result;
+  }
 
   if (opts.autodraft) {
     const created = await createOutlookDraft(messageId, draftText);
