@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["netlify/functions/**/*.js", "scripts/*.mjs"],
+  "project": ["netlify/**/*.js", "scripts/*.mjs"],
+  "ignoreDependencies": ["playwright", "axe-core"]
+}

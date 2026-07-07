@@ -1,0 +1,11 @@
+{
+  "name": "gruvan-tech-dashboard",
+  "version": "1.0.0",
+  "description": "Gruvan Tech Dashboard — internt nav + granskningscockpit (single-file + Netlify-funktioner)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cleanup": "node scripts/cleanup-scan.mjs",
+    "ui-scan": "node scripts/ui-scan.mjs"
+  }
+}

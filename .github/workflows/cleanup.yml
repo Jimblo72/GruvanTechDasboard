@@ -1,0 +1,42 @@
+name: Kodstädning (knip + Gemini)
+
+# Kör knip (deterministisk dödkodsanalys), låter Gemini tolka fynden och
+# rapporterar till ett GitHub-issue. Raderar ALDRIG kod — flaggar för granskning.
+#
+# Trigger: manuellt (Actions → "Run workflow") eller schemalagt (måndagar).
+# Kräver repo-secret GEMINI_API_KEY (samma som ai-review).
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # måndagar 06:00 UTC
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  cleanup-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # knip behöver beroendeträdet (package.json + node_modules) för att avgöra
+      # oanvända beroenden. npm install (INTE ci): lockfilen har optional
+      # plattforms-deps (t.ex. @rollup/rollup-android-arm) som ci vägrar på
+      # linux-x64 (EBADPLATFORM); install hoppar över inkompatibla optionals.
+      # --ignore-scripts hoppar över sharps native-bygge (behövs ej för knip).
+      - name: Installera beroenden
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: knip + Gemini-tolkning
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.5-flash
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/cleanup-scan.mjs
