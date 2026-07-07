@@ -1,5 +1,7 @@
 {
-  "lastSeen": "2026-07-07T19:39:35Z",
+  "lastSeen": {
+    "jimmy@peakfast.se": "2026-07-07T19:39:35Z"
+  },
   "items": [
     {
       "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsj0AAA=",
@@ -15,7 +17,8 @@
       "draftWebLink": "https://outlook.office365.com/owa/?ItemID=AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL%2FeBwAjJbzKsYZbQI7%2BfAyBjTyUAAAAAAEPAAAjJbzKsYZbQI7%2BfAyBjTyUAACOhu%2ByAAA%3D&exvsurl=1&viewmodel=ReadMessageItem",
       "autodraft": true,
       "received": "2026-07-07T19:39:35Z",
-      "timestamp": "2026-07-07T19:42:13.119Z"
+      "timestamp": "2026-07-07T19:42:13.119Z",
+      "mailbox": "jimmy@peakfast.se"
     },
     {
       "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsjzAAA=",
@@ -31,7 +34,8 @@
       "draftWebLink": "https://outlook.office365.com/owa/?ItemID=AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL%2FeBwAjJbzKsYZbQI7%2BfAyBjTyUAAAAAAEPAAAjJbzKsYZbQI7%2BfAyBjTyUAACOhu%2BwAAA%3D&exvsurl=1&viewmodel=ReadMessageItem",
       "autodraft": true,
       "received": "2026-07-07T19:11:11Z",
-      "timestamp": "2026-07-07T19:11:31.273Z"
+      "timestamp": "2026-07-07T19:11:31.273Z",
+      "mailbox": "jimmy@peakfast.se"
     },
     {
       "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsjyAAA=",
@@ -47,7 +51,8 @@
       "draftWebLink": null,
       "autodraft": true,
       "received": "2026-07-07T19:06:31Z",
-      "timestamp": "2026-07-07T19:06:53.216Z"
+      "timestamp": "2026-07-07T19:06:53.216Z",
+      "mailbox": "jimmy@peakfast.se"
     },
     {
       "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsjxAAA=",
@@ -63,7 +68,8 @@
       "draftWebLink": null,
       "autodraft": false,
       "received": "2026-07-07T15:49:22Z",
-      "timestamp": "2026-07-07T15:50:22.193Z"
+      "timestamp": "2026-07-07T15:50:22.193Z",
+      "mailbox": "jimmy@peakfast.se"
     }
   ]
 }
