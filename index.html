@@ -505,7 +505,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" onclick="showSection('prs',this)"><div class="nav-dot" style="background:var(--accent)"></div>Öppna PR:ar</button>
       <button class="nav-item" onclick="showSection('memory',this)"><div class="nav-dot" style="background:var(--text3)"></div>Minne & MCP</button>
       <button class="nav-item" onclick="showSection('flode',this)"><div class="nav-dot" style="background:var(--accent)"></div>Systemflöde</button>
-      <button class="nav-item" onclick="showSection('offert',this)"><div class="nav-dot" style="background:var(--amber)"></div>Offertgenerator</button>
+      <button class="nav-item" data-sec="offert" onclick="showSection('offert',this)"><div class="nav-dot" style="background:var(--amber)"></div>Offertgenerator</button>
       <button class="nav-item" onclick="showSection('mail',this)"><div class="nav-dot" style="background:var(--green)"></div>Mail-hub</button>
     </div>
     <div class="nav-group">
@@ -521,6 +521,12 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     <div class="nav-group">
       <div class="nav-group-label">Personligt</div>
       <button class="nav-item" onclick="openApp('https://tradingoracle.netlify.app')"><div class="nav-dot" style="background:var(--text3)"></div>TradingOracle ↗</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">PeakFast-verktyg</div>
+      <button class="nav-item" data-sec="verktyg" onclick="showSection('verktyg',this)"><div class="nav-dot" style="background:var(--accent)"></div>PeakFast-verktyg</button>
+      <button class="nav-item" data-sec="tomt" onclick="showSection('tomt',this)"><div class="nav-dot" style="background:var(--accent)"></div>Tomtgränsritare</button>
+      <button class="nav-item" data-sec="andels" onclick="showSection('andels',this)"><div class="nav-dot" style="background:var(--accent)"></div>Andelsförsäljning</button>
     </div>
   </nav>
   <div class="sidebar-footer">
@@ -876,6 +882,86 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
   <div class="section" id="sec-offert">
     <div class="topbar"><div><div class="page-title">Offertgenerator</div><div class="page-sub">PeakFast offertverktyg — ordinarie försäljning eller andelsrätt, med PDF- och broschyrexport</div></div></div>
     <iframe src="offert.html" title="Offertgenerator" style="width:100%;height:calc(100vh - 150px);min-height:620px;border:0;border-radius:14px;background:#f7f5f0"></iframe>
+  </div>
+
+  <!-- PEAKFAST-VERKTYG (översikt) -->
+  <div class="section" id="sec-verktyg">
+    <div class="topbar">
+      <div><div class="page-title">PeakFast-verktyg</div><div class="page-sub">Verktygen vi byggt · webbverktyg körs i dashboarden, lokala verktyg körs på din dator</div></div>
+    </div>
+
+    <div class="sec-head"><div class="sec-title">Webbverktyg</div><div class="sec-line"></div><div class="sec-count">3 verktyg</div></div>
+    <div class="app-grid">
+      <div class="app-card c-accent" style="cursor:default">
+        <div class="card-top"><div class="app-icon" style="background:var(--accent-glow);color:var(--accent)">Tg</div><span class="badge b-active">Webbverktyg</span></div>
+        <div class="app-name">Tomtgränsritare</div>
+        <div class="app-desc">Rita ungefärliga tomtgränser på drönarbilder.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:11px;border-top:1px solid var(--border)">
+          <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="openTool('tomt')">▶ Öppna</button>
+          <button class="btn" style="font-size:10.5px;padding:5px 11px" onclick="generateIdeas('t_tomt', document.getElementById('ideas-out-t_tomt'), this)">💡 Generera idéer</button>
+        </div>
+        <div id="ideas-out-t_tomt" style="margin-top:10px"></div>
+      </div>
+
+      <div class="app-card c-accent" style="cursor:default">
+        <div class="card-top"><div class="app-icon" style="background:var(--accent-glow);color:var(--accent)">An</div><span class="badge b-active">Webbverktyg</span></div>
+        <div class="app-name">Andelsförsäljning</div>
+        <div class="app-desc">Annonstext- och skyltgenerator för andelsförsäljning.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:11px;border-top:1px solid var(--border)">
+          <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="openTool('andels')">▶ Öppna</button>
+          <button class="btn" style="font-size:10.5px;padding:5px 11px" onclick="generateIdeas('t_andels', document.getElementById('ideas-out-t_andels'), this)">💡 Generera idéer</button>
+        </div>
+        <div id="ideas-out-t_andels" style="margin-top:10px"></div>
+      </div>
+
+      <div class="app-card c-amber" style="cursor:default">
+        <div class="card-top"><div class="app-icon" style="background:var(--amber-bg);color:var(--amber)">Of</div><span class="badge b-active">Webbverktyg</span></div>
+        <div class="app-name">Offertgenerator</div>
+        <div class="app-desc">Offert med Andelsrätt-läge.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:11px;border-top:1px solid var(--border)">
+          <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="openTool('offert')">▶ Öppna</button>
+          <button class="btn" style="font-size:10.5px;padding:5px 11px" onclick="generateIdeas('t_offert', document.getElementById('ideas-out-t_offert'), this)">💡 Generera idéer</button>
+        </div>
+        <div id="ideas-out-t_offert" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="sec-head"><div class="sec-title">Lokala verktyg</div><div class="sec-line"></div><div class="sec-count">2 verktyg</div></div>
+    <div class="app-grid">
+      <div class="app-card c-muted" style="cursor:default">
+        <div class="card-top"><div class="app-icon" style="background:rgba(58,74,96,0.3);color:var(--text3)">Pd</div><span class="badge b-parked">Lokalt verktyg</span></div>
+        <div class="app-name">PDF-textredigerare</div>
+        <div class="app-desc">Rätta text i mäklarsystem-PDF:er (lokalt verktyg).</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:11px;border-top:1px solid var(--border)">
+          <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="openLocalToolModal('pdftext')">▶ Öppna</button>
+          <button class="btn" style="font-size:10.5px;padding:5px 11px" onclick="generateIdeas('t_pdftext', document.getElementById('ideas-out-t_pdftext'), this)">💡 Generera idéer</button>
+        </div>
+        <div id="ideas-out-t_pdftext" style="margin-top:10px"></div>
+      </div>
+
+      <div class="app-card c-muted" style="cursor:default">
+        <div class="card-top"><div class="app-icon" style="background:rgba(58,74,96,0.3);color:var(--text3)">Ri</div><span class="badge b-parked">Lokalt verktyg</span></div>
+        <div class="app-name">Ritprogram</div>
+        <div class="app-desc">Planritning/3D-ritprogram (lokalt verktyg).</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:11px;border-top:1px solid var(--border)">
+          <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="openLocalToolModal('ritprogram')">▶ Öppna</button>
+          <button class="btn" style="font-size:10.5px;padding:5px 11px" onclick="generateIdeas('t_ritprogram', document.getElementById('ideas-out-t_ritprogram'), this)">💡 Generera idéer</button>
+        </div>
+        <div id="ideas-out-t_ritprogram" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOMTGRÄNSRITARE -->
+  <div class="section" id="sec-tomt">
+    <div class="topbar"><div><div class="page-title">Tomtgränsritare</div><div class="page-sub">Rita ungefärliga tomtgränser på drönarbilder — självständigt canvas-verktyg</div></div></div>
+    <iframe src="tomtgransritare.html" title="Tomtgränsritare" style="width:100%;height:calc(100vh - 150px);min-height:620px;border:0;border-radius:14px;background:#101925"></iframe>
+  </div>
+
+  <!-- ANDELSFÖRSÄLJNING -->
+  <div class="section" id="sec-andels">
+    <div class="topbar"><div><div class="page-title">Andelsförsäljning</div><div class="page-sub">Annonstext- och skyltgenerator för andelsförsäljning</div></div></div>
+    <iframe src="andelsforsaljning.html" title="Andelsförsäljning" style="width:100%;height:calc(100vh - 150px);min-height:620px;border:0;border-radius:14px;background:#f7f5f0"></iframe>
   </div>
 
   <!-- MAIL-HUB -->
@@ -1347,6 +1433,65 @@ const APPS = {
       { label: '⌥ GitHub', href: 'https://github.com/Jimblo72/GruvanTechDasboard', cls: 'secondary' },
     ]
   },
+
+  // ── PeakFast-verktyg ──────────────────────────────────────────
+  // Lättviktiga poster så idé-generatorn (och Idéer-fliken) fungerar även
+  // för verktygen. Inga reviewRepos → inga UI-/städgranskningsknappar.
+  t_tomt: {
+    icon: 'Tg', iconStyle: 'background:var(--accent-glow);color:#c8854a',
+    title: 'Tomtgränsritare', subtitle: 'PeakFast-verktyg · webbverktyg',
+    status: 'active',
+    about: 'Självständigt canvas-verktyg (ren HTML/JS, inga externa beroenden) för att rita ungefärliga tomtgränser ovanpå drönarbilder. Används i mäklarflödet för att snabbt visualisera fastighetsgränser inför broschyr, annons och kundmöte. Körs som iframe i dashboarden.',
+    planned: [
+      { t: 'Spara/exportera ritning', d: 'Ladda ner den ritade gränsen som PNG/overlay för broschyr och annons' },
+      { t: 'Skala & mått', d: 'Ange referensmått så arean kan uppskattas grovt' },
+    ],
+    links: []
+  },
+  t_andels: {
+    icon: 'An', iconStyle: 'background:var(--accent-glow);color:#c8854a',
+    title: 'Andelsförsäljning', subtitle: 'PeakFast-verktyg · webbverktyg',
+    status: 'active',
+    about: 'Annonstext- och skyltgenerator för andelsförsäljning (timeshare/andelsrätt). Genererar marknadstexter och skyltar för andelsobjekt. Självständig HTML (~4500 rader) med bildbank och bulk-import. Körs som iframe i dashboarden.',
+    planned: [
+      { t: 'Mallbibliotek', d: 'Fler färdiga text- och skyltmallar per objekttyp och säsong' },
+      { t: 'Bulk-export', d: 'Generera texter för hela objektlistan i ett svep' },
+    ],
+    links: []
+  },
+  t_offert: {
+    icon: 'Of', iconStyle: 'background:var(--amber-bg);color:#dab080',
+    title: 'Offertgenerator', subtitle: 'PeakFast-verktyg · webbverktyg',
+    status: 'active',
+    about: 'Offertverktyg för PeakFast med stöd för både ordinarie försäljning och andelsrätt, samt PDF- och broschyrexport. Körs som iframe i dashboarden (sec-offert / offert.html).',
+    planned: [
+      { t: 'Sparade offerter', d: 'Historik och återanvändning av tidigare offerter' },
+      { t: 'Delningslänk', d: 'Skicka offerten som länk i stället för PDF-bilaga' },
+    ],
+    links: []
+  },
+  t_pdftext: {
+    icon: 'Pd', iconStyle: 'background:rgba(58,74,96,0.3);color:#b7ad9f',
+    title: 'PDF-textredigerare', subtitle: 'PeakFast-verktyg · lokalt (Python)',
+    status: 'parked',
+    about: 'Lokalt Python-verktyg (PyMuPDF) för att rätta text i PDF:er exporterade från mäklarsystem. Körs på Jimmys dator (C:\\dev\\pdf-textedit), inte i den hostade dashboarden. PyMuPDF-kärnan är återanvändbar för Mäklargruvan.',
+    planned: [
+      { t: 'Batch-rättning', d: 'Kör samma texträttning över flera PDF:er samtidigt' },
+      { t: 'Enkelt GUI', d: 'Lokal webb-vy i stället för kommandorad' },
+    ],
+    links: []
+  },
+  t_ritprogram: {
+    icon: 'Ri', iconStyle: 'background:rgba(58,74,96,0.3);color:#b7ad9f',
+    title: 'Ritprogram', subtitle: 'PeakFast-verktyg · lokalt (Node)',
+    status: 'parked',
+    about: 'Lokalt planritnings- och 3D-ritprogram (Node web+api med Docker-infrastruktur). Körs lokalt på Jimmys dator (C:\\dev\\ritprogram) och kan inte startas i den hostade dashboarden. Innehåller bl.a. bygglovs-PDF-export och husgenerator.',
+    planned: [
+      { t: 'AI-extraktion av planritning', d: 'Läs in befintlig planritning och rekonstruera väggar automatiskt' },
+      { t: 'Export med logga', d: 'Broschyrfärdig planritningsexport med PeakFast-profil' },
+    ],
+    links: []
+  },
 };
 
 // Ett app kan ha flera granskningsrepon (prod-pilot + edition). Bakåtkompatibelt med reviewRepo.
@@ -1771,6 +1916,105 @@ function showSection(id, btn) {
   if (id === 'mail') initMailHub();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
+
+// ── PEAKFAST-VERKTYG: start ───────────────────────────────────
+// Öppnar ett webbverktyg (egen sektion med iframe) och markerar nav-posten.
+function openTool(sec) {
+  const nav = document.querySelector('.nav-item[data-sec="' + sec + '"]');
+  showSection(sec, nav || null);
+}
+
+// Lokala backend-appar kan inte köras i den hostade dashboarden. "Öppna" visar
+// i stället en modal med kör-lokalt-instruktion. Kommandot är en PLATSHÅLLARE
+// som Jimmy kan finslipa (redigerbart textfält + editerbart här i källan).
+const LOCAL_TOOLS = {
+  ritprogram: {
+    icon: 'Ri', iconStyle: 'background:rgba(58,74,96,0.3);color:#b7ad9f',
+    title: 'Ritprogram', sub: 'Lokalt verktyg · Node (web + api) + Docker',
+    path: 'C:\\dev\\ritprogram',
+    about: 'Planritnings- och 3D-ritprogram (Node web+api med Docker-infrastruktur). Körs lokalt på din dator — kan inte startas från den hostade dashboarden.',
+    steps: [
+      'Starta Docker-infrastrukturen (databas m.m.).',
+      'Starta web- och api-servrarna lokalt.',
+      'Öppna appen i webbläsaren på den lokala porten.',
+    ],
+    cmd: 'cd C:\\dev\\ritprogram\n# starta infrastruktur + web/api (justera efter ditt repo)\nnpm run infra:up\nnpm run dev',
+  },
+  pdftext: {
+    icon: 'Pd', iconStyle: 'background:rgba(58,74,96,0.3);color:#b7ad9f',
+    title: 'PDF-textredigerare', sub: 'Lokalt verktyg · Python (PyMuPDF)',
+    path: 'C:\\dev\\pdf-textedit',
+    about: 'Rätta text i PDF:er exporterade från mäklarsystem. Lokalt Python-verktyg som bygger på PyMuPDF. Körs på din dator — inte i den hostade dashboarden.',
+    steps: [
+      'Öppna en terminal i verktygsmappen.',
+      'Aktivera Python-miljön och starta verktyget.',
+    ],
+    cmd: 'cd C:\\dev\\pdf-textedit\n# aktivera venv + kör (justera efter ditt repo)\npython app.py',
+  },
+};
+
+function openLocalToolModal(key) {
+  const t = LOCAL_TOOLS[key];
+  if (!t) return;
+  currentModalApp = null; // ingen granskning/handoff kopplad till lokala verktyg
+  document.getElementById('m-icon').innerHTML = t.icon;
+  document.getElementById('m-icon').style.cssText = t.iconStyle;
+  document.getElementById('m-title').textContent = t.title;
+  document.getElementById('m-sub').textContent = t.sub;
+  const steps = t.steps.map((s, i) => `<div class="plan-item"><div class="plan-num">${i + 1}</div><div class="plan-text">${esc(s)}</div></div>`).join('');
+  document.getElementById('m-body').innerHTML = `
+    <div class="status-row"><span class="badge b-parked">Lokalt verktyg</span></div>
+    <div class="config-note"><strong>⚙ Körs lokalt.</strong> Det här är en backend-app på din dator (<code>${esc(t.path)}</code>) och kan inte startas från den hostade dashboarden. Öppna den i en terminal.</div>
+    <div class="modal-section"><div class="modal-section-title">Om verktyget</div><div class="modal-text"><p>${esc(t.about)}</p></div></div>
+    <div class="modal-section"><div class="modal-section-title">Så kör du lokalt</div>${steps}</div>
+    <div class="modal-section">
+      <div class="modal-section-title">Kommando <span style="font-size:9px;color:var(--text4);font-weight:400;font-style:italic;margin-left:auto">platshållare — justera</span></div>
+      <textarea class="textarea" spellcheck="false" style="min-height:92px;font-size:11px">${esc(t.cmd)}</textarea>
+      <div class="hint">Platshållarkommando — anpassa efter ditt repo. Sökväg: <code>${esc(t.path)}</code></div>
+    </div>`;
+  document.getElementById('modal').classList.add('open');
+}
+
+// Kortknappar på Översikt: öppnar appmodalen och kör önskad åtgärd där, så att
+// befintlig maskineri återanvänds (idé-output + scan-status/polling bor i modalen).
+function cardIdeas(appId) {
+  openModal(appId);
+  const out = document.getElementById('ideas-out-modal');
+  if (out) generateIdeas(appId, out, null);
+}
+function cardScan(appId, workflow) {
+  openModal(appId);
+  const repos = getReviewRepos(APPS[appId] || {});
+  if (repos[0]) triggerScan(repos[0], workflow, null);
+}
+
+// Injicerar en kompakt åtgärdsrad på varje appkort i Översikt (samma mönster som
+// loadHealth). 💡 Generera idéer överallt; 🔎 UI-granskning + 🧹 Kodstädning bara
+// när appen har ett granskningsrepo (reviewRepo/reviewRepos).
+function injectCardActions() {
+  const mkBtn = (label, title, onclick, accent) =>
+    `<button class="btn${accent ? ' btn-accent' : ''}" title="${title}" style="font-size:10.5px;padding:5px 10px" onclick="event.stopPropagation();${onclick}">${label}</button>`;
+  for (const card of document.querySelectorAll('.app-card')) {
+    const m = (card.getAttribute('onclick') || '').match(/openModal\('([^']+)'\)/);
+    if (!m) continue;                       // bara riktiga appkort (verktygskort hanteras separat)
+    const appId = m[1];
+    const app = (typeof APPS !== 'undefined') ? APPS[appId] : null;
+    if (!app) continue;
+    if (card.querySelector('.card-actions-row')) continue; // idempotent
+    const repos = getReviewRepos(app);
+    const btns = [mkBtn('💡 Idéer', 'Generera idéer', `cardIdeas('${appId}')`, true)];
+    if (repos.length) {
+      btns.push(mkBtn('🔎 UI-granskning', 'Kör UI-granskning', `cardScan('${appId}','ui-scan.yml')`));
+      btns.push(mkBtn('🧹 Kodstädning', 'Kör kodstädning', `cardScan('${appId}','cleanup.yml')`));
+    }
+    const row = document.createElement('div');
+    row.className = 'card-actions-row';
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin:11px 0 0;padding-top:11px;border-top:1px solid var(--border)';
+    row.innerHTML = btns.join('');
+    (card.querySelector('.card-footer') || card).insertAdjacentElement('beforebegin', row);
+  }
+}
+// ── PEAKFAST-VERKTYG: slut ────────────────────────────────────
 
 // Öppna PR:ar över alla repon (via github-prs-proxyn).
 let prsLoaded = false;
@@ -2826,6 +3070,7 @@ async function confirmImport(){
 
 // ── INIT ──────────────────────────────────────────────────────
 renderAgents();
+injectCardActions();
 loadHealth();
 </script>
 </body>
