@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tomtgränsritare – PeakFast</title>
+<style>
+  :root {
+    --bg: #1a1d21; --panel: #22262b; --panel2: #2a2e34; --line: #33383f;
+    --text: #e8e8e8; --muted: #a8b0b8; --accent: #2a9d5c; --accent2: #35b56c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+         background: var(--bg); color: var(--text); padding: 16px; }
+  h1 { font-size: 1.2rem; margin-bottom: 4px; }
+  .sub { font-size: .82rem; color: var(--muted); margin-bottom: 14px; }
+  .hint { font-size: .84rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+  .hint b { color: #cdd4da; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+  button { border: 0; border-radius: 8px; padding: 9px 14px; font-size: .9rem;
+           cursor: pointer; background: var(--panel2); color: var(--text); }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .lot { border: 2px solid transparent; font-weight: 700; }
+  .lot.active { border-color: #fff; }
+  .util { background: var(--panel2); }
+  .mode { background: #444b54; }
+  .mode.on { background: var(--accent); font-weight: 700; }
+  .seg { display: inline-flex; border-radius: 8px; overflow: hidden; }
+  .seg button { border-radius: 0; }
+  #export { background: var(--accent); font-weight: 700; }
+  #export:hover { background: var(--accent2); }
+  .ok { color: #7be48a; font-size: .85rem; margin-left: 6px; }
+  #wrap { position: relative; width: 100%; max-width: 1400px;
+          border: 1px dashed var(--line); border-radius: 10px; min-height: 220px;
+          display: flex; align-items: center; justify-content: center; }
+  #wrap.empty::after { content: "Ladda upp en drönarbild för att börja";
+          color: var(--muted); font-size: .95rem; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 10px;
+           touch-action: none; }
+  canvas.hidden { display: none; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-top: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+          padding: 12px 14px; flex: 1; min-width: 260px; }
+  .card h3 { font-size: .9rem; margin-bottom: 8px; color: #cdd4da; }
+  .field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: .85rem; }
+  .field label { width: 130px; color: var(--muted); }
+  .field input[type=text] { flex: 1; background: #14161a; color: var(--text);
+          border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font-size: .85rem; }
+  .field input[type=range] { flex: 1; }
+  .lotlist { font-size: .8rem; color: var(--muted); line-height: 1.6; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px;
+            vertical-align: middle; }
+  #out { width: 100%; margin-top: 10px; background: #14161a; color: #9fdc9f;
+         border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+         font: .76rem/1.4 monospace; min-height: 60px; resize: vertical; }
+  .filebtn { background: #1f7ac2; font-weight: 600; }
+  details { margin-top: 12px; font-size: .82rem; color: var(--muted); }
+  summary { cursor: pointer; color: #cdd4da; }
+  code { background: #14161a; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>Tomtgränsritare</h1>
+<div class="sub">Rita ungefärliga tomtgränser på drönarbilder – PeakFast / Mäklargruvan</div>
+
+<div class="toolbar">
+  <button class="filebtn" onclick="document.getElementById('file').click()">📷 Ladda upp drönarbild</button>
+  <input type="file" id="file" accept="image/*" style="display:none" onchange="loadImage(event)">
+  <span id="fmsg" class="ok"></span>
+</div>
+
+<p class="hint">
+  <b>Justera:</b> dra i ett hörn för att flytta det · dra i en linjes mittpunkt för att lägga till hörn · dubbelklicka på ett hörn för att ta bort det.<br>
+  <b>Rita:</b> välj tomt och klicka för att lägga till hörn i tur och ordning.
+</p>
+
+<div class="toolbar">
+  <div class="seg">
+    <button id="mAdjust" class="mode on" onclick="setMode('adjust')">✥ Justera</button>
+    <button id="mDraw" class="mode" onclick="setMode('draw')">✎ Rita</button>
+  </div>
+  <span id="lotButtons"></span>
+  <button class="util" onclick="addLot()">＋ Ny tomt</button>
+  <button class="util" onclick="undo()">↶ Ångra punkt</button>
+  <button class="util" onclick="clearLot()">Rensa vald</button>
+  <button class="util" onclick="clearAll()">Rensa allt</button>
+</div>
+
+<div id="wrap" class="empty"><canvas id="cv" class="hidden"></canvas></div>
+
+<div class="row">
+  <div class="card">
+    <h3>Tomtbeteckningar</h3>
+    <div class="sub" style="margin:0 0 8px">Byt namn på vald tomt – syns som etikett i bilden.</div>
+    <div class="field">
+      <label>Vald tomts namn</label>
+      <input type="text" id="lotName" placeholder="t.ex. 1:55" oninput="renameLot(this.value)">
+    </div>
+    <div class="lotlist" id="lotlist"></div>
+  </div>
+  <div class="card">
+    <h3>Utseende</h3>
+    <div class="field">
+      <label>Linjetjocklek</label>
+      <input type="range" id="lw" min="4" max="20" value="11" oninput="draw()">
+    </div>
+    <div class="field">
+      <label>Etikettstorlek</label>
+      <input type="range" id="fs" min="40" max="120" value="76" oninput="draw()">
+    </div>
+    <div class="field">
+      <label>Fyllnad</label>
+      <input type="range" id="fill" min="0" max="40" value="15" oninput="draw()">
+    </div>
+    <div class="field">
+      <label>Disclaimertext</label>
+      <input type="text" id="disc" value="Ungefärliga tomtgränser – ej juridiskt gällande" oninput="draw()">
+    </div>
+  </div>
+</div>
+
+<div class="toolbar" style="margin-top:12px">
+  <button id="export" onclick="exportImage()" disabled>⬇ Exportera bild (full upplösning)</button>
+  <button id="copy" class="util" onclick="copyJSON()" disabled>📋 Kopiera koordinater</button>
+  <span id="msg" class="ok"></span>
+</div>
+<textarea id="out" readonly placeholder="Koordinater uppdateras automatiskt medan du ritar/justerar..."></textarea>
+
+<details>
+  <summary>Om verktyget &amp; tips</summary>
+  <p style="margin-top:8px; line-height:1.6">
+  Allt körs lokalt i webbläsaren – ingen bild laddas upp någonstans. Koordinaterna sparas som andelar (0–1)
+  av bildens bredd/höjd, så samma inritning fungerar oavsett upplösning.<br>
+  <b>Tips för drönarfoto:</b> ta bilden så rakt ovanifrån som möjligt (liten vinkel) – då blir gränserna enklare att placera korrekt.<br>
+  Exporten sker i bildens fulla originalupplösning med etiketter och disclaimer inbränd.
+  </p>
+</details>
+
+<script>
+const PALETTE = ['#c1121f','#e36414','#1f7ac2','#2a9d5c','#8e44ad','#d4a017','#118ab2','#ef476f'];
+let polys = {};        // { namn: [[fx,fy],...] }
+let order = [];        // ordning på tomtnamn
+let colorOf = {};      // namn -> färg
+let current = null;
+let mode = 'adjust';
+const HIT = 14, MID = 12;
+
+let img = null;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+function loadImage(e){
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ev => {
+    const im = new Image();
+    im.onload = () => {
+      img = im;
+      cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+      cv.classList.remove('hidden');
+      document.getElementById('wrap').classList.remove('empty');
+      document.getElementById('export').disabled = false;
+      document.getElementById('copy').disabled = false;
+      if (order.length === 0){ addLot('1:55'); addLot('1:56'); addLot('1:57'); setCurrent('1:55'); }
+      draw();
+      document.getElementById('fmsg').textContent = f.name + ' · ' + im.naturalWidth + '×' + im.naturalHeight + ' px';
+    };
+    im.src = ev.target.result;
+  };
+  rd.readAsDataURL(f);
+}
+
+function addLot(name){
+  if (!name || name === undefined){
+    let n = 1; while (order.includes('Tomt '+n)) n++;
+    name = 'Tomt ' + n;
+  }
+  if (polys[name]) return;
+  polys[name] = [];
+  order.push(name);
+  colorOf[name] = PALETTE[(order.length-1) % PALETTE.length];
+  renderLotButtons(); setCurrent(name); refreshList();
+}
+function setCurrent(name){
+  current = name;
+  document.getElementById('lotName').value = name;
+  renderLotButtons();
+}
+function renderLotButtons(){
+  const c = document.getElementById('lotButtons'); c.innerHTML = '';
+  order.forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'lot' + (name===current?' active':'');
+    b.style.background = colorOf[name];
+    b.textContent = name;
+    b.onclick = () => setCurrent(name);
+    c.appendChild(b);
+  });
+}
+function renameLot(newName){
+  if (!current || !newName || polys[newName]) return;
+  const old = current;
+  polys[newName] = polys[old]; delete polys[old];
+  colorOf[newName] = colorOf[old]; delete colorOf[old];
+  order[order.indexOf(old)] = newName;
+  current = newName;
+  renderLotButtons(); refreshList(); draw(); updateOut();
+}
+function refreshList(){
+  const el = document.getElementById('lotlist');
+  el.innerHTML = order.map(n =>
+    `<div><span class="swatch" style="background:${colorOf[n]}"></span>${n} — ${polys[n].length} hörn</div>`
+  ).join('');
+}
+
+function toPx(p){ return [p[0]*cv.width, p[1]*cv.height]; }
+function evtPos(e){
+  const r = cv.getBoundingClientRect();
+  return [ (e.clientX-r.left)/r.width*cv.width, (e.clientY-r.top)/r.height*cv.height ];
+}
+function dist(a,b){ return Math.hypot(a[0]-b[0], a[1]-b[1]); }
+function findVertex(pos){
+  for (const k of order) for (let i=0;i<polys[k].length;i++)
+    if (dist(toPx(polys[k][i]),pos) < HIT) return {lot:k,i};
+  return null;
+}
+function findEdge(pos){
+  for (const k of order){ const P=polys[k];
+    for (let i=0;i<P.length;i++){
+      const a=toPx(P[i]), b=toPx(P[(i+1)%P.length]);
+      const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+      if (dist(m,pos)<MID) return {lot:k,i};
+    } }
+  return null;
+}
+
+function setMode(m){
+  mode = m;
+  document.getElementById('mAdjust').classList.toggle('on', m==='adjust');
+  document.getElementById('mDraw').classList.toggle('on', m==='draw');
+  flash('msg', m==='adjust'?'Justera: dra i hörn/linjer':'Rita: klicka för nya hörn');
+}
+
+let drag = null;
+cv.addEventListener('pointerdown', e=>{
+  if(!img) return;
+  cv.setPointerCapture(e.pointerId);
+  const pos = evtPos(e);
+  if (mode==='draw'){
+    if(!current) return;
+    polys[current].push([+(pos[0]/cv.width).toFixed(4), +(pos[1]/cv.height).toFixed(4)]);
+    draw(); updateOut(); refreshList(); return;
+  }
+  const v = findVertex(pos);
+  if (v){ drag=v; setCurrent(v.lot); return; }
+  const ed = findEdge(pos);
+  if (ed){
+    polys[ed.lot].splice(ed.i+1,0,[+(pos[0]/cv.width).toFixed(4),+(pos[1]/cv.height).toFixed(4)]);
+    drag={lot:ed.lot,i:ed.i+1}; setCurrent(ed.lot); draw(); updateOut(); refreshList();
+  }
+});
+cv.addEventListener('pointermove', e=>{
+  if(!img) return;
+  if(!drag){
+    const pos=evtPos(e);
+    cv.style.cursor = mode==='adjust' ? ((findVertex(pos)||findEdge(pos))?'grab':'default') : 'crosshair';
+    return;
+  }
+  const pos=evtPos(e);
+  polys[drag.lot][drag.i]=[
+    +Math.min(1,Math.max(0,pos[0]/cv.width)).toFixed(4),
+    +Math.min(1,Math.max(0,pos[1]/cv.height)).toFixed(4)];
+  cv.style.cursor='grabbing'; draw(); updateOut();
+});
+cv.addEventListener('pointerup', ()=>{ drag=null; refreshList(); });
+cv.addEventListener('dblclick', e=>{
+  if(mode!=='adjust'||!img) return;
+  const v=findVertex(evtPos(e));
+  if(v && polys[v.lot].length>3){ polys[v.lot].splice(v.i,1); draw(); updateOut(); refreshList(); }
+});
+
+function undo(){ if(current){ polys[current].pop(); draw(); updateOut(); refreshList(); } }
+function clearLot(){ if(current){ polys[current]=[]; draw(); updateOut(); refreshList(); } }
+function clearAll(){ for(const k of order) polys[k]=[]; draw(); updateOut(); refreshList(); }
+
+function hexToRgba(hex, a){
+  const n = parseInt(hex.slice(1),16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+
+function render(context, W, H, scale){
+  context.drawImage(img,0,0,W,H);
+  const lw = +document.getElementById('lw').value * scale;
+  const fs = +document.getElementById('fs').value * scale;
+  const fillA = +document.getElementById('fill').value/100;
+  for (const k of order){
+    const P = polys[k]; if (P.length<1) continue;
+    const col = colorOf[k];
+    if (P.length>=2){
+      context.beginPath();
+      context.moveTo(P[0][0]*W, P[0][1]*H);
+      for (let i=1;i<P.length;i++) context.lineTo(P[i][0]*W, P[i][1]*H);
+      context.closePath();
+      if (fillA>0){ context.fillStyle=hexToRgba(col,fillA); context.fill(); }
+      context.strokeStyle=col; context.lineWidth=lw; context.setLineDash([]);
+      context.lineJoin='round'; context.stroke();
+    }
+    // etikett
+    if (P.length>=3){
+      const cx=P.reduce((s,p)=>s+p[0],0)/P.length*W;
+      const cy=P.reduce((s,p)=>s+p[1],0)/P.length*H;
+      context.font=`700 ${fs}px sans-serif`;
+      const tw=context.measureText(k).width, pad=fs*0.28;
+      context.fillStyle='rgba(0,0,0,.78)';
+      context.fillRect(cx-tw/2-pad, cy-fs/2-pad, tw+2*pad, fs+2*pad);
+      context.strokeStyle='#ff2828'; context.lineWidth=Math.max(2,fs*0.06);
+      context.strokeRect(cx-tw/2-pad, cy-fs/2-pad, tw+2*pad, fs+2*pad);
+      context.fillStyle='#fff'; context.textBaseline='middle';
+      context.fillText(k, cx-tw/2, cy);
+      context.textBaseline='alphabetic';
+    }
+  }
+  // disclaimer
+  const disc = document.getElementById('disc').value.trim();
+  if (disc){
+    const dfs = Math.round(H*0.022);
+    context.font = `${dfs}px sans-serif`;
+    const tw = context.measureText(disc).width, pad = dfs*0.5;
+    const x=(W-tw)/2, y=H-dfs-pad*2;
+    context.fillStyle='rgba(0,0,0,.82)';
+    context.fillRect(x-pad, y-pad, tw+2*pad, dfs+2*pad);
+    context.fillStyle='#e1e1e1'; context.textBaseline='top';
+    context.fillText(disc, x, y);
+    context.textBaseline='alphabetic';
+  }
+}
+
+function draw(){
+  if(!img) return;
+  render(ctx, cv.width, cv.height, cv.width/1400);
+  if (mode==='adjust'){
+    for (const k of order){ const P=polys[k];
+      for (let i=0;i<P.length;i++){
+        const a=toPx(P[i]), b=toPx(P[(i+1)%P.length]);
+        const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+        ctx.beginPath(); ctx.arc(m[0],m[1],5,0,7);
+        ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fill();
+      }
+      for (const p of P){ const [x,y]=toPx(p);
+        ctx.beginPath(); ctx.arc(x,y,8,0,7);
+        ctx.fillStyle=colorOf[k]; ctx.fill();
+        ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.stroke();
+      }
+    }
+  }
+}
+
+function updateOut(){
+  const o={}; for(const k of order) if(polys[k].length>=3) o[k]=polys[k];
+  document.getElementById('out').value = Object.keys(o).length?JSON.stringify(o):'';
+}
+function copyJSON(){
+  updateOut(); const t=document.getElementById('out').value;
+  if(!t){ flash('msg','Rita minst en tomt med 3+ hörn'); return; }
+  navigator.clipboard.writeText(t).then(()=>flash('msg','Kopierat!'))
+    .catch(()=>{ const o=document.getElementById('out'); o.select(); document.execCommand('copy'); flash('msg','Kopierat!'); });
+}
+
+function exportImage(){
+  if(!img) return;
+  const W=img.naturalWidth, H=img.naturalHeight;
+  const oc=document.createElement('canvas'); oc.width=W; oc.height=H;
+  const octx=oc.getContext('2d');
+  render(octx, W, H, W/1400);
+  oc.toBlob(b=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download='tomtgranser.jpg';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    flash('msg','Bild exporterad i full upplösning');
+  }, 'image/jpeg', 0.93);
+}
+
+function flash(id,m){ const el=document.getElementById(id); el.textContent=m;
+  clearTimeout(el._t); el._t=setTimeout(()=>el.textContent='',3500); }
+</script>
+</body>
+</html>
