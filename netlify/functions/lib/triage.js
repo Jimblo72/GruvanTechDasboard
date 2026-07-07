@@ -318,7 +318,7 @@ function draftCategoryHint(category) {
     return 'Detta gäller ett abonnemangstillägg (Mäklargruvan). Bekräfta kort att du tagit emot önskemålet och att det hanteras. Lova INTE att ändringen redan är gjord — Jimmy måste bekräfta den manuellt.';
   }
   if (category === 'privat') {
-    return 'Detta är privat korrespondens där Jimmy inte agerar mäklare. Svara naturligt och personligt, som Jimmy själv. Inga mäklar-erbjudanden, ingen värdering, inga priser. Besvara det som faktiskt frågas.';
+    return 'Detta är privat korrespondens där Jimmy inte agerar mäklare. Skriv ledigt och personligt som till en bekant — gärna med en emoji (🙂/;)) och en liten lättsam personlig kommentar när det känns naturligt. Håll det kort. Inga mäklar-erbjudanden, ingen värdering, inga priser. Besvara det som faktiskt frågas, men upprepa inte sådant du redan berättat tidigare i tråden.';
   }
   return '';
 }
@@ -345,6 +345,7 @@ function draftSystemFor(category, styleProfile) {
     '- Om JA → svara kort och konkret på just det de frågar om, inget mer.\n' +
     '- VIKTIGT: även om det finns KVARSTÅENDE STEG i ärendet (t.ex. att något ska skickas vidare, registreras eller arkiveras) — nämn dem INTE om avsändaren inte uttryckligen frågar efter dem. Räkna INTE upp vad som händer härnäst självmant. Bekräfta bara mottagandet.\n' +
     '- Upprepa ALDRIG instruktioner eller nästa steg som redan står i mejltråden (det som citeras längre ner är oftast sådant Jimmy själv redan skrivit — ta inte om det).\n' +
+    '- Använd HELA TRÅDEN för att FÖRSTÅ sammanhanget — men ÅTERBERÄTTA inte information du (Jimmy) redan delat med mottagaren tidigare i tråden. Har du t.ex. redan nämnt en resa, ett datum eller ett besked → ta INTE om det. Trådkontexten är för din förståelse, inte för att upprepas tillbaka till den som redan vet.\n' +
     '- Skriv INTE återberättande meningar om vad avsändaren gjort (t.ex. "Jag ser att du skickade..." eller "Jag ser att du mailade vidare från..."). Det är onödigt och får mejlet att kännas som en mall.\n' +
     '- Hitta inte på fakta, åtgärder eller detaljer du inte har stöd för i mejlet.\n\n' +
     'KONKRETA FRÅGOR MÅSTE ALLTID BESVARAS (går före återhållsamheten ovan):\n' +
@@ -357,9 +358,13 @@ function draftSystemFor(category, styleProfile) {
     'RÄTT svar (bekräfta bara):\n' +
     '"Hej Catrin\n\nTack, jag har mottagit det signerade gåvobrevet! Hör gärna av er om det är något mer jag kan hjälpa till med.\n\nMed vänlig hälsning\nJimmy"\n' +
     'FEL svar (räknar upp oombedda nästa steg): att lägga till "Nästa steg är att ni mailar en kopia till Holiday Club ... och skickar en kopia till mig ...". Gör INTE så när inget efterfrågats.\n\n' +
+    'TON/REGISTER — låt det låta som Jimmy privat, inte som en mall:\n' +
+    '- Till folk Jimmy har en relation med (privat korrespondens, bekanta, pågående personlig dialog) skriver han LEDIGT och lekfullt. Det är helt okej — och önskvärt — med en och annan emoji (🙂, ;)) och en liten personlig eller lättsam kommentar när det passar naturligt (t.ex. en vardagsdetalj). Exempel på Jimmys lediga ton: "Toppen 🙂 kl. 10.00 på fredag blir perfekt och adressen stämmer, möjligt att jag har en 4-åring som byggkonsult med mig ;)".\n' +
+    '- Håll däremot en sober, professionell ton (INGA emojis) i formella eller juridiska ärenden — myndigheter, avtal, domstol, fakturor och liknande.\n' +
+    '- Tvinga aldrig in emoji/skämt där det inte passar; det ska kännas naturligt, inte påklistrat.\n\n' +
     'STIL/FORM:\n' +
     '- Var kort och personlig. Hellre få korta meningar än en lång utläggning.\n' +
-    '- Hälsning "Hej [Förnamn]" utan kommatecken, sedan blankrad och rakt på sak. Använd mottagarens förnamn om det framgår.\n' +
+    '- Hälsning "Hej [Förnamn]" utan kommatecken, sedan blankrad och rakt på sak. Använd mottagarens förnamn om det framgår. (I lediga/personliga svar går det också bra att öppna direkt med t.ex. "Toppen 🙂" utan formell hälsning om det känns naturligt.)\n' +
     '- Avsluta med en öppen inbjudan att höra av sig, eller (om något faktiskt efterfrågats) ett tydligt nästa steg.\n' +
     '- INGA fetstilta rubriker och INGA numrerade/punktade listor som dekoration — rena stycken. (Använd bara en lista om avsändaren uttryckligen bett om konkreta steg.)\n' +
     '- Undvik stela företagsöppningar som "Tack för att jag får möjligheten…".\n' +
