@@ -1,0 +1,47 @@
+name: UI/UX-granskning (axe + Gemini)
+
+# Renderar sidorna med Playwright, kör axe-core (a11y) och låter Gemini bedöma
+# skärmdumparna visuellt. Rapporterar till ett GitHub-issue. Inget auto-fixas.
+#
+# Dashboarden är LÖSENORDSSKYDDAD i prod → vi kan inte nå den live. Därför servar
+# vi repots statiska filer lokalt i CI och granskar dem (via TARGET_URL=localhost).
+#
+# Trigger: manuellt (Actions → "Run workflow") eller schemalagt (måndagar).
+# Kräver repo-secret GEMINI_API_KEY.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1" # måndagar 07:00 UTC (efter kodstädningen 06:00)
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ui-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installera Playwright + axe-core
+        run: |
+          npm install --no-save --ignore-scripts playwright axe-core
+          npx playwright install --with-deps chromium
+
+      - name: Serva sajten lokalt + axe + Gemini-granskning
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.5-flash
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_URL: http://localhost:8080
+          SCAN_PAGES: "/|Cockpit,/flode.html|Systemflöde"
+        run: |
+          npx --yes http-server . -p 8080 --silent &
+          for i in $(seq 1 30); do curl -sf http://localhost:8080 >/dev/null && break; sleep 1; done
+          node scripts/ui-scan.mjs

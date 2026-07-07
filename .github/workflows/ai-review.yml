@@ -1,0 +1,47 @@
+name: AI-granskning (Gemini)
+
+# Skickar PR-diffen till Googles Gemini-API för en rådgivande kodgranskning
+# och postar fynden som en PR-kommentar. Ingen auto-merge, inget block.
+#
+# SEKRETESSGRIND: aktivera bara detta workflow på repos som är godkända för
+# extern AI-granskning. Ändrad kod lämnar repot och skickas till Google.
+# Undanta känsliga filer i .aiignore. Denna testfork är godkänd.
+#
+# Kräver ett repo-secret: GEMINI_API_KEY (Settings → Secrets → Actions).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Avbryt en pågående granskning om nya commits pushas till samma PR.
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    # Hoppa över PR:er från forkar — de saknar secrets och skrivrättigheter.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Gemini-granskning av diffen
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.5-flash
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/ai-review.mjs
