@@ -1,0 +1,17 @@
+{
+  "rubrik": "Försäljning av andelsrätt — vad som ingår",
+  "arvode": {
+    "belopp": 37500,
+    "alt_belopp": 40000,
+    "moms": "inkl. moms",
+    "beskrivning": "oavsett slutlig köpeskilling"
+  },
+  "ingar": [
+    { "namn": "Hemnet", "beskrivning": "Annonsering på Hemnet – exponering mot tusentals köpare" },
+    { "namn": "Booli", "beskrivning": "Annonsering på Booli" },
+    { "namn": "Boneo", "beskrivning": "Annonsering på Boneo – prisjämförelse och bostadsguide" },
+    { "namn": "Facebook", "beskrivning": "Riktad annonsering på Facebook mot relevanta köpargrupper" },
+    { "namn": "Visningar och kontraktsskrivning", "beskrivning": "Visningar, kontraktsskrivning och hela försäljningsprocessen från annons till tillträde" }
+  ],
+  "notering": "Vid andelsförsäljning ingår inte fotografering, drönarbilder eller drönarvideo — befintliga bilder används."
+}
