@@ -85,6 +85,9 @@ exports.handler = async () => {
           draftId: result.draftId,
           draftWebLink: result.draftWebLink,
           autodraft: result.autodraft,
+          alreadyReplied: result.alreadyReplied,
+          duplicateDraft: result.duplicateDraft,
+          skipReason: result.skipReason,
           received: m.receivedDateTime || '',
           timestamp: result.timestamp,
         });

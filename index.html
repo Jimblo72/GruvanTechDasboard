@@ -1796,8 +1796,21 @@ const MAIL_CAT = {
   offert_forsaljning:{ label: 'Försäljning · offert', color: 'var(--amber)', bg: 'var(--amber-bg)' },
   support:           { label: 'Support', color: 'var(--blue)', bg: 'rgba(125,184,212,0.12)' },
   abonnemang:        { label: 'Abonnemang · flaggad', color: 'var(--red-bright)', bg: 'rgba(194,85,85,0.12)' },
+  privat:            { label: 'Privat', color: 'var(--green)', bg: 'var(--green-bg)' },
   brus:              { label: 'Brus · inget svar', color: 'var(--text4)', bg: 'var(--surface)' },
 };
+
+// Neutral statusrad för utkast-guarden (redan besvarat / dubblett-utkast).
+// Returnerar tom sträng när ingen guard slog till.
+function mailGuardLine(d) {
+  if (d && d.alreadyReplied) {
+    return `<div style="margin-top:9px;padding:8px 11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:11.5px;color:var(--text3)">✓ Redan besvarat — inget utkast skapat. Du har redan svarat sist i tråden.</div>`;
+  }
+  if (d && d.duplicateDraft) {
+    return `<div style="margin-top:9px;padding:8px 11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:11.5px;color:var(--text3)">✎ Utkast finns redan i tråden — hoppade över. Öppna det befintliga utkastet i Outlook.</div>`;
+  }
+  return '';
+}
 function mailCatBadge(cat) {
   const c = MAIL_CAT[cat] || { label: cat, color: 'var(--text3)', bg: 'var(--surface)' };
   return `<span style="font-size:10px;font-weight:700;color:${c.color};background:${c.bg};border:1px solid var(--border);border-radius:6px;padding:2px 8px;white-space:nowrap">${esc(c.label)}</span>`;
@@ -1924,11 +1937,14 @@ function renderTriageResult(d) {
   const warn = d.needsManualConfirm
     ? `<div style="margin-top:9px;padding:9px 12px;background:rgba(194,85,85,0.12);border:1px solid rgba(194,85,85,0.3);border-radius:8px;font-size:11.5px;color:var(--text2)">⚠ <strong>Kräver att du manuellt bekräftar abonnemangsändringen i Mäklargruvan.</strong> Utkastet bekräftar bara mottagandet — ingen ändring har gjorts.</div>`
     : '';
+  const guard = mailGuardLine(d);
   const link = d.draftWebLink
     ? `<a href="${esc(d.draftWebLink)}" target="_blank" class="btn btn-accent" style="font-size:11px">↗ Öppna utkast i Outlook</a>`
-    : (d.category === 'brus'
-        ? `<span style="font-size:11px;color:var(--text4)">Inget utkast — klassat som brus.</span>`
-        : `<span style="font-size:11px;color:var(--text4)">Utkast genererat men inte skapat i Outlook (torrläge).</span>`);
+    : (guard
+        ? '' // guardraden förklarar varför inget nytt utkast skapades
+        : (d.category === 'brus'
+            ? `<span style="font-size:11px;color:var(--text4)">Inget utkast — klassat som brus.</span>`
+            : `<span style="font-size:11px;color:var(--text4)">Utkast genererat men inte skapat i Outlook (torrläge).</span>`));
   const preview = d.draftText
     ? `<details style="margin-top:9px"><summary style="font-size:11px;color:var(--text3);cursor:pointer">Förhandsvisa utkasttext</summary><div style="margin-top:6px;padding:10px 12px;background:var(--bg4);border:1px solid var(--border);border-radius:8px;font-size:11.5px;color:var(--text2);white-space:pre-wrap;line-height:1.6">${esc(d.draftText)}</div></details>`
     : '';
@@ -1940,7 +1956,8 @@ function renderTriageResult(d) {
     <div style="font-size:11.5px;color:var(--text3);margin-top:7px;line-height:1.5">${esc(d.reason || '')}</div>
     ${d.suggested_action ? `<div style="font-size:11px;color:var(--text4);margin-top:4px">Förslag: ${esc(d.suggested_action)}</div>` : ''}
     ${warn}
-    <div style="margin-top:10px">${link}</div>
+    ${guard}
+    ${link ? `<div style="margin-top:10px">${link}</div>` : ''}
     ${preview}
   </div>`;
 }
@@ -1976,9 +1993,12 @@ function renderQueueItem(it) {
   const warn = it.needsManualConfirm
     ? `<div style="margin-top:7px;padding:7px 10px;background:rgba(194,85,85,0.12);border:1px solid rgba(194,85,85,0.3);border-radius:7px;font-size:11px;color:var(--text2)">⚠ Kräver manuell bekräftelse av abonnemangsändringen i Mäklargruvan.</div>`
     : '';
+  const guard = mailGuardLine(it);
   const link = it.draftWebLink
     ? `<a href="${esc(it.draftWebLink)}" target="_blank" class="btn btn-accent" style="font-size:10.5px">↗ Öppna utkast i Outlook</a>`
-    : `<span style="font-size:10.5px;color:var(--text4)">${it.autodraft ? 'Inget utkast' : 'Torrläge — inget utkast skapat'}</span>`;
+    : (guard
+        ? '' // guardraden förklarar varför inget nytt utkast skapades
+        : `<span style="font-size:10.5px;color:var(--text4)">${it.autodraft ? 'Inget utkast' : 'Torrläge — inget utkast skapat'}</span>`);
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:9px">
     <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
       <div style="font-size:13px;font-weight:600;color:var(--text);min-width:0">${esc(it.subject || '(inget ämne)')}</div>
@@ -1988,7 +2008,8 @@ function renderQueueItem(it) {
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${mailCatBadge(it.category)}<span style="font-size:10px;color:var(--text4)">Säkerhet: ${conf}%</span></div>
     <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">${esc(it.reason || '')}</div>
     ${warn}
-    <div style="margin-top:9px">${link}</div>
+    ${guard}
+    ${link ? `<div style="margin-top:9px">${link}</div>` : ''}
   </div>`;
 }
 
