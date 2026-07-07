@@ -1,6 +1,22 @@
 {
-  "lastSeen": "2026-07-07T15:49:22Z",
+  "lastSeen": "2026-07-07T19:06:31Z",
   "items": [
+    {
+      "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsjyAAA=",
+      "category": "brus",
+      "subject": "Test",
+      "fromName": "Jimmy Blomgren",
+      "fromAddress": "jimmyblomgren@gmail.com",
+      "reason": "Detta är ett testmeddelande från Jimmy själv för att kontrollera att systemet fungerar. Det är inte ett kundbehov eller en verklig förfrågan.",
+      "confidence": 0.95,
+      "suggested_action": "Bekräfta att klassificeringsmotorn är igång och fungerar korrekt. Ingen kundåtgärd krävs.",
+      "needsManualConfirm": false,
+      "draftId": null,
+      "draftWebLink": null,
+      "autodraft": true,
+      "received": "2026-07-07T19:06:31Z",
+      "timestamp": "2026-07-07T19:06:53.216Z"
+    },
     {
       "messageId": "AAMkADllMTZkZDRkLThiNjAtNGQ1Ny04MTZiLTIxZDgwMjA0YTQ0MwBGAAAAAACBSMaSHcxCQ5JtDqt2jL-eBwAjJbzKsYZbQI7_fAyBjTyUAAAAAAEMAAAjJbzKsYZbQI7_fAyBjTyUAACOhsjxAAA=",
       "category": "support",
