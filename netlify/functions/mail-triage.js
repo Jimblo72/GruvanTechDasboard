@@ -4,15 +4,17 @@
 // en gång per meddelande, inte i loop. Skickar ALDRIG.
 //
 // POST-body: { messageId, force? }
-//   - Klassificerar via Gemini, genererar utkasttext via Claude, skapar utkast
-//     via Graph (createReply + PATCH). Vid kategori "brus" skapas inget utkast.
+//   - Klassificerar via Claude Haiku (Gemini opt-in), genererar utkasttext via
+//     Claude, skapar utkast via Graph (createReply + PATCH). Vid kategori "brus"
+//     skapas inget utkast.
 //   - `force` finns för framtida idempotens-styrning; standard skapar ett utkast
 //     per anrop.
 // Returnerar: { category, reason, confidence, suggested_action, needsManualConfirm,
 //               draftId, draftWebLink, draftText }
 //
 // Miljövariabler: MS_TENANT_ID/MS_CLIENT_ID/MS_CLIENT_SECRET, MAILBOX_USER,
-//                 GEMINI_API_KEY (+ GEMINI_MODEL), ANTHROPIC_API_KEY.
+//                 ANTHROPIC_API_KEY, MAIL_CLASSIFY_MODEL/MAIL_DRAFT_MODEL,
+//                 MAIL_CLASSIFY_PROVIDER (+ GEMINI_API_KEY/GEMINI_MODEL om gemini).
 
 const { triageMessage } = require('./lib/triage');
 
