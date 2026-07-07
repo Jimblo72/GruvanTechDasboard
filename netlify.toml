@@ -1,0 +1,8 @@
+# Netlify-konfiguration för Gruvan Tech Dashboard.
+#
+# Schemalagda funktioner registreras här (module-agnostiskt och pålitligt,
+# oberoende av CommonJS/ESM). mail-poll körs var 10:e minut och läser inkorgen,
+# klassificerar och (om MAIL_AUTODRAFT=true) skapar svarsutkast via Graph.
+
+[functions."mail-poll"]
+  schedule = "*/10 * * * *"
