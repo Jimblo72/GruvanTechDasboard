@@ -506,6 +506,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" onclick="showSection('memory',this)"><div class="nav-dot" style="background:var(--text3)"></div>Minne & MCP</button>
       <button class="nav-item" onclick="showSection('flode',this)"><div class="nav-dot" style="background:var(--accent)"></div>Systemflöde</button>
       <button class="nav-item" onclick="showSection('offert',this)"><div class="nav-dot" style="background:var(--amber)"></div>Offertgenerator</button>
+      <button class="nav-item" onclick="showSection('mail',this)"><div class="nav-dot" style="background:var(--green)"></div>Mail-hub</button>
     </div>
     <div class="nav-group">
       <div class="nav-group-label">Gruvan-serien</div>
@@ -877,6 +878,41 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     <iframe src="offert.html" title="Offertgenerator" style="width:100%;height:calc(100vh - 150px);min-height:620px;border:0;border-radius:14px;background:#f7f5f0"></iframe>
   </div>
 
+  <!-- MAIL-HUB -->
+  <div class="section" id="sec-mail">
+    <div class="topbar">
+      <div><div class="page-title">Mail-hub</div><div class="page-sub">Läser inkorgen (jimmy@peakfast.se) · klassificerar · skapar svarsutkast i Outlook · du granskar och skickar</div></div>
+      <button class="btn btn-accent" onclick="loadInbox(true)">↺ Uppdatera inkorg</button>
+    </div>
+
+    <div class="config-note" id="mail-config-note" style="display:none">
+      <strong>⚠ Konfiguration krävs.</strong> Mail-hub anropar Netlify-funktioner som pratar med Microsoft Graph. Sätt <code>MS_TENANT_ID</code>, <code>MS_CLIENT_ID</code>, <code>MS_CLIENT_SECRET</code> (samt <code>GEMINI_API_KEY</code> och <code>ANTHROPIC_API_KEY</code>) som environment variables i Netlify. Live-test mot Graph sker efter deploy.
+    </div>
+
+    <div class="config-note" style="background:var(--green-bg);border-color:rgba(78,203,141,0.3);color:var(--text2)">
+      <strong>🔒 Godkännandeprincip:</strong> Ingenting skickas automatiskt. Utkasten skapas i Outlook-tråden och ligger kvar tills <em>du</em> granskar och skickar dem manuellt. Den schemalagda pollern kör som standard i <strong>torrläge</strong> (klassificerar men skapar inga utkast) tills <code>MAIL_AUTODRAFT=true</code> sätts i Netlify.
+    </div>
+
+    <div style="display:flex;gap:8px;margin:6px 0 18px">
+      <button class="seg-btn active" id="mail-tab-inbox" onclick="switchMailTab('inbox')">Inkorg</button>
+      <button class="seg-btn" id="mail-tab-queue" onclick="switchMailTab('queue')">Godkännandekö</button>
+    </div>
+
+    <!-- Inkorg -->
+    <div id="mail-view-inbox">
+      <div id="mail-inbox-list"><div class="loading">Öppna fliken för att hämta inkorgen…</div></div>
+    </div>
+
+    <!-- Godkännandekö (från schemalagd poller) -->
+    <div id="mail-view-queue" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-size:11px;color:var(--text4)">Poster som den schemalagda pollern (var 10:e min) triage:at.</span>
+        <button class="btn" onclick="loadMailQueue(true)">↺ Uppdatera kö</button>
+      </div>
+      <div id="mail-queue-list"><div class="loading">Klicka "Uppdatera kö" för att ladda…</div></div>
+    </div>
+  </div>
+
 </main>
 </div>
 
@@ -930,7 +966,10 @@ const FN = {
   githubDispatch:'/.netlify/functions/github-dispatch', // triggar scan (kräver workflow-scope)
   chat:      '/.netlify/functions/ai-chat',       // konversation med Claude/GPT
   contacts:  '/.netlify/functions/contacts',       // läs/skriv kontaktnätverk (data/contacts.json)
-  githubPrs: '/.netlify/functions/github-prs'      // öppna PR:er över alla repon
+  githubPrs: '/.netlify/functions/github-prs',     // öppna PR:er över alla repon
+  mailFetch: '/.netlify/functions/mail-fetch',     // läser inkorgen (jimmy@peakfast.se) via Graph
+  mailTriage:'/.netlify/functions/mail-triage',    // klassificerar + skapar svarsutkast i Outlook
+  mailQueue: '/.netlify/functions/mail-queue'      // godkännandekö som pollern skrivit (data/mail-queue.json)
 };
 const GH_USER = 'Jimblo72';
 
@@ -1707,6 +1746,7 @@ function showSection(id, btn) {
   if (id === 'contacts' && !contactsLoaded) loadContacts();
   if (id === 'review' && !reviewsOverviewLoaded) loadReviewOverview();
   if (id === 'ideer') initIdeerPicker();
+  if (id === 'mail' && !inboxLoaded) loadInbox();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
 
@@ -1732,6 +1772,175 @@ async function loadPRs() {
   } catch (e) {
     el.innerHTML = `<div class="loading">Kunde inte hämta PR:ar (${esc(e.message)}) — kräver github-prs-funktionen driftsatt.</div>`;
   }
+}
+
+// ── MAIL-HUB (Microsoft Graph via Netlify-funktioner) ──────────
+// Läser inkorgen, triage:ar enskilda mejl på klick, visar godkännandekön.
+// Skickar aldrig — utkasten ligger i Outlook för manuell granskning.
+let inboxLoaded = false;
+const MAIL_CAT = {
+  offert_andelsratt: { label: 'Andelsrätt · offert', color: 'var(--accent)', bg: 'var(--accent-glow)' },
+  offert_forsaljning:{ label: 'Försäljning · offert', color: 'var(--amber)', bg: 'var(--amber-bg)' },
+  support:           { label: 'Support', color: 'var(--blue)', bg: 'rgba(125,184,212,0.12)' },
+  abonnemang:        { label: 'Abonnemang · flaggad', color: 'var(--red-bright)', bg: 'rgba(194,85,85,0.12)' },
+  brus:              { label: 'Brus · inget svar', color: 'var(--text4)', bg: 'var(--surface)' },
+};
+function mailCatBadge(cat) {
+  const c = MAIL_CAT[cat] || { label: cat, color: 'var(--text3)', bg: 'var(--surface)' };
+  return `<span style="font-size:10px;font-weight:700;color:${c.color};background:${c.bg};border:1px solid var(--border);border-radius:6px;padding:2px 8px;white-space:nowrap">${esc(c.label)}</span>`;
+}
+
+function switchMailTab(tab) {
+  document.getElementById('mail-view-inbox').style.display = tab === 'inbox' ? '' : 'none';
+  document.getElementById('mail-view-queue').style.display = tab === 'queue' ? '' : 'none';
+  document.getElementById('mail-tab-inbox').classList.toggle('active', tab === 'inbox');
+  document.getElementById('mail-tab-queue').classList.toggle('active', tab === 'queue');
+  if (tab === 'queue' && !mailQueueLoaded) loadMailQueue();
+}
+
+async function loadInbox(force) {
+  const el = document.getElementById('mail-inbox-list');
+  if (!el) return;
+  if (inboxLoaded && !force) return;
+  el.innerHTML = '<div class="loading">Hämtar inkorgen via Microsoft Graph…</div>';
+  document.getElementById('mail-config-note').style.display = 'none';
+  try {
+    const r = await fetch(FN.mailFetch);
+    if (r.status === 404) { showMailConfigNote('Funktionen mail-fetch är inte driftsatt än.'); return; }
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { msg = (await r.json()).error || msg; } catch (e) {}
+      showMailConfigNote(msg); return;
+    }
+    const data = await r.json();
+    inboxLoaded = true;
+    const msgs = data.messages || [];
+    if (!msgs.length) { el.innerHTML = '<div class="loading">Inkorgen är tom. 🎉</div>'; return; }
+    el.innerHTML = msgs.map(renderInboxRow).join('');
+  } catch (e) {
+    showMailConfigNote(e.message);
+  }
+}
+function showMailConfigNote(msg) {
+  const note = document.getElementById('mail-config-note');
+  note.style.display = '';
+  const list = document.getElementById('mail-inbox-list');
+  if (list) list.innerHTML = `<div class="loading">Kunde inte läsa inkorgen (${esc(msg || 'okänt fel')}). Kräver att Graph-secrets är satta i Netlify och att funktionerna är driftsatta.</div>`;
+}
+
+function renderInboxRow(m) {
+  const unread = !m.isRead;
+  return `<div class="mail-row" id="mailrow-${esc(m.id)}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:9px">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div style="width:8px;height:8px;border-radius:50%;background:${unread ? 'var(--green)' : 'var(--muted)'};margin-top:6px;flex-shrink:0" title="${unread ? 'oläst' : 'läst'}"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+          <div style="font-size:13px;font-weight:600;color:var(--text);${unread ? '' : 'font-weight:500;color:var(--text2)'}">${esc(m.subject)}</div>
+          <div style="font-size:10px;color:var(--text4);white-space:nowrap">${esc(m.received ? timeAgo(m.received) : '')}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin:2px 0 6px">${esc(m.fromName || m.fromAddress)}${m.fromName && m.fromAddress ? ` · <span style="color:var(--text4)">${esc(m.fromAddress)}</span>` : ''}</div>
+        <div style="font-size:11.5px;color:var(--text4);line-height:1.5">${esc((m.preview || '').slice(0, 220))}</div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="btn btn-solid" onclick="triageMail('${esc(m.id)}', this)" style="font-size:11px">✦ Analysera & skapa utkast</button>
+    </div>
+    <div class="mail-triage-result" id="triage-${esc(m.id)}" style="margin-top:10px"></div>
+  </div>`;
+}
+
+async function triageMail(id, btn) {
+  const out = document.getElementById('triage-' + id);
+  if (!out) return;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Analyserar…'; }
+  out.innerHTML = '<div class="loading" style="padding:8px 0">Klassificerar och skapar utkast…</div>';
+  try {
+    const r = await fetch(FN.mailTriage, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messageId: id }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    out.innerHTML = renderTriageResult(data);
+  } catch (e) {
+    out.innerHTML = `<div class="loading" style="padding:8px 0;color:var(--red-bright)">Triage misslyckades: ${esc(e.message)}</div>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✦ Analysera igen'; }
+  }
+}
+
+function renderTriageResult(d) {
+  const conf = Math.round((d.confidence || 0) * 100);
+  const warn = d.needsManualConfirm
+    ? `<div style="margin-top:9px;padding:9px 12px;background:rgba(194,85,85,0.12);border:1px solid rgba(194,85,85,0.3);border-radius:8px;font-size:11.5px;color:var(--text2)">⚠ <strong>Kräver att du manuellt bekräftar abonnemangsändringen i Mäklargruvan.</strong> Utkastet bekräftar bara mottagandet — ingen ändring har gjorts.</div>`
+    : '';
+  const link = d.draftWebLink
+    ? `<a href="${esc(d.draftWebLink)}" target="_blank" class="btn btn-accent" style="font-size:11px">↗ Öppna utkast i Outlook</a>`
+    : (d.category === 'brus'
+        ? `<span style="font-size:11px;color:var(--text4)">Inget utkast — klassat som brus.</span>`
+        : `<span style="font-size:11px;color:var(--text4)">Utkast genererat men inte skapat i Outlook (torrläge).</span>`);
+  const preview = d.draftText
+    ? `<details style="margin-top:9px"><summary style="font-size:11px;color:var(--text3);cursor:pointer">Förhandsvisa utkasttext</summary><div style="margin-top:6px;padding:10px 12px;background:var(--bg4);border:1px solid var(--border);border-radius:8px;font-size:11.5px;color:var(--text2);white-space:pre-wrap;line-height:1.6">${esc(d.draftText)}</div></details>`
+    : '';
+  return `<div style="padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:10px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      ${mailCatBadge(d.category)}
+      <span style="font-size:10px;color:var(--text4)">Säkerhet: ${conf}%</span>
+    </div>
+    <div style="font-size:11.5px;color:var(--text3);margin-top:7px;line-height:1.5">${esc(d.reason || '')}</div>
+    ${d.suggested_action ? `<div style="font-size:11px;color:var(--text4);margin-top:4px">Förslag: ${esc(d.suggested_action)}</div>` : ''}
+    ${warn}
+    <div style="margin-top:10px">${link}</div>
+    ${preview}
+  </div>`;
+}
+
+// Godkännandekö — läser data/mail-queue.json som pollern skrivit.
+let mailQueueLoaded = false;
+async function loadMailQueue(force) {
+  const el = document.getElementById('mail-queue-list');
+  if (!el) return;
+  if (mailQueueLoaded && !force) return;
+  el.innerHTML = '<div class="loading">Hämtar kön…</div>';
+  try {
+    const r = await fetch(FN.mailQueue);
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { msg = (await r.json()).error || msg; } catch (e) {}
+      throw new Error(msg);
+    }
+    const data = await r.json();
+    mailQueueLoaded = true;
+    const items = data.items || [];
+    if (!items.length) {
+      el.innerHTML = '<div class="loading">Kön är tom. Pollern har inte triage:at några nya mejl än (eller körs i torrläge).</div>';
+      return;
+    }
+    el.innerHTML = items.map(renderQueueItem).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="loading">Kunde inte läsa kön (${esc(e.message)}) — kräver mail-queue-funktionen och att pollern har kört.</div>`;
+  }
+}
+function renderQueueItem(it) {
+  const conf = Math.round((it.confidence || 0) * 100);
+  const warn = it.needsManualConfirm
+    ? `<div style="margin-top:7px;padding:7px 10px;background:rgba(194,85,85,0.12);border:1px solid rgba(194,85,85,0.3);border-radius:7px;font-size:11px;color:var(--text2)">⚠ Kräver manuell bekräftelse av abonnemangsändringen i Mäklargruvan.</div>`
+    : '';
+  const link = it.draftWebLink
+    ? `<a href="${esc(it.draftWebLink)}" target="_blank" class="btn btn-accent" style="font-size:10.5px">↗ Öppna utkast i Outlook</a>`
+    : `<span style="font-size:10.5px;color:var(--text4)">${it.autodraft ? 'Inget utkast' : 'Torrläge — inget utkast skapat'}</span>`;
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:9px">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+      <div style="font-size:13px;font-weight:600;color:var(--text);min-width:0">${esc(it.subject || '(inget ämne)')}</div>
+      <div style="font-size:10px;color:var(--text4);white-space:nowrap">${esc(it.received ? timeAgo(it.received) : '')}</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:2px 0 7px">${esc(it.fromName || it.fromAddress || '')}</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${mailCatBadge(it.category)}<span style="font-size:10px;color:var(--text4)">Säkerhet: ${conf}%</span></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">${esc(it.reason || '')}</div>
+    ${warn}
+    <div style="margin-top:9px">${link}</div>
+  </div>`;
 }
 
 // ── GITHUB (commits via säker funktion, fallback till publik API) ──
