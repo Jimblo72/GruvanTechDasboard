@@ -21,8 +21,13 @@
 //     Opus). Modell via MAIL_DRAFT_MODEL, default claude-haiku-4-5-20251001.
 
 const { graphJson } = require('./graph');
+const { readJsonFile } = require('./store');
 
 const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
+
+// Fil där den inlärda mejlstilen (från Jimmys skickade mejl) sparas.
+// Skrivs av mail-learn-style.js (on-demand), läses här vid utkastgenerering.
+const STYLE_FILE_PATH = 'data/mail-style.json';
 
 // Default-modeller. Haiku 4.5 är snabb nog för både klassificering och korta
 // svarsmejl och håller oss väl under funktionens timeout.
@@ -69,12 +74,65 @@ async function withRetry(fn, delays = SYNC_RETRY_DELAYS) {
 const CATEGORIES = ['offert_andelsratt', 'offert_forsaljning', 'support', 'abonnemang', 'brus'];
 
 // ── Signatur / röstprofil ─────────────────────────────────────
-const SIGNATURE =
-  'Med vänliga hälsningar,\n' +
-  'Jimmy Blomgren\n' +
-  'Registrerad Fastighetsmäklare, PeakFast\n' +
-  '070-788 57 00\n' +
-  'jimmy@peakfast.se';
+// VIKTIGT: Outlook lägger själv till Jimmys fullständiga signatur (titel,
+// telefon, adress) när utkastet öppnas för svar. Utkasttexten ska därför INTE
+// upprepa hela signaturblocket — då blir det dubbel signatur. Vi avslutar
+// utkastet med sign-off + namn på sin höjd.
+const SIGN_OFF = 'Med vänlig hälsning\nJimmy';
+
+// Baslinje-röstprofil. Används om data/mail-style.json ännu inte har genererats
+// (dvs. innan Jimmy kört "Lär in min mejlstil"). Bygger på tidigare observation
+// av hans faktiska ton; den inlärda profilen förfinar/bekräftar den sedan.
+const DEFAULT_STYLE_PROFILE = {
+  style_guide:
+    'Jimmy skriver vardagligt, varmt och vänligt — som ett mejl till en bekant, inte ett företagsbrev. ' +
+    'Hälsning: "Hej [Förnamn]" (utan kommatecken), sedan blankrad och rakt på sak. ' +
+    'Han förklarar gärna kort VARFÖR när det behövs, ofta i långa flytande meningar med "så", "dvs" och "bl.a." invävt. ' +
+    'Han avslutar oftast med en fråga eller ett tydligt nästa steg, t.ex. "Hör av dig om du undrar något!". ' +
+    'Ingen fet stil, inga rubriker, inga punktlistor som dekoration — rena stycken. Undvik stela företagsöppningar som ' +
+    '"Tack för att jag får möjligheten…". Håll det kort och personligt.',
+  examples: [
+    'Tack Catrin! Hör av er om det är några frågor eller någonting mer jag kan hjälpa er med.',
+    'Hej Anna\n\nVad roligt att du hörde av dig! Jag återkommer så snart jag kollat upp det här.',
+    'Absolut, det fixar vi. Jag hör av mig igen så fort jag vet mer så du inte behöver undra.',
+  ],
+  generated_at: null,
+  sample_count: 0,
+  is_default: true,
+};
+
+// Strippar HTML → ren text. Delas av fetchFullMessage (inkorg) och
+// mail-learn-style (skickade mejl). Tar bort style/script, taggar och entiteter.
+function htmlToText(raw, contentType) {
+  const s = String(raw || '');
+  const isHtml = contentType === 'html' || /<[a-z][\s\S]*>/i.test(s);
+  if (!isHtml) return s.replace(/\r\n/g, '\n').trim();
+  return s
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<\/(p|div|br|tr|li|h[1-6])>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+}
+
+// Läser den inlärda stilprofilen (data/mail-style.json). Faller tillbaka på
+// baslinjeprofilen om filen saknas eller är ogiltig. EN liten GitHub-läsning —
+// ingen hämtning av skickade mejl sker här (det gör bara mail-learn-style).
+async function loadStyleProfile() {
+  try {
+    const { data } = await readJsonFile(STYLE_FILE_PATH, null);
+    if (data && data.style_guide) return data;
+  } catch (_) { /* ignorera — faller tillbaka på baslinjen */ }
+  return DEFAULT_STYLE_PROFILE;
+}
 
 // ── Klassificering: schema + systemprompt ─────────────────────
 // Delas mellan Anthropic-tool-use (input_schema) och Gemini (responseSchema).
@@ -222,35 +280,58 @@ async function classify(message, opts = {}) {
 }
 
 // ── Claude: utkastgenerering ──────────────────────────────────
-function draftSystemFor(category) {
-  let extra = '';
+function draftCategoryHint(category) {
   if (category === 'offert_andelsratt') {
-    extra =
-      'Detta gäller andelsförsäljning. Nämn att PeakFast har ett fast arvode på 37 500 kr (alt. 40 000 kr) inkl. moms för andelsförsäljning, och erbjud dig att skicka en fullständig offert.';
-  } else if (category === 'offert_forsaljning') {
-    extra =
-      'Detta gäller en vanlig försäljning/värdering. Tacka för förfrågan, erbjud en kostnadsfri värdering och föreslå att boka en tid.';
-  } else if (category === 'support') {
-    extra =
-      'Detta är en supportfråga. Bekräfta att du tagit emot frågan och ge ett hjälpsamt, konkret svar så långt det går utan att gissa fakta du inte har.';
-  } else if (category === 'abonnemang') {
-    extra =
-      'Detta gäller ett abonnemangstillägg (Mäklargruvan). Bekräfta att du tagit emot önskemålet och att det hanteras. Lova INTE att ändringen redan är gjord — Jimmy måste bekräfta den manuellt.';
+    return 'Detta gäller andelsförsäljning. Nämn kort att PeakFast har ett fast arvode på 37 500 kr (alt. 40 000 kr) inkl. moms för andelsförsäljning, och erbjud dig att skicka en fullständig offert.';
   }
+  if (category === 'offert_forsaljning') {
+    return 'Detta gäller en vanlig försäljning/värdering. Tacka kort för förfrågan, erbjud en kostnadsfri värdering och föreslå att boka en tid.';
+  }
+  if (category === 'support') {
+    return 'Detta är en supportfråga. Bekräfta kort att du tagit emot frågan och ge ett hjälpsamt, konkret svar så långt det går utan att gissa fakta du inte har.';
+  }
+  if (category === 'abonnemang') {
+    return 'Detta gäller ett abonnemangstillägg (Mäklargruvan). Bekräfta kort att du tagit emot önskemålet och att det hanteras. Lova INTE att ändringen redan är gjord — Jimmy måste bekräfta den manuellt.';
+  }
+  return '';
+}
+
+// Bygger systemprompten för utkastet. Injicerar Jimmys inlärda (eller baslinje-)
+// röstprofil så att texten låter som HAN: kort, varm, "Hej [Förnamn]" utan komma,
+// rakt på sak, avsluta med fråga/nästa steg, inga dekorativa punktlistor, och
+// UTAN att upprepa hela signaturen (Outlook lägger till den).
+function draftSystemFor(category, styleProfile) {
+  const hint = draftCategoryHint(category);
+  const guide = (styleProfile && styleProfile.style_guide) || DEFAULT_STYLE_PROFILE.style_guide;
+  const examples = ((styleProfile && styleProfile.examples) || DEFAULT_STYLE_PROFILE.examples)
+    .slice(0, 3)
+    .map((e, i) => `${i + 1}. ${e}`)
+    .join('\n');
+
   return (
-    'Du skriver ett svarsutkast åt fastighetsmäklaren Jimmy Blomgren (PeakFast). ' +
-    'Skriv artigt, professionellt och i första person ("jag"). Svara på svenska. ' +
-    'Håll det kort och konkret. ' +
-    extra +
-    '\n\nAvsluta ALLTID med exakt denna signatur (oförändrad):\n' +
-    SIGNATURE +
-    '\n\nSkriv ENDAST själva mejltexten (hälsning, brödtext, signatur) — ingen ämnesrad, inga meta-kommentarer.'
+    'Du skriver ett svarsutkast åt fastighetsmäklaren Jimmy Blomgren (PeakFast), i första person ("jag"), på svenska.\n\n' +
+    'SKRIV I JIMMYS RÖST enligt denna stilguide:\n' + guide + '\n\n' +
+    (examples ? 'Exempel på hur Jimmy faktiskt skriver (härma tonen, kopiera inte ordagrant):\n' + examples + '\n\n' : '') +
+    'Regler:\n' +
+    '- Var KORT och personlig. Hellre 2–4 korta stycken än en lång utläggning. Fatta dig kort även om du täcker sakinnehållet.\n' +
+    '- Hälsning "Hej [Förnamn]" utan kommatecken, sedan blankrad och rakt på sak. Använd mottagarens förnamn om det framgår.\n' +
+    '- Avsluta gärna med en fråga eller ett tydligt nästa steg.\n' +
+    '- INGA fetstilta rubriker och INGA numrerade/punktade listor som dekoration — rena stycken. (Använd bara en lista om innehållet verkligen är konkreta steg.)\n' +
+    '- Undvik stela företagsöppningar som "Tack för att jag får möjligheten…".\n' +
+    (hint ? '- ' + hint + '\n' : '') +
+    '\nAvsluta med denna sign-off (och INGET mer — upprepa INTE titel, telefon eller adress, Outlook lägger till full signatur automatiskt):\n' +
+    SIGN_OFF +
+    '\n\nSkriv ENDAST själva mejltexten (hälsning, brödtext, sign-off) — ingen ämnesrad, inga meta-kommentarer.'
   );
 }
 
 async function generateDraft(message, category, opts = {}) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY saknas i Netlify environment variables');
+
+  // Läs den precomputerade stilprofilen (en liten GitHub-läsning). Ingen
+  // hämtning av skickade mejl sker här — det håller triage under 10 s-gränsen.
+  const styleProfile = opts.styleProfile || (await loadStyleProfile());
 
   const userPrompt =
     `Inkommande mejl att besvara:\n\n` +
@@ -272,8 +353,8 @@ async function generateDraft(message, category, opts = {}) {
       },
       body: JSON.stringify({
         model,
-        max_tokens: 700,
-        system: draftSystemFor(category),
+        max_tokens: 600,
+        system: draftSystemFor(category, styleProfile),
         messages: [{ role: 'user', content: userPrompt }],
       }),
     });
@@ -338,9 +419,7 @@ async function fetchFullMessage(messageId) {
     `/users/${encodeURIComponent(mailbox)}/messages/${encodeURIComponent(messageId)}?$select=${select}`
   );
   const raw = m.body?.content || m.bodyPreview || '';
-  const text = m.body?.contentType === 'html'
-    ? raw.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
-    : raw;
+  const text = htmlToText(raw, m.body?.contentType);
   return {
     id: messageId,
     subject: m.subject || '',
@@ -404,6 +483,10 @@ module.exports = {
   CATEGORIES,
   SYNC_RETRY_DELAYS,
   POLL_RETRY_DELAYS,
+  STYLE_FILE_PATH,
+  DEFAULT_STYLE_PROFILE,
+  htmlToText,
+  loadStyleProfile,
   classify,
   classifyAnthropic,
   classifyGemini,
