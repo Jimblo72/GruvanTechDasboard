@@ -1,49 +1,63 @@
 // netlify/functions/lib/triage.js
-// Delad triage-logik: klassificera ett inkorgsmeddelande (Gemini) och generera
-// ett svarsutkast i Jimmys röst (Claude), samt skapa utkastet i Outlook-tråden
-// via Microsoft Graph (createReply + PATCH). Skickar ALDRIG.
+// Delad triage-logik: klassificera ett inkorgsmeddelande (Claude Haiku, med
+// Gemini som opt-in-fallback) och generera ett svarsutkast i Jimmys röst
+// (Claude Haiku), samt skapa utkastet i Outlook-tråden via Microsoft Graph
+// (createReply + PATCH). Skickar ALDRIG.
 //
 // Används av både mail-triage.js (på klick från dashboarden) och mail-poll.js
 // (schemalagd poller). CommonJS, zero-dependency.
 //
 // Modellval:
-//   * Klassificering → Gemini flash (billig, bunden kategorisering, strukturerad
-//     JSON via responseSchema).
-//   * Utkastgenerering → Claude Haiku (snabb; ett kort svarsmejl kräver inte Opus,
-//     och Opus var så långsamt att hela kedjan sprängde Netlifys 10 s-timeout).
-//     Modell konfigurerbar via MAIL_DRAFT_MODEL, default claude-haiku-4-5-20251001.
+//   * Klassificering → Claude Haiku via tool-use (forcerat function calling ger
+//     garanterat giltig strukturerad JSON). Provider konfigurerbar via
+//     MAIL_CLASSIFY_PROVIDER (default 'anthropic'; 'gemini' återanvänder den
+//     gamla, billigare Gemini-vägen). Modell via MAIL_CLASSIFY_MODEL.
+//     Bakgrund: Gemini classify gav upprepade HTTP 503 ("high demand") i
+//     livetester, och under Netlifys hårda 10 s-gräns åt retryerna upp tiden
+//     så hela kedjan timeoutade (502 med HTML-body). Anthropic har aldrig varit
+//     det felande steget → vi flyttar båda LLM-stegen till en snabb, pålitlig
+//     provider.
+//   * Utkastgenerering → Claude Haiku (snabb; ett kort svarsmejl kräver inte
+//     Opus). Modell via MAIL_DRAFT_MODEL, default claude-haiku-4-5-20251001.
 
 const { graphJson } = require('./graph');
 
 const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
 
-// Default-modell för utkastgenerering. Haiku 4.5 är snabb nog för korta
+// Default-modeller. Haiku 4.5 är snabb nog för både klassificering och korta
 // svarsmejl och håller oss väl under funktionens timeout.
 const DEFAULT_DRAFT_MODEL = 'claude-haiku-4-5-20251001';
+const DEFAULT_CLASSIFY_MODEL = 'claude-haiku-4-5-20251001';
 
-// ── Retry/backoff för transienta LLM-överbelastningar (429/503) ─
-// Kör fn(); vid HTTP 429/503 (identifierat via err.status eller texten i
-// felmeddelandet) väntas kort och exponentiellt innan nytt försök. Övriga fel
-// kastas direkt. Total extra fördröjning är bunden (~1,7 s) så vi håller oss
-// under funktionens timeout.
-const RETRY_DELAYS = [500, 1200]; // ms → upp till 2 omförsök
+// ── Retry/backoff för transienta LLM-överbelastningar ─────────
+// Kör fn(); vid HTTP 429/503/529 (identifierat via err.status eller texten i
+// felmeddelandet) väntas kort innan nytt försök. Övriga fel kastas direkt.
+// `delays` är en array med backoff-tider i ms; antalet omförsök = delays.length.
+// Anroparen väljer budget så den synkrona on-click-vägen kan hållas snäv
+// (~0,4 s) medan den schemalagda pollern (lång timeout) kan retrya mer.
+//
+//   * Synkron väg (mail-triage.js, 10 s-gräns): 1 omförsök, 400 ms.
+//   * Poller (mail-poll.js, lång timeout): 2 omförsök, 500 ms + 1200 ms.
+const SYNC_RETRY_DELAYS = [400];       // 1 omförsök, ~0,4 s extra
+const POLL_RETRY_DELAYS = [500, 1200]; // 2 omförsök, ~1,7 s extra
 
+// Anthropic returnerar 529 (overloaded), Gemini/Google 503 vid överbelastning.
 function isTransientError(e) {
   const s = e && e.status;
-  if (s === 429 || s === 503) return true;
+  if (s === 429 || s === 503 || s === 529) return true;
   const msg = String((e && e.message) || '');
-  return /HTTP\s+(429|503)\b/.test(msg);
+  return /HTTP\s+(429|503|529)\b/.test(msg);
 }
 
-async function withRetry(fn) {
+async function withRetry(fn, delays = SYNC_RETRY_DELAYS) {
   let lastErr;
-  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
     try {
       return await fn();
     } catch (e) {
       lastErr = e;
-      if (attempt < RETRY_DELAYS.length && isTransientError(e)) {
-        await new Promise(res => setTimeout(res, RETRY_DELAYS[attempt]));
+      if (attempt < delays.length && isTransientError(e)) {
+        await new Promise(res => setTimeout(res, delays[attempt]));
         continue;
       }
       throw e;
@@ -62,7 +76,8 @@ const SIGNATURE =
   '070-788 57 00\n' +
   'jimmy@peakfast.se';
 
-// ── Gemini: klassificering ────────────────────────────────────
+// ── Klassificering: schema + systemprompt ─────────────────────
+// Delas mellan Anthropic-tool-use (input_schema) och Gemini (responseSchema).
 const CLASSIFY_SCHEMA = {
   type: 'object',
   properties: {
@@ -89,15 +104,82 @@ Regler:
 - suggested_action: kort förslag på nästa steg för Jimmy.
 - Hitta inte på — om osäkert, välj den rimligaste kategorin och sänk confidence.`;
 
-async function classify(message) {
+function classifyUserText(message) {
+  return (
+    `Ämne: ${message.subject || '(inget ämne)'}\n` +
+    `Från: ${message.fromName || ''} <${message.fromAddress || ''}>\n\n` +
+    `Innehåll:\n${(message.text || '').slice(0, 8000)}`
+  );
+}
+
+function normalizeClassification(parsed) {
+  const out = parsed && typeof parsed === 'object' ? parsed : {};
+  if (!CATEGORIES.includes(out.category)) out.category = 'support';
+  out.confidence = Math.max(0, Math.min(1, Number(out.confidence) || 0));
+  out.reason = String(out.reason || '');
+  out.suggested_action = String(out.suggested_action || '');
+  return out;
+}
+
+// ── Anthropic Claude Haiku: klassificering via tool-use ───────
+// Vi tvingar modellen att anropa ETT verktyg (report_classification) vars
+// input_schema matchar CLASSIFY_SCHEMA. tool_choice låser anropet, så svaret
+// är garanterat giltig strukturerad JSON — inga ```json-staket att skala bort.
+const CLASSIFY_TOOL = {
+  name: 'report_classification',
+  description: 'Rapportera klassificeringen av mejlet enligt schemat.',
+  input_schema: CLASSIFY_SCHEMA,
+};
+
+async function classifyAnthropic(message, opts = {}) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error('ANTHROPIC_API_KEY saknas i Netlify environment variables');
+  const model = process.env.MAIL_CLASSIFY_MODEL || DEFAULT_CLASSIFY_MODEL;
+  const delays = opts.retryDelays || SYNC_RETRY_DELAYS;
+
+  const data = await withRetry(async () => {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 400,
+        system: CLASSIFY_SYSTEM,
+        tools: [CLASSIFY_TOOL],
+        tool_choice: { type: 'tool', name: 'report_classification' },
+        messages: [{ role: 'user', content: classifyUserText(message) }],
+      }),
+    });
+    if (!r.ok) {
+      const errText = await r.text();
+      const err = new Error(`Anthropic HTTP ${r.status}: ${errText.slice(0, 200)}`);
+      err.status = r.status;
+      throw err;
+    }
+    return r.json();
+  }, delays);
+
+  const toolUse = (data.content || []).find(
+    b => b.type === 'tool_use' && b.name === 'report_classification'
+  );
+  if (!toolUse || !toolUse.input) {
+    throw new Error('Anthropic gav inget tool_use-svar vid klassificering.');
+  }
+  return normalizeClassification(toolUse.input);
+}
+
+// ── Gemini: klassificering (opt-in fallback) ──────────────────
+// Behålls bakom MAIL_CLASSIFY_PROVIDER=gemini. Gemini har responseSchema för
+// strukturerad JSON men gav 503 vid överbelastning i livetester → ej default.
+async function classifyGemini(message, opts = {}) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY saknas i Netlify environment variables');
   const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
-
-  const userText =
-    `Ämne: ${message.subject || '(inget ämne)'}\n` +
-    `Från: ${message.fromName || ''} <${message.fromAddress || ''}>\n\n` +
-    `Innehåll:\n${(message.text || '').slice(0, 8000)}`;
+  const delays = opts.retryDelays || SYNC_RETRY_DELAYS;
 
   // Nätverksanropet retry:as vid transient 429/503; JSON-parsning sker efteråt
   // (parse-fel ska inte trigga omförsök).
@@ -109,7 +191,7 @@ async function classify(message) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: CLASSIFY_SYSTEM }] },
-          contents: [{ role: 'user', parts: [{ text: userText }] }],
+          contents: [{ role: 'user', parts: [{ text: classifyUserText(message) }] }],
           generationConfig: {
             responseMimeType: 'application/json',
             responseSchema: CLASSIFY_SCHEMA,
@@ -125,13 +207,18 @@ async function classify(message) {
       throw err;
     }
     return r.json();
-  });
+  }, delays);
   const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
   if (!text) throw new Error('Tomt svar från Gemini vid klassificering.');
-  const parsed = JSON.parse(text);
-  if (!CATEGORIES.includes(parsed.category)) parsed.category = 'support';
-  parsed.confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
-  return parsed;
+  return normalizeClassification(JSON.parse(text));
+}
+
+// Router: väljer klassificerings-provider. Default 'anthropic' (snabb+pålitlig);
+// sätt MAIL_CLASSIFY_PROVIDER=gemini för den gamla billiga vägen.
+async function classify(message, opts = {}) {
+  const provider = (process.env.MAIL_CLASSIFY_PROVIDER || 'anthropic').toLowerCase();
+  if (provider === 'gemini') return classifyGemini(message, opts);
+  return classifyAnthropic(message, opts);
 }
 
 // ── Claude: utkastgenerering ──────────────────────────────────
@@ -161,7 +248,7 @@ function draftSystemFor(category) {
   );
 }
 
-async function generateDraft(message, category) {
+async function generateDraft(message, category, opts = {}) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY saknas i Netlify environment variables');
 
@@ -172,8 +259,9 @@ async function generateDraft(message, category) {
     `${(message.text || '').slice(0, 6000)}`;
 
   const model = process.env.MAIL_DRAFT_MODEL || DEFAULT_DRAFT_MODEL;
+  const delays = opts.retryDelays || SYNC_RETRY_DELAYS;
 
-  // Nätverksanropet retry:as vid transient 429/503.
+  // Nätverksanropet retry:as vid transient 429/503/529.
   const data = await withRetry(async () => {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -196,7 +284,7 @@ async function generateDraft(message, category) {
       throw err;
     }
     return r.json();
-  });
+  }, delays);
   const text = (data.content || [])
     .filter(b => b.type === 'text')
     .map(b => b.text)
@@ -268,8 +356,12 @@ async function fetchFullMessage(messageId) {
 // utkast. `opts.autodraft` styr om utkast faktiskt skapas i Outlook.
 // `opts.message` kan skickas in för att slippa en extra Graph-hämtning (poller).
 async function triageMessage(messageId, opts = {}) {
+  // Retry-budget: den synkrona on-click-vägen (mail-triage.js) använder default
+  // (snäv, ~0,4 s) så retryerna inte spränger 10 s-gränsen; pollern skickar in
+  // POLL_RETRY_DELAYS via opts.retryDelays.
+  const retryDelays = opts.retryDelays || SYNC_RETRY_DELAYS;
   const message = opts.message || (await fetchFullMessage(messageId));
-  const classification = await classify(message);
+  const classification = await classify(message, { retryDelays });
   const category = classification.category;
   const needsReply = category !== 'brus';
   const needsManualConfirm = category === 'abonnemang';
@@ -296,7 +388,7 @@ async function triageMessage(messageId, opts = {}) {
 
   // Generera alltid utkasttexten (billigt nog och nyttigt i kön), men skapa
   // bara i Outlook om autodraft är på.
-  const draftText = await generateDraft(message, category);
+  const draftText = await generateDraft(message, category, { retryDelays });
   result.draftText = draftText;
 
   if (opts.autodraft) {
@@ -310,7 +402,11 @@ async function triageMessage(messageId, opts = {}) {
 
 module.exports = {
   CATEGORIES,
+  SYNC_RETRY_DELAYS,
+  POLL_RETRY_DELAYS,
   classify,
+  classifyAnthropic,
+  classifyGemini,
   generateDraft,
   createOutlookDraft,
   fetchFullMessage,

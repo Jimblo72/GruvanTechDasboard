@@ -2,7 +2,7 @@
 // Schemalagd Netlify-funktion (var 10:e minut, se netlify.toml) som:
 //   1. Läser inkorgen för MAILBOX_USER via Graph.
 //   2. Plockar ut olästa meddelanden som är NYARE än senast sedda tidsstämpel.
-//   3. Klassificerar var och en (Gemini). För icke-brus skapas ett svarsutkast
+//   3. Klassificerar var och en (Claude Haiku, ev. Gemini). För icke-brus skapas ett svarsutkast
 //      (Claude + Graph createReply) — MEN endast om MAIL_AUTODRAFT === 'true'.
 //      Annars torrkörning: klassificera + köa, skapa INGA utkast.
 //   4. Persisterar "lastSeen" + en liten kö till data/mail-queue.json (GitHub).
@@ -15,7 +15,7 @@
 // Schemaläggning: registrerad i netlify.toml → [functions."mail-poll"].
 
 const { graphJson } = require('./lib/graph');
-const { triageMessage } = require('./lib/triage');
+const { triageMessage, POLL_RETRY_DELAYS } = require('./lib/triage');
 const { readJsonFile, writeJsonFile } = require('./lib/store');
 
 const FILE_PATH = 'data/mail-queue.json';
@@ -64,7 +64,12 @@ exports.handler = async () => {
           conversationId: m.conversationId || '',
           text: m.bodyPreview || '',
         };
-        const result = await triageMessage(m.id, { message, autodraft });
+        // Pollern har lång timeout → större retry-budget än den synkrona vägen.
+        const result = await triageMessage(m.id, {
+          message,
+          autodraft,
+          retryDelays: POLL_RETRY_DELAYS,
+        });
         log.triaged++;
         if (result.draftId) log.drafts++;
         newItems.push({
