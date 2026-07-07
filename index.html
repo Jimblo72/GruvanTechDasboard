@@ -905,6 +905,14 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <div id="mail-style-result" style="margin-top:11px"></div>
     </div>
 
+    <!-- Brevlåde-väljare (multi-mailbox). Visas bara när fler än en brevlåda är
+         konfigurerad; annars döljs den och panelen beter sig exakt som förr. -->
+    <div id="mail-mailbox-bar" style="display:none;align-items:center;gap:10px;margin:6px 0 4px;flex-wrap:wrap">
+      <label for="mail-mailbox-select" style="font-size:11px;color:var(--text4)">Brevlåda</label>
+      <select id="mail-mailbox-select" onchange="onMailboxChange()" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;cursor:pointer"></select>
+      <span id="mail-mailbox-active" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+
     <div style="display:flex;gap:8px;margin:6px 0 18px">
       <button class="seg-btn active" id="mail-tab-inbox" onclick="switchMailTab('inbox')">Inkorg</button>
       <button class="seg-btn" id="mail-tab-queue" onclick="switchMailTab('queue')">Godkännandekö</button>
@@ -979,10 +987,11 @@ const FN = {
   chat:      '/.netlify/functions/ai-chat',       // konversation med Claude/GPT
   contacts:  '/.netlify/functions/contacts',       // läs/skriv kontaktnätverk (data/contacts.json)
   githubPrs: '/.netlify/functions/github-prs',     // öppna PR:er över alla repon
-  mailFetch: '/.netlify/functions/mail-fetch',     // läser inkorgen (jimmy@peakfast.se) via Graph
+  mailConfig:'/.netlify/functions/mail-config',    // listar konfigurerade brevlådor (multi-mailbox) → {address,label}
+  mailFetch: '/.netlify/functions/mail-fetch',     // läser inkorgen (vald brevlåda) via Graph
   mailTriage:'/.netlify/functions/mail-triage',    // klassificerar + skapar svarsutkast i Outlook
   mailQueue: '/.netlify/functions/mail-queue',     // godkännandekö som pollern skrivit (data/mail-queue.json)
-  mailLearnStyle:'/.netlify/functions/mail-learn-style' // lär in Jimmys mejlstil från Sent Items → data/mail-style.json
+  mailLearnStyle:'/.netlify/functions/mail-learn-style' // lär in mejlstil från Sent Items → per-brevlåde-stilprofil
 };
 const GH_USER = 'Jimblo72';
 
@@ -1759,7 +1768,7 @@ function showSection(id, btn) {
   if (id === 'contacts' && !contactsLoaded) loadContacts();
   if (id === 'review' && !reviewsOverviewLoaded) loadReviewOverview();
   if (id === 'ideer') initIdeerPicker();
-  if (id === 'mail' && !inboxLoaded) loadInbox();
+  if (id === 'mail') initMailHub();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
 
@@ -1791,6 +1800,77 @@ async function loadPRs() {
 // Läser inkorgen, triage:ar enskilda mejl på klick, visar godkännandekön.
 // Skickar aldrig — utkasten ligger i Outlook för manuell granskning.
 let inboxLoaded = false;
+
+// ── Multi-mailbox ──────────────────────────────────────────────
+// Brevlåde-väljaren fylls från mail-config vid första öppning. selectedMailbox
+// hängs på alla Mail-hub-anrop. Är mail-config inte driftsatt (404) förblir
+// selectedMailbox null → anropen utelämnar ?mailbox och servern använder dagens
+// enda brevlåda (helt bakåtkompatibelt).
+let mailboxesList = [];
+let selectedMailbox = null;
+let mailConfigLoaded = false;
+
+async function initMailHub() {
+  await loadMailboxes();
+  if (!inboxLoaded) loadInbox();
+}
+
+async function loadMailboxes() {
+  if (mailConfigLoaded) return;
+  try {
+    const r = await fetch(FN.mailConfig);
+    if (r.ok) {
+      const d = await r.json();
+      mailboxesList = (d.mailboxes || []).filter(m => m && m.address);
+    }
+  } catch (e) { /* mail-config ej driftsatt → single-mailbox-fallback */ }
+  mailConfigLoaded = true;
+
+  const bar = document.getElementById('mail-mailbox-bar');
+  const sel = document.getElementById('mail-mailbox-select');
+  if (mailboxesList.length) {
+    selectedMailbox = mailboxesList[0].address;
+    if (sel) {
+      sel.innerHTML = mailboxesList.map(m => `<option value="${esc(m.address)}">${esc(m.label || m.address)}</option>`).join('');
+      sel.value = selectedMailbox;
+    }
+    // Visa väljaren bara när det finns fler än en brevlåda; annars ser panelen
+    // ut precis som förr.
+    if (bar) bar.style.display = mailboxesList.length > 1 ? 'flex' : 'none';
+    updateMailboxActiveLabel();
+  } else {
+    selectedMailbox = null;
+    if (bar) bar.style.display = 'none';
+  }
+}
+
+function currentMailboxLabel() {
+  const m = mailboxesList.find(x => x.address === selectedMailbox);
+  return m ? (m.label || m.address) : '';
+}
+function updateMailboxActiveLabel() {
+  const el = document.getElementById('mail-mailbox-active');
+  if (el) el.textContent = selectedMailbox ? (currentMailboxLabel() + ' · ' + selectedMailbox) : '';
+}
+// Bygger ?mailbox=/&mailbox= bara om en brevlåda är vald (annars tom → servern defaultar).
+function mbQuery(prefix) {
+  return selectedMailbox ? prefix + 'mailbox=' + encodeURIComponent(selectedMailbox) : '';
+}
+function onMailboxChange() {
+  const sel = document.getElementById('mail-mailbox-select');
+  if (!sel) return;
+  selectedMailbox = sel.value;
+  updateMailboxActiveLabel();
+  // Ladda om allt för den valda brevlådan.
+  inboxLoaded = false;
+  mailQueueLoaded = false;
+  const styleOut = document.getElementById('mail-style-result');
+  if (styleOut) styleOut.innerHTML = '';
+  loadInbox(true);
+  const queueView = document.getElementById('mail-view-queue');
+  if (queueView && queueView.style.display !== 'none') loadMailQueue(true);
+}
+
 const MAIL_CAT = {
   offert_andelsratt: { label: 'Andelsrätt · offert', color: 'var(--accent)', bg: 'var(--accent-glow)' },
   offert_forsaljning:{ label: 'Försäljning · offert', color: 'var(--amber)', bg: 'var(--amber-bg)' },
@@ -1824,7 +1904,7 @@ async function learnMailStyle(btn) {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Lär in…'; }
   out.innerHTML = '<div class="loading" style="padding:6px 0">Läser dina skickade mejl och destillerar din ton…</div>';
   try {
-    const r = await fetch(FN.mailLearnStyle, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const r = await fetch(FN.mailLearnStyle + mbQuery('?'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     if (r.status === 404) {
       out.innerHTML = '<div class="loading" style="padding:6px 0;color:var(--text4)">Funktionen mail-learn-style är inte driftsatt än — deploya först.</div>';
       return;
@@ -1867,7 +1947,7 @@ async function loadInbox(force) {
   el.innerHTML = '<div class="loading">Hämtar inkorgen via Microsoft Graph…</div>';
   document.getElementById('mail-config-note').style.display = 'none';
   try {
-    const r = await fetch(FN.mailFetch);
+    const r = await fetch(FN.mailFetch + mbQuery('?'));
     if (r.status === 404) { showMailConfigNote('Funktionen mail-fetch är inte driftsatt än.'); return; }
     if (!r.ok) {
       let msg = `HTTP ${r.status}`;
@@ -1920,7 +2000,7 @@ async function triageMail(id, btn) {
     const r = await fetch(FN.mailTriage, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId: id }),
+      body: JSON.stringify(selectedMailbox ? { messageId: id, mailbox: selectedMailbox } : { messageId: id }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
@@ -1970,7 +2050,7 @@ async function loadMailQueue(force) {
   if (mailQueueLoaded && !force) return;
   el.innerHTML = '<div class="loading">Hämtar kön…</div>';
   try {
-    const r = await fetch(FN.mailQueue);
+    const r = await fetch(FN.mailQueue + mbQuery('?'));
     if (!r.ok) {
       let msg = `HTTP ${r.status}`;
       try { msg = (await r.json()).error || msg; } catch (e) {}

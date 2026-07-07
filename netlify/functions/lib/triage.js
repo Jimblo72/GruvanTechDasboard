@@ -29,6 +29,7 @@ const {
   buildOtherThreadsSummary,
   buildThreadContextBlock,
 } = require('./thread');
+const { getMailbox, defaultMailbox } = require('./mailboxes');
 
 const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
 
@@ -130,14 +131,23 @@ function htmlToText(raw, contentType) {
     .trim();
 }
 
-// Läser den inlärda stilprofilen (data/mail-style.json). Faller tillbaka på
-// baslinjeprofilen om filen saknas eller är ogiltig. EN liten GitHub-läsning —
-// ingen hämtning av skickade mejl sker här (det gör bara mail-learn-style).
-async function loadStyleProfile() {
+// Läser den inlärda stilprofilen. `styleFile` är brevlådans egen profil-fil
+// (multi-mailbox); utelämnad → dagens data/mail-style.json (bakåtkompatibelt,
+// EN liten GitHub-läsning). Ordning: given fil → legacy data/mail-style.json →
+// baslinjeprofilen. Den andra läsningen sker BARA om en per-brevlåde-fil angetts
+// och saknas/är tom, så legacy-vägen aldrig får extra latens.
+async function loadStyleProfile(styleFile) {
+  const path = styleFile || STYLE_FILE_PATH;
   try {
-    const { data } = await readJsonFile(STYLE_FILE_PATH, null);
+    const { data } = await readJsonFile(path, null);
     if (data && data.style_guide) return data;
-  } catch (_) { /* ignorera — faller tillbaka på baslinjen */ }
+  } catch (_) { /* ignorera — faller tillbaka nedan */ }
+  if (path !== STYLE_FILE_PATH) {
+    try {
+      const { data } = await readJsonFile(STYLE_FILE_PATH, null);
+      if (data && data.style_guide) return data;
+    } catch (_) { /* ignorera — faller tillbaka på baslinjen */ }
+  }
   return DEFAULT_STYLE_PROFILE;
 }
 
@@ -172,6 +182,16 @@ Regler:
 - suggested_action: kort förslag på nästa steg för Jimmy.
 - Använd HELA TRÅDEN (om den finns med) för att avgöra vem som är köpare/säljare.
 - Hitta inte på — om osäkert, välj den rimligaste kategorin och sänk confidence.`;
+
+// Injicerar brevlådans roll-hint (multi-mailbox) i klassificeringssystemet så
+// klassningen passar just den inkorgens verksamhet (t.ex. info@maklargruvan.se =
+// supportinkorg för SaaS-tjänsten → abonnemang/support mer sannolikt). Tom
+// roleHint → EXAKT dagens prompt (bakåtkompatibelt).
+function classifySystemFor(roleHint) {
+  const rh = String(roleHint || '').trim();
+  if (!rh) return CLASSIFY_SYSTEM;
+  return CLASSIFY_SYSTEM + `\n\nDenna brevlåda: ${rh}`;
+}
 
 function classifyUserText(message, context) {
   const base =
@@ -220,7 +240,7 @@ async function classifyAnthropic(message, opts = {}) {
       body: JSON.stringify({
         model,
         max_tokens: 400,
-        system: CLASSIFY_SYSTEM,
+        system: classifySystemFor(opts.roleHint),
         tools: [CLASSIFY_TOOL],
         tool_choice: { type: 'tool', name: 'report_classification' },
         messages: [{ role: 'user', content: classifyUserText(message, opts.context) }],
@@ -262,7 +282,7 @@ async function classifyGemini(message, opts = {}) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: CLASSIFY_SYSTEM }] },
+          systemInstruction: { parts: [{ text: classifySystemFor(opts.roleHint) }] },
           contents: [{ role: 'user', parts: [{ text: classifyUserText(message, opts.context) }] }],
           generationConfig: {
             responseMimeType: 'application/json',
@@ -327,7 +347,7 @@ function draftCategoryHint(category) {
 // röstprofil så att texten låter som HAN: kort, varm, "Hej [Förnamn]" utan komma,
 // rakt på sak, avsluta med fråga/nästa steg, inga dekorativa punktlistor, och
 // UTAN att upprepa hela signaturen (Outlook lägger till den).
-function draftSystemFor(category, styleProfile) {
+function draftSystemFor(category, styleProfile, mbOpts = {}) {
   const hint = draftCategoryHint(category);
   const guide = (styleProfile && styleProfile.style_guide) || DEFAULT_STYLE_PROFILE.style_guide;
   const examples = ((styleProfile && styleProfile.examples) || DEFAULT_STYLE_PROFILE.examples)
@@ -335,7 +355,14 @@ function draftSystemFor(category, styleProfile) {
     .map((e, i) => `${i + 1}. ${e}`)
     .join('\n');
 
+  // Multi-mailbox: brevlådans egen signatur (default = dagens SIGN_OFF) och en
+  // valfri roll-hint som sätter affärskontexten för denna inkorg. Tom roleHint +
+  // utelämnad signatur → EXAKT dagens prompt (bakåtkompatibelt).
+  const signature = (mbOpts.signature && String(mbOpts.signature).trim()) ? mbOpts.signature : SIGN_OFF;
+  const roleHint = String(mbOpts.roleHint || '').trim();
+
   return (
+    (roleHint ? 'OM DENNA BREVLÅDA: ' + roleHint + '\n\n' : '') +
     'Du skriver ett svarsutkast åt fastighetsmäklaren Jimmy Blomgren (PeakFast), i första person ("jag"), på svenska.\n\n' +
     'SKRIV I JIMMYS RÖST enligt denna stilguide:\n' + guide + '\n\n' +
     (examples ? 'Exempel på hur Jimmy faktiskt skriver (härma tonen, kopiera inte ordagrant):\n' + examples + '\n\n' : '') +
@@ -370,7 +397,7 @@ function draftSystemFor(category, styleProfile) {
     '- Undvik stela företagsöppningar som "Tack för att jag får möjligheten…".\n' +
     (hint ? '\nOm ärendetypen: ' + hint + '\n' : '') +
     '\nAvsluta med denna sign-off (och INGET mer — upprepa INTE titel, telefon eller adress, Outlook lägger till full signatur automatiskt):\n' +
-    SIGN_OFF +
+    signature +
     '\n\nSkriv ENDAST själva mejltexten (hälsning, brödtext, sign-off) — ingen ämnesrad, inga meta-kommentarer.'
   );
 }
@@ -385,7 +412,7 @@ async function generateDraft(message, category, opts = {}) {
   // två GitHub-läsningarna inte adderar latens ovanpå varandra.
   const isAndelOffert = category === 'offert_andelsratt';
   const [styleProfile, andelMall] = await Promise.all([
-    opts.styleProfile ? Promise.resolve(opts.styleProfile) : loadStyleProfile(),
+    opts.styleProfile ? Promise.resolve(opts.styleProfile) : loadStyleProfile(opts.styleFile),
     isAndelOffert ? loadAndelMall() : Promise.resolve(null),
   ]);
 
@@ -414,7 +441,7 @@ async function generateDraft(message, category, opts = {}) {
       body: JSON.stringify({
         model,
         max_tokens: 600,
-        system: draftSystemFor(category, styleProfile),
+        system: draftSystemFor(category, styleProfile, { signature: opts.signature, roleHint: opts.roleHint }),
         messages: [{ role: 'user', content: userPrompt }],
       }),
     });
@@ -454,11 +481,11 @@ function escapeHtml(s) {
 // Skapar ett svarsutkast (createReply) och lägger vår genererade text överst,
 // med originalmeddelandets citerade innehåll kvar under. Returnerar draftId +
 // webLink. Skickar aldrig.
-async function createOutlookDraft(messageId, draftText) {
-  const mailbox = MAILBOX();
+async function createOutlookDraft(messageId, draftText, mailbox) {
+  const mb = mailbox || MAILBOX();
   // 1) createReply → returnerar ett utkast (draft) inkl. citerat original i body.
   const draft = await graphJson(
-    `/users/${encodeURIComponent(mailbox)}/messages/${encodeURIComponent(messageId)}/createReply`,
+    `/users/${encodeURIComponent(mb)}/messages/${encodeURIComponent(messageId)}/createReply`,
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }
   );
   if (!draft || !draft.id) throw new Error('createReply gav inget utkast-ID.');
@@ -469,7 +496,7 @@ async function createOutlookDraft(messageId, draftText) {
 
   // 2) PATCH utkastets body med vår text (behåller citerat original under).
   await graphJson(
-    `/users/${encodeURIComponent(mailbox)}/messages/${encodeURIComponent(draft.id)}`,
+    `/users/${encodeURIComponent(mb)}/messages/${encodeURIComponent(draft.id)}`,
     {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -481,11 +508,11 @@ async function createOutlookDraft(messageId, draftText) {
 }
 
 // Hämtar fullt meddelande (för LLM-kontext) och normaliserar body → text.
-async function fetchFullMessage(messageId) {
-  const mailbox = MAILBOX();
+async function fetchFullMessage(messageId, mailbox) {
+  const mb = mailbox || MAILBOX();
   const select = 'subject,body,bodyPreview,from,toRecipients,receivedDateTime,conversationId';
   const m = await graphJson(
-    `/users/${encodeURIComponent(mailbox)}/messages/${encodeURIComponent(messageId)}?$select=${select}`
+    `/users/${encodeURIComponent(mb)}/messages/${encodeURIComponent(messageId)}?$select=${select}`
   );
   const raw = m.body?.content || m.bodyPreview || '';
   const text = htmlToText(raw, m.body?.contentType);
@@ -509,15 +536,24 @@ async function triageMessage(messageId, opts = {}) {
   // POLL_RETRY_DELAYS via opts.retryDelays.
   const retryDelays = opts.retryDelays || SYNC_RETRY_DELAYS;
   const force = !!opts.force;
-  const message = opts.message || (await fetchFullMessage(messageId));
+
+  // Multi-mailbox: vilken brevlåda triageras. Anroparen (funktionerna) skickar in
+  // en validerad adress via opts.mailbox; utelämnad → dagens enda brevlåda
+  // (defaultMailbox, env/fallback). Brevlådans konfig (signatur/roll-hint/
+  // stilprofil) läses PARALLELLT med Graph-anropen så den inte staplar latens —
+  // vi behöver bara själva adressen (mb) för Graph-vägen direkt.
+  const mb = opts.mailbox || defaultMailbox().address;
+  const mbConfigP = getMailbox(mb).catch(() => null);
+
+  const message = opts.message || (await fetchFullMessage(messageId, mb));
 
   // Latens: den synkrona on-click-vägen håller kontexten lätt (ingen tvärtråds-
   // sökning, mindre transkription) så vi ryms under Netlifys 10 s-gräns. Pollern
   // (opts.includeCrossThread=true) har lång timeout och tar full kontext.
   const includeCrossThread = !!opts.includeCrossThread;
   const threadCaps = includeCrossThread
-    ? { maxMessages: 12, maxChars: 6000 }
-    : { maxMessages: 8, maxChars: 3000 };
+    ? { maxMessages: 12, maxChars: 6000, mailbox: mb }
+    : { maxMessages: 8, maxChars: 3000, mailbox: mb };
 
   // Hämta hela tråden (+ i pollern: andra trådar från samma avsändare) PARALLELLT
   // så de extra Graph-anropen inte staplar latens. Saknas conversationId →
@@ -529,7 +565,7 @@ async function triageMessage(messageId, opts = {}) {
       const [t, others] = await Promise.all([
         fetchThread(message.conversationId, threadCaps),
         includeCrossThread
-          ? fetchOtherThreadsFromSender(message.fromAddress, message.conversationId)
+          ? fetchOtherThreadsFromSender(message.fromAddress, message.conversationId, mb)
           : Promise.resolve([]),
       ]);
       if (t) thread = t;
@@ -538,14 +574,19 @@ async function triageMessage(messageId, opts = {}) {
   }
   const contextBlock = buildThreadContextBlock(thread.transcript, buildOtherThreadsSummary(otherThreads));
 
-  // Klassificera MED trådkontext (hjälper t.ex. att känna igen 'privat').
-  const classification = await classify(message, { retryDelays, context: contextBlock });
+  // Brevlådans konfig (redan startad ovan, parallellt med Graph). Faller tillbaka
+  // på defaultMailbox() om adressen inte var konfigurerad (säkerhet).
+  const mbConfig = (await mbConfigP) || defaultMailbox();
+
+  // Klassificera MED trådkontext (hjälper t.ex. att känna igen 'privat') + brevlådans roll-hint.
+  const classification = await classify(message, { retryDelays, context: contextBlock, roleHint: mbConfig.roleHint });
   const category = classification.category;
   const needsReply = category !== 'brus';
   const needsManualConfirm = category === 'abonnemang';
 
   const result = {
     messageId,
+    mailbox: mb,
     subject: message.subject,
     fromName: message.fromName,
     fromAddress: message.fromAddress,
@@ -586,9 +627,16 @@ async function triageMessage(messageId, opts = {}) {
     return result;
   }
 
-  // Generera utkasttexten MED trådkontext (billigt nog och nyttigt i kön), men
-  // skapa bara i Outlook om autodraft är på OCH ingen guard slår till.
-  const draftText = await generateDraft(message, category, { retryDelays, context: contextBlock });
+  // Generera utkasttexten MED trådkontext (billigt nog och nyttigt i kön) och
+  // brevlådans signatur/roll-hint/stilprofil, men skapa bara i Outlook om
+  // autodraft är på OCH ingen guard slår till.
+  const draftText = await generateDraft(message, category, {
+    retryDelays,
+    context: contextBlock,
+    styleFile: mbConfig.styleFile,
+    signature: mbConfig.signature,
+    roleHint: mbConfig.roleHint,
+  });
   result.draftText = draftText;
 
   // Guard 2 — DUBBLETT-UTKAST: om det redan finns ett osänt svarsutkast i tråden
@@ -601,7 +649,7 @@ async function triageMessage(messageId, opts = {}) {
   }
 
   if (opts.autodraft) {
-    const created = await createOutlookDraft(messageId, draftText);
+    const created = await createOutlookDraft(messageId, draftText, mb);
     result.draftId = created.draftId;
     result.draftWebLink = created.draftWebLink;
   }

@@ -8,8 +8,7 @@
 //   MAILBOX_USER = jimmy@peakfast.se   (fallback nedan)
 
 const { graphJson } = require('./lib/graph');
-
-const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
+const { getMailboxes } = require('./lib/mailboxes');
 
 exports.handler = async (event) => {
   const headers = {
@@ -23,7 +22,16 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  const mailbox = MAILBOX();
+  // Multi-mailbox: ?mailbox= väljer inkorg. Måste vara en KONFIGURERAD brevlåda
+  // (säkerhet — ingen godtycklig brevlåde-åtkomst). Utelämnad → första
+  // konfigurerade (= dagens enda brevlåda utan multi-config).
+  const mailboxes = await getMailboxes();
+  const q = String((event.queryStringParameters && event.queryStringParameters.mailbox) || '').trim();
+  const found = q ? mailboxes.find(m => m.address.toLowerCase() === q.toLowerCase()) : mailboxes[0];
+  if (q && !found) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd brevlåda: ${q}` }) };
+  }
+  const mailbox = found.address;
   const select = 'id,subject,from,receivedDateTime,bodyPreview,conversationId,isRead';
   const path =
     `/users/${encodeURIComponent(mailbox)}/mailFolders/inbox/messages` +
