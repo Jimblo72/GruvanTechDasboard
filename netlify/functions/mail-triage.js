@@ -17,6 +17,7 @@
 //                 MAIL_CLASSIFY_PROVIDER (+ GEMINI_API_KEY/GEMINI_MODEL om gemini).
 
 const { triageMessage } = require('./lib/triage');
+const { isAllowed } = require('./lib/mailboxes');
 
 exports.handler = async (event) => {
   const headers = {
@@ -39,9 +40,20 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'messageId saknas' }) };
   }
 
+  // Multi-mailbox: valfri brevlåda i bodyn. Måste vara konfigurerad (säkerhet).
+  // Utelämnad → triageMessage använder dagens enda brevlåda (bakåtkompatibelt).
+  const mailbox = String(payload.mailbox || '').trim();
+  if (mailbox && !(await isAllowed(mailbox))) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd brevlåda: ${mailbox}` }) };
+  }
+
   try {
     // Explicit klick → skapa faktiskt utkastet i Outlook.
-    const result = await triageMessage(messageId, { autodraft: true, force: !!payload.force });
+    const result = await triageMessage(messageId, {
+      autodraft: true,
+      force: !!payload.force,
+      mailbox: mailbox || undefined,
+    });
     return { statusCode: 200, headers, body: JSON.stringify(result) };
   } catch (e) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: `Triage misslyckades: ${e.message}` }) };
