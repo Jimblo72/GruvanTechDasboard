@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PeakFast – Offertgenerator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{
+  --green:#2A4125;--green-mid:#3d6037;--green-light:#4a7340;
+  --gold:#c4a052;--gold-dark:#8b634b;
+  --bg:#f7f5f0;--text:#1a2018;--text-muted:#5a6455;
+  --border:#ddd8cc;--accent-bg:#eef2ea;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.shell{display:grid;grid-template-columns:360px 1fr;min-height:100vh;}
+.sidebar{background:var(--green);color:#f0ede8;padding:24px 20px;display:flex;flex-direction:column;gap:0;position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(196,160,82,.3) transparent;}
+.sidebar-logo{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sidebar-logo img{width:160px;height:auto;display:block;}
+.sidebar h3{font-size:9.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin:16px 0 7px;}
+.form-group{margin-bottom:8px;}
+.form-group label{display:block;font-size:10.5px;font-weight:500;color:rgba(240,237,232,.55);margin-bottom:3px;}
+.form-group input,.form-group textarea,.form-group select{width:100%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:5px;padding:6px 9px;color:#f0ede8;font-family:'DM Sans',sans-serif;font-size:12.5px;outline:none;transition:border-color .2s;}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--gold);}
+.form-group input[type="file"]{background:transparent;border:1px dashed rgba(255,255,255,.25);padding:4px 0;cursor:pointer;}
+.form-group textarea{resize:vertical;min-height:50px;}
+.form-group select option{background:var(--green);}
+.moms-toggle{display:flex;gap:0;border:1px solid rgba(255,255,255,.2);border-radius:6px;overflow:hidden;margin-bottom:8px;flex-shrink:0;}
+.moms-btn{flex:1;padding:7px 4px;font-size:10.5px;font-weight:600;cursor:pointer;border:none;background:rgba(255,255,255,.06);color:rgba(240,237,232,.6);transition:all .2s;font-family:'DM Sans',sans-serif;}
+.moms-btn.active{background:var(--gold);color:var(--green);}
+.services-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.service-toggle{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.11);border-radius:5px;padding:6px 8px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:1px;}
+.service-toggle:hover{border-color:rgba(196,160,82,.45);}
+.service-toggle.active{background:rgba(196,160,82,.14);border-color:var(--gold);}
+.service-toggle .st-name{font-size:10.5px;font-weight:500;color:#f0ede8;line-height:1.2;}
+.service-toggle .st-price{font-size:9.5px;color:var(--gold);font-weight:600;}
+.price-inputs{display:flex;flex-direction:column;gap:5px;}
+.price-row{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border-radius:5px;padding:5px 8px;}
+.price-row-label{flex:1;font-size:10.5px;color:rgba(240,237,232,.65);}
+.price-row input{width:76px;text-align:right;padding:3px 6px;font-size:11.5px;margin:0;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:4px;color:#f0ede8;}
+.price-row-unit{font-size:9.5px;color:rgba(240,237,232,.35);width:18px;}
+.fee-box{background:rgba(196,160,82,.1);border:1px solid rgba(196,160,82,.3);border-radius:7px;padding:12px;}
+.fee-label{font-size:9.5px;color:rgba(240,237,232,.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.btn-row{display:flex;gap:7px;margin-top:14px;}
+.btn-generate{flex:1;background:var(--gold);color:var(--green);border:none;border-radius:7px;padding:10px 8px;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-generate:hover{background:#d4b060;}
+.btn-group{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.btn-outline{width:100%;background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:10px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;color:rgba(240,237,232,.82);}
+.btn-outline:hover{background:rgba(255,255,255,.07);}
+.btn-outline.gold{color:var(--gold);border-color:rgba(196,160,82,.45);}
+.btn-outline.gold:hover{background:rgba(196,160,82,.09);border-color:var(--gold);}
+.preview-area{background:#dedad3;display:flex;flex-direction:column;align-items:center;padding:32px 24px;gap:16px;}
+.preview-toolbar{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:820px;}
+.preview-toolbar-label{font-size:10.5px;font-weight:600;color:#7a7468;letter-spacing:.06em;text-transform:uppercase;}
+.preview-zoom{display:flex;align-items:center;gap:6px;}
+.preview-zoom button{background:white;border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;color:var(--text-muted);}
+.preview-zoom span{font-size:12px;color:#7a7468;width:40px;text-align:center;}
+#doc{width:820px;min-height:1160px;background:white;box-shadow:0 10px 50px rgba(0,0,0,.18);display:flex;flex-direction:column;transform-origin:top center;transition:transform .2s;}
+.doc-header{background:var(--green);padding:20px 52px 18px;display:flex;justify-content:space-between;align-items:center;}
+.doc-logo-area img{width:190px;height:auto;display:block;}
+.doc-header-right{text-align:right;}
+.doc-offer-badge{font-size:9px;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px;font-weight:600;}
+.doc-offer-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#f0ede8;line-height:1.2;}
+.doc-offer-meta{margin-top:6px;font-size:10px;color:rgba(240,237,232,.42);display:flex;flex-direction:column;gap:2px;}
+.gold-bar{height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-dark));}
+.doc-body{padding:34px 52px;flex:1;display:flex;flex-direction:column;gap:22px;}
+.doc-parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.doc-party h4{font-size:8.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dark);margin-bottom:6px;}
+.doc-party-name{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--green);}
+.doc-party-detail{font-size:11px;color:var(--text-muted);line-height:1.75;margin-top:3px;}
+.doc-party-detail a{color:var(--green-mid);text-decoration:none;}
+.doc-divider{height:1px;background:var(--border);position:relative;}
+.doc-divider::before{content:'';position:absolute;left:0;top:0;height:1px;width:32px;background:var(--gold);}
+.doc-intro{background:var(--accent-bg);border-left:3px solid var(--gold);border-radius:0 6px 6px 0;padding:13px 16px;font-size:12px;line-height:1.75;color:var(--text-muted);font-style:italic;}
+.doc-intro strong{color:var(--green);font-style:normal;}
+.doc-property{background:var(--accent-bg);border-left:3px solid var(--green);border-radius:0 8px 0 0;padding:13px 17px;}
+.doc-property-title{font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--green-light);margin-bottom:9px;}
+.doc-property-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
+.doc-prop-item label{display:block;font-size:9px;color:var(--text-muted);margin-bottom:2px;}
+.doc-prop-item span{font-size:12px;font-weight:600;color:var(--text);}
+/* Draggable image container */
+.doc-property-img-wrap{width:100%;height:300px;overflow:hidden;border-radius:0 0 8px 0;display:none;position:relative;background:#1a2018;cursor:grab;}
+.doc-property-img-wrap.active{display:block;}
+.doc-property-img-wrap:active{cursor:grabbing;}
+.doc-property-img-wrap img{width:100%;height:100%;object-fit:cover;object-position:50% 50%;display:block;pointer-events:none;user-select:none;}
+.img-drag-hint{position:absolute;bottom:8px;right:10px;background:rgba(0,0,0,.52);color:#f0ede8;font-size:10px;padding:4px 10px;border-radius:20px;display:flex;align-items:center;gap:5px;pointer-events:none;opacity:1;transition:opacity .4s;}
+.img-drag-hint.hide{opacity:0;}
+.section-heading{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.services-table{width:100%;border-collapse:collapse;}
+.services-table thead tr{background:var(--green);}
+.services-table thead th{padding:8px 12px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(240,237,232,.78);text-align:left;}
+.services-table thead th:last-child{text-align:right;}
+.services-table tbody tr{border-bottom:1px solid var(--border);}
+.services-table tbody tr:nth-child(even){background:#faf9f7;}
+.services-table tbody td{padding:9px 12px;font-size:11.5px;color:var(--text);}
+.service-desc{font-size:9.5px;color:var(--text-muted);margin-top:2px;}
+.service-link{font-size:9.5px;color:var(--green-mid);text-decoration:none;display:inline-block;margin-top:2px;}
+.tag-inclus{display:inline-block;font-size:8.5px;font-weight:600;background:#eef2ea;color:var(--green-light);padding:2px 8px;border-radius:12px;}
+.tag-extra{display:inline-block;font-size:8.5px;font-weight:600;background:#fff3e0;color:#bf6a00;padding:2px 8px;border-radius:12px;}
+.service-cat{display:inline-block;font-size:8.5px;font-weight:600;text-transform:uppercase;background:var(--accent-bg);color:var(--green-light);padding:2px 7px;border-radius:12px;margin-top:2px;}
+.cat-marketplace{background:#e8f0fe;color:#1a56a0;}.cat-social{background:#fce8ff;color:#7c1fa8;}.cat-photo{background:#fff3e0;color:#bf6a00;}.cat-drone{background:#e8faf0;color:#1a7a45;}
+.doc-fee{background:#f4f7f2;border:1px solid #d0dac8;border-radius:8px;padding:14px 17px;}
+.doc-fee-title{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:11px;}
+.fee-models{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fee-model{background:white;border:1px solid var(--border);border-radius:6px;padding:11px 13px;}
+.fee-model-label{font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dark);margin-bottom:5px;}
+.fee-model-value{font-size:14px;font-weight:700;color:var(--green);font-family:'Cormorant Garamond',serif;}
+.fee-model-desc{font-size:10px;color:var(--text-muted);margin-top:3px;line-height:1.5;}
+.doc-calc{background:#faf9f7;border:1px solid var(--border);border-radius:8px;padding:13px 15px;}
+.doc-calc-title{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:9px;}
+.calc-input-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.calc-input-row label{font-size:11px;color:var(--text-muted);white-space:nowrap;}
+.calc-input-row input{flex:1;border:1px solid var(--border);border-radius:5px;padding:6px 10px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;}
+.calc-results{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.calc-result{background:var(--green);border-radius:6px;padding:9px 12px;}
+.calc-result-label{font-size:8.5px;color:rgba(240,237,232,.55);text-transform:uppercase;letter-spacing:.08em;}
+.calc-result-val{font-size:15px;font-weight:700;color:var(--gold);font-family:'Cormorant Garamond',serif;margin-top:2px;}
+.calc-result-desc{font-size:9px;color:rgba(240,237,232,.45);margin-top:1px;}
+.moms-note{font-size:9px;color:var(--text-muted);margin-top:4px;font-style:italic;}
+.doc-terms{background:#faf9f7;border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.term-item label{font-size:8.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dark);display:block;margin-bottom:2px;}
+.term-item span{font-size:11.5px;color:var(--text);}
+.doc-closing{font-size:11.5px;line-height:1.8;color:var(--text-muted);}
+.doc-links{display:flex;flex-wrap:wrap;gap:5px;}
+.doc-link-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:10px;color:var(--green);text-decoration:none;font-weight:500;transition:all .2s;white-space:nowrap;}
+.doc-link-chip:hover{background:var(--green);color:#f0ede8;border-color:var(--green);}
+.doc-link-chip img{height:11px;width:auto;vertical-align:middle;}
+.doc-footer{background:var(--green);padding:15px 52px;display:flex;justify-content:space-between;align-items:center;}
+.footer-contact{font-size:10px;color:rgba(240,237,232,.48);line-height:1.7;}
+.footer-contact strong{display:block;color:rgba(240,237,232,.88);font-size:11.5px;font-weight:600;margin-bottom:1px;}
+.footer-contact a{color:rgba(240,237,232,.6);text-decoration:none;}
+.footer-tagline{font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--gold);text-align:right;font-style:italic;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#f0ede8;padding:12px 20px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.2);transform:translateY(70px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;z-index:999;border-left:3px solid var(--gold);}
+.toast.show{transform:translateY(0);opacity:1;}
+/* Brochure modal */
+.bm-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.08);}
+.bm-section:last-of-type{border-bottom:none;}
+.bm-label{font-size:11px;font-weight:600;color:rgba(240,237,232,.85);margin-bottom:6px;}
+.bm-file{width:100%;background:rgba(255,255,255,.07);border:1px dashed rgba(255,255,255,.2);border-radius:5px;padding:5px 8px;color:rgba(240,237,232,.6);font-size:10.5px;cursor:pointer;}
+@media(max-width:1100px){.shell{grid-template-columns:1fr;}.sidebar{position:relative;height:auto;}#doc{width:100%;max-width:820px;}}
+
+/* Theme picker */
+.theme-picker{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;}
+.theme-swatch{width:36px;height:36px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0;}
+.theme-swatch:hover{transform:scale(1.1);}
+.theme-swatch.active{border-color:#f0ede8;box-shadow:0 0 0 2px rgba(196,160,82,.6);}
+.theme-swatch.custom-swatch{display:flex;align-items:center;justify-content:center;font-size:16px;color:#f0ede8;font-weight:700;}
+.custom-service-row{display:flex;gap:4px;align-items:center;background:rgba(255,255,255,.05);border-radius:5px;padding:4px 6px;margin-bottom:4px;}
+.custom-service-row input{flex:1;min-width:0;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:4px 7px;color:#f0ede8;font-family:'DM Sans',sans-serif;font-size:11px;}
+.custom-service-row input::placeholder{color:rgba(240,237,232,.3);}
+.custom-service-row .del-btn{background:rgba(255,80,80,.15);border:1px solid rgba(255,80,80,.3);border-radius:4px;color:#ff8080;font-size:13px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;line-height:1;}
+.custom-service-row .del-btn:hover{background:rgba(255,80,80,.3);}
+.btn-add-service{width:100%;background:transparent;border:1px dashed rgba(196,160,82,.4);border-radius:6px;padding:7px;font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(196,160,82,.8);cursor:pointer;margin-top:4px;transition:all .2s;}
+.btn-add-service:hover{border-color:var(--gold);color:var(--gold);background:rgba(196,160,82,.06);}
+
+/* PDF options */
+.pdf-options{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:10px;margin-bottom:8px;}
+.pdf-option-row{display:flex;align-items:center;gap:8px;padding:4px 0;}
+.pdf-option-row label{font-size:11px;color:rgba(240,237,232,.7);flex:1;}
+.pdf-option-row input[type=checkbox]{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+.pdf-option-row select{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:3px 6px;color:#f0ede8;font-family:'DM Sans',sans-serif;font-size:11px;flex:1;}
+
+/* Print styles */
+@media print {
+  .sidebar,.preview-toolbar,.toast{display:none!important;}
+  .shell{display:block;}
+  .preview-area{padding:0;background:white;}
+  #doc{box-shadow:none;width:100%;}
+  .doc-links{display:none!important;}
+  .doc-link-chip{display:none!important;}
+  .doc-calc{display:none!important;}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="data:image/png;base64,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" alt="PeakFast">
+  </div>
+
+  <h3>Offerttyp</h3>
+  <div class="moms-toggle">
+    <button class="moms-btn active" id="type-standard" onclick="setOfferType('standard')">Ordinarie försäljning</button>
+    <button class="moms-btn" id="type-andel" onclick="setOfferType('andel')">Andelsrätt</button>
+  </div>
+
+  <h3>Kund</h3>
+  <div class="form-group"><label>Kundnamn / Företag</label><input type="text" id="clientName" value="Svensson Fastigheter AB"></div>
+  <div class="form-group"><label>Kontaktperson</label><input type="text" id="clientContact" value="Anna Svensson"></div>
+  <div class="form-group"><label>E-post</label><input type="text" id="clientEmail" value="anna@svensson.se"></div>
+  <div class="form-group"><label>Telefon</label><input type="text" id="clientPhone" value="070-000 00 00"></div>
+
+  <h3>Objekt</h3>
+  <div class="form-group"><label>Adress</label><input type="text" id="propAddress" value="Storgatan 12"></div>
+  <div class="form-group"><label>Ort</label><input type="text" id="propCity" value="Stockholm"></div>
+  <div class="form-group"><label>Typ</label>
+    <select id="propType">
+      <option value="fastighet">Fastighet</option>
+      <option value="bostadsratt" selected>Bostadsrätt</option>
+      <option value="fritidshus">Fritidshus</option>
+      <option value="tomt">Tomt</option>
+      <option value="lokal">Kommersiell lokal</option>
+      <option value="andel">Andelsrätt</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Storlek (m²)</label><input type="text" id="propSize" value="120"></div>
+  <div class="form-group"><label>Objektsbild (valfri)</label><input type="file" id="propImage" accept="image/*"></div>
+
+  <h3>Priser – momsinställning</h3>
+  <div class="moms-toggle">
+    <button class="moms-btn active" id="moms-inkl" onclick="setMoms('inkl')">Inkl. moms (standard)</button>
+    <button class="moms-btn" id="moms-exkl" onclick="setMoms('exkl')">Exkl. moms</button>
+  </div>
+
+  <h3>Värdebedömning</h3>
+  <div class="form-group"><label>Bedömt spann</label><input type="text" id="valueRange" value="2 500 000 – 3 000 000 kr"></div>
+  <div class="form-group"><label>Rekommenderat utgångspris</label><input type="text" id="valueStart" value="2 750 000 kr"></div>
+
+  <h3>Tjänster</h3>
+  <div class="services-grid" id="serviceToggles"></div>
+
+  <h3>Priser per tjänst (tomt = Ingår i arvodet)</h3>
+  <div class="price-inputs" id="priceInputs"></div>
+
+  <h3>Egna tjänster</h3>
+  <div id="customServiceToggles" class="services-grid"></div>
+  <div id="customPriceInputs" class="price-inputs" style="margin-top:6px;"></div>
+  <button class="btn-add-service" onclick="addCustomService()">+ Lägg till egen tjänst</button>
+
+  <h3>Arvode</h3>
+  <div class="fee-box" id="feeBoxStandard">
+    <div class="fee-label">Alt 1 – Procent av köpeskilling</div>
+    <div class="form-group" style="margin-bottom:6px;"><label>Procentsats (%)</label><input type="number" id="feePercent" value="1.5" step="0.1" min="0"></div>
+    <div class="fee-label" style="margin-top:10px;">Alt 2 – Fast belopp + tillägg</div>
+    <div class="form-group" style="margin-bottom:4px;"><label>Fast belopp upp till (kr)</label><input type="number" id="feeFixedThreshold" value="3000000" step="50000"></div>
+    <div class="form-group" style="margin-bottom:4px;"><label>Fast belopp (kr)</label><input type="number" id="feeFixedAmount" value="45000" step="1000"></div>
+    <div class="form-group"><label>Tillägg på överskjutande del (%)</label><input type="number" id="feeFixedExtra" value="10" step="0.5" min="0"></div>
+  </div>
+  <div class="fee-box" id="feeBoxAndel" style="display:none;">
+    <div class="fee-label">Fast arvode (inkl. moms)</div>
+    <div class="moms-toggle" style="margin-bottom:0;">
+      <button class="moms-btn active" id="andelFee37500" onclick="setAndelFee(37500)">37 500 kr</button>
+      <button class="moms-btn" id="andelFee40000" onclick="setAndelFee(40000)">40 000 kr</button>
+    </div>
+  </div>
+
+  <h3>Offertinfo</h3>
+  <div class="form-group"><label>Offertdatum</label><input type="date" id="offerDate"></div>
+  <div class="form-group"><label>Giltig till</label><input type="date" id="validDate"></div>
+  <div class="form-group"><label>Betalningsvillkor</label><input type="text" id="payTerms" value="Betalning sker vid tillträde"></div>
+
+  <h3>Färgtema</h3>
+  <div style="font-size:10px;color:rgba(240,237,232,.45);margin-bottom:6px;">Gäller alla exportformat</div>
+  <div class="theme-picker" id="themePicker">
+    <div class="theme-swatch active" data-theme="classic" title="Classic Green" style="background:linear-gradient(135deg,#2A4125,#c4a052)"></div>
+    <div class="theme-swatch" data-theme="slate" title="Slate Blue" style="background:linear-gradient(135deg,#1e3a5f,#7eb8c9)"></div>
+    <div class="theme-swatch" data-theme="charcoal" title="Charcoal" style="background:linear-gradient(135deg,#2c2c2c,#b8a090)"></div>
+    <div class="theme-swatch" data-theme="burgundy" title="Burgundy" style="background:linear-gradient(135deg,#5c1a2e,#c4906a)"></div>
+    <div class="theme-swatch custom-swatch" data-theme="custom" title="Eget val" style="background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)">+</div>
+  </div>
+  <div id="customColorPickers" style="display:none;gap:6px;margin-top:6px;flex-direction:column;">
+    <div class="pdf-option-row"><label>Primärfärg</label><input type="color" id="customPrimary" value="#2A4125" style="width:40px;height:28px;border:none;border-radius:4px;cursor:pointer;background:none;padding:0;"></div>
+    <div class="pdf-option-row"><label>Accentfärg</label><input type="color" id="customAccent" value="#c4a052" style="width:40px;height:28px;border:none;border-radius:4px;cursor:pointer;background:none;padding:0;"></div>
+  </div>
+
+  <div class="pdf-options" style="margin-top:4px;">
+    <div class="pdf-option-row">
+      <input type="checkbox" id="pdfHideLinks">
+      <label for="pdfHideLinks">Utskriftsläge (dölj länkikoner i HTML)</label>
+    </div>
+  </div>
+
+  <div class="btn-row"><button class="btn-generate" onclick="refresh()">↻ Uppdatera</button></div>
+  <div class="btn-group">
+    <button class="btn-outline gold" onclick="exportHTML()">📧 Exportera HTML-offert</button>
+    <button class="btn-outline" onclick="generatePDF()">⬇ Ladda ner offert PDF (A4)</button>
+    <button class="btn-outline" id="btnBrochure" style="border-color:rgba(196,160,82,.6);color:var(--gold);font-weight:600;" onclick="toggleBrochurePanel()"> Offertbroschyr (A3)</button>
+  </div>
+
+  <!-- BROSCHYR INLINE PANEL -->
+  <div id="brochurePanel" style="display:none;margin-top:14px;border-top:1px solid rgba(255,255,255,.12);padding-top:14px;">
+    <div style="font-size:9.5px;color:rgba(240,237,232,.45);margin-bottom:10px;line-height:1.6;">A3-häfte för dubbelsidigt utskrift.<br><span style="color:rgba(196,160,82,.7);">Sid 1</span> Framsida · <span style="color:rgba(196,160,82,.7);">Sid 2–3</span> Offert · <span style="color:rgba(196,160,82,.7);">Sid 4</span> Baksida</div>
+
+    <div class="form-group"><label>Framsida – bild (tom = objektsbild)</label>
+      <input type="file" id="brochureCoverImage" accept="image/*"></div>
+    <div id="brochureCoverThumb" style="display:none;margin:-4px 0 8px;border-radius:5px;overflow:hidden;height:60px;">
+      <img id="brochureCoverImg" style="width:100%;height:100%;object-fit:cover;" src="" alt=""></div>
+
+    <div class="form-group"><label>Baksida – bild (valfri)</label>
+      <input type="file" id="brochureBackImage" accept="image/*"></div>
+    <div id="brochureBackThumb" style="display:none;margin:-4px 0 8px;border-radius:5px;overflow:hidden;height:60px;">
+      <img id="brochureBackImg" style="width:100%;height:100%;object-fit:cover;" src="" alt=""></div>
+
+    <div class="form-group"><label>Sida 3 – extra bild (valfri)</label>
+      <input type="file" id="brochureInnerImage" accept="image/*"></div>
+    <div id="brochureInnerThumb" style="display:none;margin:-4px 0 8px;border-radius:5px;overflow:hidden;height:60px;">
+      <img id="brochureInnerImg" style="width:100%;height:100%;object-fit:cover;" src="" alt=""></div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <input type="checkbox" id="brochureAddPdf" style="width:13px;height:13px;accent-color:var(--gold);">
+      <label style="font-size:10.5px;color:rgba(240,237,232,.7);">Bifoga PDF (öppnas separat)</label>
+    </div>
+    <div id="brochurePdfOptions" style="display:none;">
+      <div class="form-group"><input type="file" id="brochurePdfFile" accept="application/pdf"></div>
+    </div>
+
+    <div style="margin-top:10px;display:flex;gap:6px;">
+      <button style="flex:1;background:var(--gold);color:var(--green);border:none;border-radius:7px;padding:9px 6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;" onclick="generateBrochure()">⬇ Ladda ner</button>
+      <button style="background:rgba(255,255,255,.08);color:rgba(240,237,232,.7);border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:9px 10px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;" onclick="previewBrochure()" title="Förhandsgranska">👁</button>
+    </div>
+  </div>
+</aside>
+
+<main class="preview-area">
+  <div class="preview-toolbar">
+    <span class="preview-toolbar-label" id="previewLabel">Förhandsvisning</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div id="brochureViewToggle" style="display:none;background:rgba(0,0,0,.12);border-radius:20px;padding:2px;display:none;">
+        <button id="btnViewOffert"   onclick="switchPreview('offert')"   style="border:none;border-radius:16px;padding:4px 12px;font-size:11px;cursor:pointer;background:white;color:#2A4125;font-weight:600;">Offert</button>
+        <button id="btnViewBrochure" onclick="switchPreview('brochure')" style="border:none;border-radius:16px;padding:4px 12px;font-size:11px;cursor:pointer;background:transparent;color:#888;font-weight:400;">Broschyr</button>
+      </div>
+      <div class="preview-zoom">
+        <button onclick="zoom(-0.1)">−</button>
+        <span id="zoomVal">100%</span>
+        <button onclick="zoom(0.1)">+</button>
+      </div>
+    </div>
+  </div>
+  <!-- Broschyr preview -->
+  <div id="brochurePreviewWrap" style="display:none;width:100%;background:#c9c5be;padding:16px;border-radius:8px;box-shadow:0 10px 50px rgba(0,0,0,.18);">
+    <div style="font-size:9px;text-align:center;color:#7a7468;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">Broschyrförhandsvisning</div>
+    <div id="brochurePrevPages" style="font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;gap:12px;"></div>
+    <div style="font-size:9px;text-align:center;color:#7a7468;margin-top:8px;font-style:italic;">Generera PDF för exakt resultat</div>
+  </div>
+  <div id="doc">
+    <div class="doc-header">
+      <div class="doc-logo-area">
+        <img src="data:image/png;base64,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" alt="PeakFast">
+        <div style="font-size:8px;color:rgba(240,237,232,.38);letter-spacing:.14em;text-transform:uppercase;margin-top:5px;">Registrerad Fastighetsmäklare</div>
+      </div>
+      <div class="doc-header-right">
+        <div class="doc-offer-badge">Offert</div>
+        <div class="doc-offer-title" id="d-offerTitle">Försäljning av Storgatan 12</div>
+        <div class="doc-offer-meta">
+          <span id="d-offerNr">Offert #PF-—</span>
+          <span id="d-offerDate">Datum: —</span>
+          <span id="d-validDate">Giltig till: —</span>
+        </div>
+      </div>
+    </div>
+    <div class="gold-bar"></div>
+    <div class="doc-body">
+      <div class="doc-parties">
+        <div class="doc-party">
+          <h4>Till</h4>
+          <div class="doc-party-name" id="d-clientName">—</div>
+          <div class="doc-party-detail" id="d-clientDetail">—</div>
+        </div>
+        <div class="doc-party">
+          <h4>Från</h4>
+          <div class="doc-party-name">PeakFast</div>
+          <div class="doc-party-detail">
+            Jimmy Blomgren<br>070-788 57 00<br>
+            <a href="mailto:jimmy@peakfast.se">jimmy@peakfast.se</a><br>
+            <a href="https://www.peakfast.se" target="_blank">www.peakfast.se</a>
+          </div>
+        </div>
+      </div>
+      <div class="doc-divider"></div>
+      <div>
+        <div class="doc-property">
+          <div class="doc-property-title">Objektsuppgifter</div>
+          <div class="doc-property-grid">
+            <div class="doc-prop-item"><label>Adress</label><span id="d-address">—</span></div>
+            <div class="doc-prop-item"><label>Ort</label><span id="d-city">—</span></div>
+            <div class="doc-prop-item"><label>Objektstyp</label><span id="d-type">—</span></div>
+            <div class="doc-prop-item"><label>Storlek</label><span id="d-size">—</span></div>
+            <div class="doc-prop-item"><label>Ansvarig mäklare</label><span>Jimmy Blomgren</span></div>
+          </div>
+        </div>
+        <div id="d-propImgWrap" class="doc-property-img-wrap">
+          <img id="d-propImg" src="" alt="">
+          <div class="img-drag-hint" id="d-dragHint">✥ Dra för att justera bilden</div>
+        </div>
+      </div>
+      <div class="doc-intro" id="d-intro" contenteditable="true" spellcheck="false" style="outline:none;cursor:text;">
+        Tack för att jag får möjligheten att lämna offert — jag tycker det vore kul att få förtroendet att hjälpa er med försäljningen av <strong id="d-intro-addr">Storgatan 12</strong>. Min bedömning av värdet på marknaden idag är i spannet <strong id="d-intro-range">2 500 000 – 3 000 000 kr</strong> och jag rekommenderar ett utgångspris på <strong id="d-intro-start">2 750 000 kr</strong>.
+      </div>
+      <div>
+        <div class="section-heading">Ingående tjänster</div>
+        <table class="services-table">
+          <thead><tr>
+            <th style="width:50%">Tjänst</th>
+            <th>Kategori</th>
+            <th style="text-align:right">Pris / Villkor</th>
+          </tr></thead>
+          <tbody id="d-services"><tr><td colspan="3" style="text-align:center;color:#aaa;padding:18px;font-size:11px">Laddar...</td></tr></tbody>
+        </table>
+        <div id="d-totals-wrap" style="display:none;">
+          <table class="services-table">
+            <tbody>
+              <tr id="d-vat-row" style="display:none;">
+                <td colspan="2" style="font-size:11px;color:var(--text-muted);padding:7px 12px;">Exkl. moms delsumma &amp; moms (25%)</td>
+                <td style="text-align:right;padding:7px 12px;font-size:11px;color:var(--text-muted);"><span id="d-subtotal">0 kr</span> + <span id="d-vat">0 kr</span></td>
+              </tr>
+              <tr style="background:var(--accent-bg);border-top:2px solid var(--border);">
+                <td colspan="2" style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--green);" id="d-total-label">Tilläggstjänster totalt inkl. moms</td>
+                <td style="text-align:right;padding:10px 12px;font-size:14px;font-weight:700;color:var(--green);font-family:'Cormorant Garamond',serif;" id="d-total">0 kr</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="moms-note" id="d-moms-note">Priser angivna inkl. moms</div>
+      </div>
+      <div class="doc-fee">
+        <div class="doc-fee-title">Arvode</div>
+        <div class="fee-models" id="d-feeModels">
+          <div class="fee-model" id="d-feeModel1">
+            <div class="fee-model-label" id="d-fee1-label">Alt 1 – Procent av köpeskilling</div>
+            <div class="fee-model-value" id="d-fee1-val">1,5%</div>
+            <div class="fee-model-desc" id="d-fee1-desc">Arvodet = 1.5% av slutlig köpeskilling.</div>
+          </div>
+          <div class="fee-model" id="d-feeModel2">
+            <div class="fee-model-label">Alt 2 – Fast belopp + tillägg</div>
+            <div class="fee-model-value" id="d-fee2-val">45 000 kr</div>
+            <div class="fee-model-desc" id="d-fee2-desc">Fast 45 000 kr t.o.m. 3 000 000 kr + 10% på överskjutande del.</div>
+          </div>
+        </div>
+      </div>
+      <div class="doc-calc" id="d-calcBox">
+        <div class="doc-calc-title">Arvodesräknare – ange slutpris för att se arvode</div>
+        <div class="calc-input-row">
+          <label>Slutpris (kr):</label>
+          <input type="number" id="calcPrice" placeholder="ex. 2 800 000" step="10000" min="0">
+        </div>
+        <div class="calc-results">
+          <div class="calc-result"><div class="calc-result-label">Alt 1 – Procent</div><div class="calc-result-val" id="calc-r1">—</div><div class="calc-result-desc" id="calc-r1-desc"></div></div>
+          <div class="calc-result"><div class="calc-result-label">Alt 2 – Fast + tillägg</div><div class="calc-result-val" id="calc-r2">—</div><div class="calc-result-desc" id="calc-r2-desc"></div></div>
+        </div>
+      </div>
+      <div class="doc-terms">
+        <div class="term-item"><label>Betalningsvillkor</label><input id="d-payTerms" type="text" value="Betalning sker vid tillträde" style="font-size:11.5px;color:var(--text);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;width:100%;padding:1px 0;font-family:'DM Sans',sans-serif;cursor:text;"></div>
+        <div class="term-item"><label>Offert giltig till</label><input id="d-validDate2" type="text" value="—" style="font-size:11.5px;color:var(--text);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;width:100%;padding:1px 0;font-family:'DM Sans',sans-serif;cursor:text;"></div>
+        <div class="term-item"><label>Leveranstid / Start</label><span>Enligt överenskommelse</span></div>
+        <div class="term-item"><label>Offertansvarig</label><span>Jimmy Blomgren</span></div>
+      </div>
+      <div class="doc-closing">
+        Du är varmt välkommen att återkomma med eventuella frågor eller synpunkter på offerten. Jag ser fram emot ett gott samarbete och hoppas att vi kan hjälpa dig att sälja din bostad på bästa möjliga villkor.<br><br>
+        Med vänliga hälsningar,<br>
+        <strong style="color:var(--green);">Jimmy Blomgren</strong> – Registrerad Fastighetsmäklare, PeakFast
+      </div>
+      <div>
+        <div class="section-heading">Mer information &amp; Användbara länkar</div>
+        <div class="doc-links" id="d-links"></div>
+      </div>
+    </div>
+    <div class="doc-footer">
+      <div class="footer-contact">
+        <strong>PeakFast</strong>
+        <a href="mailto:jimmy@peakfast.se">jimmy@peakfast.se</a> &nbsp;·&nbsp; 070-788 57 00<br>
+        <a href="https://www.peakfast.se" target="_blank">www.peakfast.se</a> &nbsp;·&nbsp; Registrerad Fastighetsmäklare
+      </div>
+      <div class="footer-tagline">Din fastighet.<br>Vårt engagemang.</div>
+    </div>
+  </div>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
+
+<script>
+const LOGO_VIT = "data:image/png;base64,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";
+const LOGO_BLK = "data:image/png;base64,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";
+
+const PROP_TYPES = {fastighet:'Fastighet',bostadsratt:'Bostadsrätt',fritidshus:'Fritidshus',tomt:'Tomt',lokal:'Kommersiell lokal',andel:'Andelsrätt'};
+
+const SERVICES = [
+  {id:'hemnet',     name:'Hemnet',               desc:'Annonsering på Hemnet – exponering mot tusentals köpare',           cat:'Marknadsplatser', catClass:'cat-marketplace', link:'https://www.hemnet.se',                  linkLabel:'hemnet.se'},
+  {id:'hemnetplus', name:'Hemnet Plus',           desc:'Utökad exponering och premiumprofil på Hemnet',                    cat:'Marknadsplatser', catClass:'cat-marketplace', link:'https://www.hemnet.se/priser',           linkLabel:'Hemnet avgiftsinformation'},
+  {id:'booli',      name:'Booli',                 desc:'Annonsering på Booli',                                            cat:'Marknadsplatser', catClass:'cat-marketplace', link:'https://www.booli.se/',                  linkLabel:'Booli.se'},
+  {id:'boneo',      name:'Boneo.se',              desc:'Annonsering på Boneo – prisjämförelse och bostadsguide',          cat:'Marknadsplatser', catClass:'cat-marketplace', link:'https://www.boneo.se/',                  linkLabel:'Boneo.se'},
+  {id:'facebook',   name:'Facebook',              desc:'Riktad annonsering på Facebook mot relevanta köpargrupper',        cat:'Sociala medier',  catClass:'cat-social',      link:'https://www.facebook.com/peakfast.se/', linkLabel:'PeakFast Facebook'},
+  {id:'foto',       name:'Fotografering',         desc:'Professionell interiör- och exteriörfoto (2–4 tim, 30+ bilder)', cat:'Fotograf',        catClass:'cat-photo',       link:'https://www.peakfast.se',               linkLabel:'Om fotografering'},
+  {id:'foto3d',     name:'3D / Virtuell visning', desc:'Matterport 3D-skanning för virtuell genomgång av objektet',       cat:'Fotograf',        catClass:'cat-photo',       link:'https://www.peakfast.se',               linkLabel:'Om 3D-visning'},
+  {id:'dronefoto',  name:'Drönarbilder',          desc:'Flygfoto av fastigheten och närmiljön (10–20 bilder)',            cat:'Drönarbilder',    catClass:'cat-drone',       link:'https://www.peakfast.se',               linkLabel:'Om drönarbilder'},
+  {id:'dronevideo', name:'Drönarvideo',           desc:'Redigerad drönarvideo (30–60 sek) för Hemnet och sociala medier', cat:'Drönarvideo',     catClass:'cat-drone',       link:'https://www.peakfast.se',               linkLabel:'Om drönarvideo'},
+  {id:'besiktning', name:'Besiktning',            desc:'Förmedling av besiktningstjänst inför försäljning',               cat:'Övrigt',          catClass:'',                link:'https://www.peakfast.se',               linkLabel:'Om besiktning'},
+  {id:'planritning',name:'Planritning',           desc:'2D-planritning framtagen av arkitekt / mättekniker',              cat:'Övrigt',          catClass:'',                link:'https://www.peakfast.se',               linkLabel:'Om planritning'},
+  {id:'styling',    name:'Homestyling',           desc:'Professionell homestyling inför fotografering och visning',       cat:'Övrigt',          catClass:'',                link:'https://www.peakfast.se',               linkLabel:'Om homestyling'},
+];
+
+const STATIC_LINKS = [
+  {url:'https://www.peakfast.se',                  label:'PeakFast.se',                 logo:true},
+  {url:'https://www.facebook.com/peakfast.se/',    label:'PeakFast Facebook',           icon:'📘'},
+  {url:'https://www.hemnet.se/priser',             label:'Hemnet – avgiftsinformation', icon:''},
+  {url:'https://www.booli.se/',                    label:'Booli.se',                    icon:'🔍'},
+  {url:'https://www.boneo.se/',                    label:'Boneo.se',                    icon:'🌐'},
+];
+
+const active = new Set(['hemnet','foto','dronefoto','dronevideo','facebook']);
+const prices = {};
+SERVICES.forEach(function(s) { prices[s.id] = 0; });
+let zoomLevel = 1;
+let propImageData = null;
+let momsMode = 'inkl';
+let imgPosX = 50, imgPosY = 50;
+
+// ── OFFERTTYP: Standard / Andelsrätt ─────────────────────────────────────────
+let offerType = 'standard';
+let andelFee = 37500;
+const ANDEL_EXCLUDED = ['foto', 'dronefoto', 'dronevideo'];
+
+function titlePrefix() {
+  return offerType === 'andel' ? 'Försäljning av andelsrätt – ' : 'Försäljning av ';
+}
+
+function setOfferType(mode) {
+  offerType = mode;
+  var isAndel = mode === 'andel';
+  document.getElementById('type-standard').classList.toggle('active', !isAndel);
+  document.getElementById('type-andel').classList.toggle('active', isAndel);
+  // Fee inputs: hide standard fee box, show fixed-fee toggle in andel mode
+  document.getElementById('feeBoxStandard').style.display = isAndel ? 'none' : 'block';
+  document.getElementById('feeBoxAndel').style.display = isAndel ? 'block' : 'none';
+  // Excluded services: remove from active + hide toggles and price rows in andel mode
+  ANDEL_EXCLUDED.forEach(function(id) {
+    var tog = document.getElementById('toggle-' + id);
+    var inp = document.getElementById('price-' + id);
+    if (isAndel) {
+      active.delete(id);
+      if (tog) { tog.classList.remove('active'); tog.style.display = 'none'; }
+    } else {
+      if (tog) tog.style.display = '';
+    }
+    if (inp && inp.parentElement) inp.parentElement.style.display = isAndel ? 'none' : '';
+  });
+  // Auto-select objekttyp Andelsrätt in andel mode (leave user's choice when going back)
+  if (isAndel) {
+    var sel = document.getElementById('propType');
+    if (sel) sel.value = 'andel';
+  }
+  refresh();
+}
+
+function setAndelFee(v) {
+  andelFee = v;
+  document.getElementById('andelFee37500').classList.toggle('active', v === 37500);
+  document.getElementById('andelFee40000').classList.toggle('active', v === 40000);
+  refresh();
+}
+
+function setMoms(mode) {
+  momsMode = mode;
+  document.getElementById('moms-inkl').classList.toggle('active', mode === 'inkl');
+  document.getElementById('moms-exkl').classList.toggle('active', mode === 'exkl');
+  refresh();
+}
+
+function initSidebar() {
+  // Service toggles
+  var tEl = document.getElementById('serviceToggles');
+  SERVICES.forEach(function(s) {
+    var el = document.createElement('div');
+    el.className = 'service-toggle' + (active.has(s.id) ? ' active' : '');
+    el.id = 'toggle-' + s.id;
+    el.innerHTML = '<div class="st-name">' + s.name + '</div><div class="st-price">Ingår i arvodet</div>';
+    el.onclick = function() {
+      if (active.has(s.id)) active.delete(s.id); else active.add(s.id);
+      el.classList.toggle('active');
+      refresh();
+    };
+    tEl.appendChild(el);
+  });
+
+  // Price inputs
+  var pEl = document.getElementById('priceInputs');
+  SERVICES.forEach(function(s) {
+    var row = document.createElement('div');
+    row.className = 'price-row';
+    var label = document.createElement('span');
+    label.className = 'price-row-label';
+    label.textContent = s.name;
+    var inp = document.createElement('input');
+    inp.type = 'number';
+    inp.id = 'price-' + s.id;
+    inp.min = '0';
+    inp.step = '100';
+    inp.placeholder = '—';
+    inp.oninput = (function(sid) {
+      return function() {
+        prices[sid] = this.value === '' ? 0 : +this.value;
+        var tog = document.getElementById('toggle-' + sid);
+        if (tog) {
+          tog.querySelector('.st-price').textContent =
+            (this.value === '' || this.value === '0')
+              ? 'Ingår i arvodet'
+              : Number(this.value).toLocaleString('sv') + ' kr';
+        }
+        refresh();
+      };
+    })(s.id);
+    var unit = document.createElement('span');
+    unit.className = 'price-row-unit';
+    unit.textContent = 'kr';
+    row.appendChild(label);
+    row.appendChild(inp);
+    row.appendChild(unit);
+    pEl.appendChild(row);
+  });
+
+  // Image upload + drag-to-reposition
+  var isDragging = false, dragStartX, dragStartY, dragStartPosX, dragStartPosY;
+  var hintTimer = null;
+
+  document.getElementById('propImage').addEventListener('change', function() {
+    var file = this.files[0];
+    var wrap = document.getElementById('d-propImgWrap');
+    if (!file) {
+      propImageData = null;
+      wrap.classList.remove('active');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      propImageData = e.target.result;
+      imgPosX = 50; imgPosY = 50;
+      var img = document.getElementById('d-propImg');
+      img.src = propImageData;
+      img.style.objectPosition = '50% 50%';
+      wrap.classList.add('active');
+      // Show hint, then fade
+      var hint = document.getElementById('d-dragHint');
+      hint.classList.remove('hide');
+      clearTimeout(hintTimer);
+      hintTimer = setTimeout(function() { hint.classList.add('hide'); }, 3000);
+      // Measure natural dimensions then refresh preview
+      var measureImg = new Image();
+      measureImg.onload = function() {
+        window._pdfImgW = measureImg.naturalWidth || 1920;
+        window._pdfImgH = measureImg.naturalHeight || 1080;
+        refresh();
+      };
+      measureImg.src = propImageData;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Drag logic on the wrap element
+  var wrap = document.getElementById('d-propImgWrap');
+
+  function startDrag(clientX, clientY) {
+    isDragging = true;
+    dragStartX = clientX;
+    dragStartY = clientY;
+    dragStartPosX = imgPosX;
+    dragStartPosY = imgPosY;
+    wrap.style.cursor = 'grabbing';
+    // Hide hint on first drag
+    document.getElementById('d-dragHint').classList.add('hide');
+  }
+  function moveDrag(clientX, clientY) {
+    if (!isDragging) return;
+    var img = document.getElementById('d-propImg');
+    var wrapRect = wrap.getBoundingClientRect();
+    // How much did mouse move as percent of container
+    var dx = (clientX - dragStartX) / wrapRect.width  * 100;
+    var dy = (clientY - dragStartY) / wrapRect.height * 100;
+    // Moving right → image shifts right → object-position-x decreases
+    imgPosX = Math.max(0, Math.min(100, dragStartPosX - dx));
+    imgPosY = Math.max(0, Math.min(100, dragStartPosY - dy));
+    img.style.objectPosition = imgPosX + '% ' + imgPosY + '%';
+  }
+  function endDrag() {
+    isDragging = false;
+    wrap.style.cursor = 'grab';
+  }
+
+  // Mouse events
+  wrap.addEventListener('mousedown', function(e) { e.preventDefault(); startDrag(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', function(e) { moveDrag(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', endDrag);
+
+  // Touch events
+  wrap.addEventListener('touchstart', function(e) { var t=e.touches[0]; startDrag(t.clientX, t.clientY); }, {passive:true});
+  window.addEventListener('touchmove', function(e) { if(isDragging){var t=e.touches[0];moveDrag(t.clientX, t.clientY);} }, {passive:true});
+  window.addEventListener('touchend', endDrag);
+
+  // All sidebar inputs trigger refresh
+  var inputs = document.querySelectorAll('.sidebar input:not([type="file"]):not([type="number"]), .sidebar textarea, .sidebar select');
+  inputs.forEach(function(el) {
+    el.addEventListener('input', refresh);
+    el.addEventListener('change', refresh);
+  });
+  var numInputs = document.querySelectorAll('.sidebar input[type="number"]:not(.price-row input)');
+  numInputs.forEach(function(el) {
+    el.addEventListener('input', refresh);
+  });
+
+  // Set default dates — offerDate today, validDate 6 months ahead
+  var today = new Date();
+  var valid6m = new Date(today);
+  valid6m.setMonth(valid6m.getMonth() + 6);
+  document.getElementById('offerDate').value = today.toISOString().slice(0,10);
+  document.getElementById('validDate').value  = valid6m.toISOString().slice(0,10);
+}
+
+
+// ── CUSTOM SERVICES ─────────────────────────────────────────────────────────
+let customServices = [];
+let customServiceCounter = 0;
+
+function addCustomService(name, cat, price) {
+  var id = 'custom_' + (++customServiceCounter);
+  var svc = { id: id, name: name || '', cat: cat || '', price: price || 0 };
+  customServices.push(svc);
+  prices[id] = svc.price;
+  renderCustomServices();
+  refresh();
+}
+
+function removeCustomService(id) {
+  customServices = customServices.filter(function(s) { return s.id !== id; });
+  delete prices[id];
+  renderCustomServices();
+  refresh();
+}
+
+function renderCustomServices() {
+  var tEl = document.getElementById('customServiceToggles');
+  var pEl = document.getElementById('customPriceInputs');
+  tEl.innerHTML = '';
+  pEl.innerHTML = '';
+
+  customServices.forEach(function(svc) {
+    // Toggle chip
+    var chip = document.createElement('div');
+    chip.className = 'service-toggle active';
+    chip.id = 'toggle-' + svc.id;
+    chip.innerHTML = '<div class="st-name">' + (svc.name || '(namnlös)') + '</div>'
+      + '<div class="st-price">' + (svc.price > 0 ? Number(svc.price).toLocaleString('sv') + ' kr' : 'Ingår i arvodet') + '</div>';
+    tEl.appendChild(chip);
+
+    // Input row
+    var row = document.createElement('div');
+    row.className = 'custom-service-row';
+    row.innerHTML =
+      '<input type="text" placeholder="Tjänstens namn" value="' + svc.name.replace(/"/g,'&quot;') + '">'
+      + '<input type="text" placeholder="Kategori" value="' + svc.cat.replace(/"/g,'&quot;') + '" style="max-width:80px;">'
+      + '<input type="number" placeholder="Pris" value="' + (svc.price||'') + '" min="0" step="100" style="max-width:70px;text-align:right;">'
+      + '<button class="del-btn" title="Ta bort">×</button>';
+
+    var inputs = row.querySelectorAll('input');
+    inputs[0].oninput = (function(s, chip) { return function() {
+      s.name = this.value;
+      chip.querySelector('.st-name').textContent = this.value || '(namnlös)';
+      refresh();
+    }; })(svc, chip);
+
+    inputs[1].oninput = (function(s) { return function() { s.cat = this.value; refresh(); }; })(svc);
+
+    inputs[2].oninput = (function(s, chip) { return function() {
+      s.price = this.value === '' ? 0 : +this.value;
+      prices[s.id] = s.price;
+      chip.querySelector('.st-price').textContent = s.price > 0
+        ? Number(s.price).toLocaleString('sv') + ' kr' : 'Ingår i arvodet';
+      refresh();
+    }; })(svc, chip);
+
+    row.querySelector('.del-btn').onclick = (function(id) { return function() {
+      removeCustomService(id);
+    }; })(svc.id);
+
+    pEl.appendChild(row);
+  });
+}
+
+// Active set for custom services — always active
+function getChosenServices() {
+  var std = SERVICES.filter(function(s) { return active.has(s.id); });
+  var cust = customServices.map(function(s) {
+    return { id: s.id, name: s.name || '(namnlös)', cat: s.cat || 'Övrigt',
+             catClass: '', desc: '', link: '', linkLabel: '', price: s.price||0 };
+  });
+  return std.concat(cust);
+}
+
+function fmt(n)     { return Math.round(n).toLocaleString('sv') + ' kr'; }
+function fmtN(n)    { return Math.round(n).toLocaleString('sv'); }
+function fmtDate(s) {
+  if (!s) return '—';
+  var d = new Date(s);
+  return d.toLocaleDateString('sv-SE', {day:'numeric', month:'long', year:'numeric'});
+}
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function gv(id) {
+  var el = document.getElementById(id);
+  return el ? el.value : '';
+}
+function dispPrice(p) {
+  if (momsMode === 'inkl') return fmt(p);
+  return fmt(p / 1.25) + ' (exkl.)';
+}
+
+function refreshCalc() {
+  var priceVal = parseFloat(gv('calcPrice')) || 0;
+  var pct      = parseFloat(gv('feePercent')) || 0;
+  var thresh   = parseFloat(gv('feeFixedThreshold')) || 0;
+  var fixed    = parseFloat(gv('feeFixedAmount')) || 0;
+  var extra    = parseFloat(gv('feeFixedExtra')) || 0;
+  if (priceVal > 0) {
+    var r1 = priceVal * pct / 100;
+    var r2 = priceVal <= thresh ? fixed : fixed + (priceVal - thresh) * extra / 100;
+    document.getElementById('calc-r1').textContent = fmt(r1);
+    document.getElementById('calc-r1-desc').textContent = pct + '% × ' + fmtN(priceVal) + ' kr';
+    document.getElementById('calc-r2').textContent = fmt(r2);
+    document.getElementById('calc-r2-desc').textContent = priceVal <= thresh
+      ? 'Fast ' + fmt(fixed)
+      : fmt(fixed) + ' + ' + extra + '% på ' + fmt(priceVal - thresh);
+  } else {
+    document.getElementById('calc-r1').textContent = '—';
+    document.getElementById('calc-r2').textContent = '—';
+    document.getElementById('calc-r1-desc').textContent = '';
+    document.getElementById('calc-r2-desc').textContent = '';
+  }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var cp = document.getElementById('calcPrice');
+  if (cp) cp.addEventListener('input', refreshCalc);
+});
+
+function refresh() {
+  var propType   = gv('propType');
+  var propAddr   = gv('propAddress');
+  var propCity   = gv('propCity');
+  var propSize   = gv('propSize');
+  var offerDate  = gv('offerDate');
+  var validDate  = gv('validDate');
+  var clientName = gv('clientName');
+  var clientContact = gv('clientContact');
+  var clientEmail   = gv('clientEmail');
+  var clientPhone   = gv('clientPhone');
+  var valueRange = gv('valueRange');
+  var valueStart = gv('valueStart');
+  var payTerms   = gv('payTerms');
+  var pct    = parseFloat(gv('feePercent')) || 0;
+  var thresh = parseFloat(gv('feeFixedThreshold')) || 0;
+  var fixed  = parseFloat(gv('feeFixedAmount')) || 0;
+  var extra  = parseFloat(gv('feeFixedExtra')) || 0;
+  var typeLabel = PROP_TYPES[propType] || propType;
+
+  // Header
+  document.getElementById('d-offerTitle').textContent  = titlePrefix() + (propAddr || '—');
+  document.getElementById('d-offerNr').textContent     = 'Offert #PF-' + offerDate.replace(/-/g,'').slice(0,8);
+  document.getElementById('d-offerDate').textContent   = 'Datum: ' + fmtDate(offerDate);
+  document.getElementById('d-validDate').textContent   = 'Giltig till: ' + fmtDate(validDate);
+  document.getElementById('d-validDate2').value  = fmtDate(validDate);
+
+  // Client
+  document.getElementById('d-clientName').textContent = clientName || '—';
+  var detailParts = [esc(clientContact)];
+  if (clientEmail) detailParts.push('<a href="mailto:' + esc(clientEmail) + '">' + esc(clientEmail) + '</a>');
+  if (clientPhone) detailParts.push(esc(clientPhone));
+  document.getElementById('d-clientDetail').innerHTML = detailParts.join('<br>');
+
+  // Property
+  document.getElementById('d-address').textContent = propAddr || '—';
+  document.getElementById('d-city').textContent    = propCity || '—';
+  document.getElementById('d-type').textContent    = typeLabel;
+  document.getElementById('d-size').textContent    = propSize ? propSize + ' m²' : '—';
+
+  // Intro
+  document.getElementById('d-intro-addr').textContent  = propAddr || '—';
+  document.getElementById('d-intro-range').textContent = valueRange || '—';
+  document.getElementById('d-intro-start').textContent = valueStart || '—';
+
+  // Services
+  var chosen = getChosenServices();
+  var tbody = document.getElementById('d-services');
+  if (chosen.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:18px;font-size:11px">Välj tjänster i sidopanelen</td></tr>';
+  } else {
+    tbody.innerHTML = chosen.map(function(s, i) {
+      var hp = prices[s.id] > 0;
+      var priceCell = hp
+        ? '<span class="tag-extra">Tilläggstjänst</span><br><span style="font-size:12px;font-weight:700;color:var(--green)">' + dispPrice(prices[s.id]) + '</span>'
+        : '<span class="tag-inclus">Ingår i arvodet</span>';
+      return '<tr><td><div style="font-weight:600">' + esc(s.name) + '</div>'
+        + '<div class="service-desc">' + esc(s.desc) + '</div>'
+        + (s.link ? '<a class="service-link" href="' + esc(s.link) + '" target="_blank">→ ' + esc(s.linkLabel) + '</a>' : '')
+        + '</td><td><span class="service-cat ' + s.catClass + '">' + esc(s.cat) + '</span></td>'
+        + '<td style="vertical-align:top;text-align:right">' + priceCell + '</td></tr>';
+    }).join('');
+  }
+
+  // Moms note
+  document.getElementById('d-moms-note').textContent = momsMode === 'inkl'
+    ? 'Priser angivna inkl. moms' : 'Priser angivna exkl. moms';
+
+  // Totals
+  var extras = chosen.filter(function(s) { return prices[s.id] > 0; });
+  var subtotalInkl = extras.reduce(function(sum,s) { return sum + prices[s.id]; }, 0);
+  var subtotalExkl = subtotalInkl / 1.25;
+  var vatAmount    = subtotalInkl - subtotalExkl;
+  var wrap = document.getElementById('d-totals-wrap');
+  if (extras.length > 0) {
+    wrap.style.display = 'block';
+    if (momsMode === 'inkl') {
+      document.getElementById('d-vat-row').style.display      = 'none';
+      document.getElementById('d-total-label').textContent    = 'Tilläggstjänster totalt inkl. moms';
+      document.getElementById('d-total').textContent          = fmt(subtotalInkl);
+    } else {
+      document.getElementById('d-subtotal').textContent       = fmt(subtotalExkl);
+      document.getElementById('d-vat').textContent            = fmt(vatAmount);
+      document.getElementById('d-vat-row').style.display      = 'table-row';
+      document.getElementById('d-total-label').textContent    = 'Tilläggstjänster totalt inkl. moms';
+      document.getElementById('d-total').textContent          = fmt(subtotalInkl);
+    }
+  } else {
+    wrap.style.display = 'none';
+  }
+
+  // Fee
+  if (offerType === 'andel') {
+    document.getElementById('d-fee1-label').textContent = 'Fast arvode';
+    document.getElementById('d-fee1-val').textContent   = fmt(andelFee);
+    document.getElementById('d-fee1-desc').textContent  = 'Fast arvode oavsett slutlig köpeskilling. Inkl. moms.';
+    document.getElementById('d-feeModel2').style.display = 'none';
+    document.getElementById('d-feeModels').style.gridTemplateColumns = '1fr';
+    document.getElementById('d-calcBox').style.display = 'none';
+  } else {
+    document.getElementById('d-fee1-label').textContent = 'Alt 1 – Procent av köpeskilling';
+    document.getElementById('d-fee1-val').textContent  = pct.toLocaleString('sv', {minimumFractionDigits:1}) + '%';
+    document.getElementById('d-fee1-desc').textContent = 'Arvodet = ' + pct + '% av slutlig köpeskilling.';
+    document.getElementById('d-fee2-val').textContent  = fmt(fixed);
+    document.getElementById('d-fee2-desc').textContent = 'Fast ' + fmt(fixed) + ' t.o.m. ' + fmt(thresh) + ' + ' + extra + '% på överskjutande del.';
+    document.getElementById('d-feeModel2').style.display = '';
+    document.getElementById('d-feeModels').style.gridTemplateColumns = '';
+    document.getElementById('d-calcBox').style.display = '';
+  }
+
+  // Pay terms
+  // Pay terms — now an input field
+  var ptEl = document.getElementById('d-payTerms');
+  if (ptEl && !ptEl._manualEdit) ptEl.value = payTerms;
+
+  // Intro — only auto-update addr/range/start if user hasn't manually edited the block
+  var introEl = document.getElementById('d-intro');
+  if (introEl && !introEl._manualEdit) {
+    document.getElementById('d-intro-addr').textContent  = propAddr || '—';
+    document.getElementById('d-intro-range').textContent = valueRange || '—';
+    document.getElementById('d-intro-start').textContent = valueStart || '—';
+  }
+
+  // Links
+  var seen = new Set(STATIC_LINKS.map(function(l) { return l.url; }));
+  var allLinks = STATIC_LINKS.slice();
+  chosen.forEach(function(s) {
+    if (s.link && !seen.has(s.link)) {
+      seen.add(s.link);
+      allLinks.push({url: s.link, label: s.linkLabel, icon:'🔗'});
+    }
+  });
+  document.getElementById('d-links').innerHTML = allLinks.map(function(l) {
+    if (l.logo) {
+      return '<a class="doc-link-chip" href="' + esc(l.url) + '" target="_blank"><img src="' + LOGO_BLK + '" alt="PeakFast"> ' + esc(l.label) + '</a>';
+    }
+    return '<a class="doc-link-chip" href="' + esc(l.url) + '" target="_blank"><span>' + (l.icon||'🔗') + '</span>' + esc(l.label) + '</a>';
+  }).join('');
+
+  refreshCalc();
+}
+
+function zoom(delta) {
+  zoomLevel = Math.max(.4, Math.min(1.5, zoomLevel + delta));
+  document.getElementById('doc').style.transform = 'scale(' + zoomLevel + ')';
+  document.getElementById('zoomVal').textContent = Math.round(zoomLevel * 100) + '%';
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+
+function exportHTML() {
+  var clientName    = gv('clientName'), clientContact = gv('clientContact'),
+      clientEmail   = gv('clientEmail'), clientPhone = gv('clientPhone');
+  var propAddress   = gv('propAddress'), propCity = gv('propCity'),
+      propType      = gv('propType'), propSize = gv('propSize');
+  var offerDate     = gv('offerDate'), validDate = gv('validDate');
+  // Read from editable preview fields (user may have manually changed them)
+  var payTerms      = (document.getElementById('d-payTerms') && document.getElementById('d-payTerms').value) || gv('payTerms');
+  var introHTML     = document.getElementById('d-intro') ? document.getElementById('d-intro').innerHTML : '';
+  var valueRange    = gv('valueRange'), valueStart = gv('valueStart');
+  var offerNr       = 'PF-' + offerDate.replace(/-/g,'').slice(0,8);
+  var typeLabel     = PROP_TYPES[propType] || propType;
+  var pct    = parseFloat(gv('feePercent')) || 0;
+  var thresh = parseFloat(gv('feeFixedThreshold')) || 0;
+  var fixed  = parseFloat(gv('feeFixedAmount')) || 0;
+  var extra  = parseFloat(gv('feeFixedExtra')) || 0;
+  var chosen      = getChosenServices();
+  var extras      = chosen.filter(function(s) { return prices[s.id] > 0; });
+  var subtotalInkl= extras.reduce(function(sum,s) { return sum + prices[s.id]; }, 0);
+  var subtotalExkl= subtotalInkl / 1.25;
+  var vatAmount   = subtotalInkl - subtotalExkl;
+  var seen = new Set(STATIC_LINKS.map(function(l) { return l.url; }));
+  var allLinks = STATIC_LINKS.slice();
+  chosen.forEach(function(s) {
+    if (s.link && !seen.has(s.link)) { seen.add(s.link); allLinks.push({url:s.link, label:s.linkLabel, icon:'🔗'}); }
+  });
+  var imgBlock = propImageData
+    ? '<img src="' + propImageData + '" style="width:100%;height:260px;object-fit:cover;object-position:' + imgPosX + '% ' + imgPosY + '%;border-radius:0 0 8px 0;display:block;" alt="Objektsbild">'
+    : '';
+  var momsNoteText = momsMode === 'inkl' ? 'Priser angivna inkl. moms' : 'Priser angivna exkl. moms';
+
+  var sRows = chosen.map(function(s, i) {
+    var hp = prices[s.id] > 0;
+    var priceCell = hp
+      ? '<span style="display:inline-block;font-size:9px;font-weight:700;background:#fff3e0;color:#bf6a00;padding:2px 8px;border-radius:12px;">Tilläggstjänst</span><br><span style="font-size:13px;font-weight:700;color:#2A4125">' + dispPrice(prices[s.id]) + '</span>'
+      : '<span style="display:inline-block;font-size:9px;font-weight:700;background:#eef2ea;color:#4a7340;padding:2px 8px;border-radius:12px;">Ingår i arvodet</span>';
+    return '<tr style="background:' + (i%2?'#faf9f7':'#fff') + ';border-bottom:1px solid #ddd8cc;">'
+      + '<td style="padding:12px 18px;"><div style="font-weight:700;font-size:14px;color:#1a2018;font-family:Arial,sans-serif">' + esc(s.name) + '</div>'
+      + '<div style="font-size:11px;color:#5a6455;margin-top:3px;font-family:Arial,sans-serif">' + esc(s.desc) + '</div>'
+      + (s.link ? '<a href="' + esc(s.link) + '" style="font-size:11px;color:#3d6037;text-decoration:none;margin-top:4px;display:inline-block">→ ' + esc(s.linkLabel) + '</a>' : '')
+      + '</td><td style="padding:12px 18px;vertical-align:top;"><span style="display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;background:#eef2ea;color:#4a7340;padding:2px 9px;border-radius:12px;font-family:Arial,sans-serif">' + esc(s.cat) + '</span></td>'
+      + '<td style="padding:12px 18px;text-align:right;vertical-align:top;font-family:Arial,sans-serif">' + priceCell + '</td></tr>';
+  }).join('');
+
+  var totalsBlock = '';
+  if (extras.length > 0) {
+    if (momsMode === 'inkl') {
+      totalsBlock = '<tr style="background:#eef2ea;border-top:2px solid #ddd8cc;"><td colspan="2" style="padding:10px 18px;font-size:12px;font-weight:600;color:#2A4125;font-family:Arial,sans-serif;">Tilläggstjänster totalt inkl. moms</td><td style="text-align:right;padding:10px 18px;font-size:15px;font-weight:700;color:#2A4125;font-family:Georgia,serif;">' + fmt(subtotalInkl) + '</td></tr>';
+    } else {
+      totalsBlock = '<tr style="border-top:1px solid #ddd8cc;"><td colspan="2" style="padding:7px 18px;font-size:11px;color:#5a6455;font-family:Arial,sans-serif;">Exkl. moms &amp; moms (25%)</td><td style="text-align:right;padding:7px 18px;font-size:11px;color:#5a6455;font-family:Arial,sans-serif;">' + fmt(subtotalExkl) + ' + ' + fmt(vatAmount) + '</td></tr>'
+        + '<tr style="background:#eef2ea;border-top:2px solid #ddd8cc;"><td colspan="2" style="padding:10px 18px;font-size:12px;font-weight:600;color:#2A4125;font-family:Arial,sans-serif;">Tilläggstjänster totalt inkl. moms</td><td style="text-align:right;padding:10px 18px;font-size:15px;font-weight:700;color:#2A4125;font-family:Georgia,serif;">' + fmt(subtotalInkl) + '</td></tr>';
+    }
+  }
+
+  var chips = allLinks.map(function(l) {
+    var inner = l.logo
+      ? '<img src="' + LOGO_BLK + '" style="height:14px;width:auto;"> ' + esc(l.label)
+      : (l.icon||'🔗') + ' ' + esc(l.label);
+    return '<a href="' + esc(l.url) + '" style="display:inline-flex;align-items:center;gap:7px;background:#eef2ea;border:1px solid #ddd8cc;border-radius:20px;padding:7px 14px;font-size:12px;color:#2A4125;text-decoration:none;font-family:Arial,sans-serif;font-weight:600;margin:4px;">' + inner + '</a>';
+  }).join('');
+
+  var propGrid = [['Adress',propAddress||'—'],['Ort',propCity||'—'],['Typ',typeLabel],['Storlek',propSize?propSize+' m²':'—'],['Ansvarig mäklare','Jimmy Blomgren'],['Reg. Fastighetsmäklare','Ja']]
+    .map(function(pair) {
+      return '<div style="min-width:120px;flex:1;"><div style="font-size:9.5px;color:#5a6455;margin-bottom:2px;font-family:Arial,sans-serif;">' + esc(pair[0]) + '</div><div style="font-size:13px;font-weight:700;color:#1a2018;font-family:Arial,sans-serif;">' + esc(pair[1]) + '</div></div>';
+    }).join('');
+
+  var validDateDisplay = document.getElementById('d-validDate2').value || fmtDate(validDate);
+  var termsGrid = [['Betalningsvillkor',payTerms],['Offert giltig till',validDateDisplay],['Leveranstid / Start','Enligt överenskommelse'],['Offertansvarig','Jimmy Blomgren']]
+    .map(function(pair) {
+      return '<div style="min-width:160px;flex:1;"><div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8b634b;margin-bottom:4px;font-family:Arial,sans-serif;">' + esc(pair[0]) + '</div><div style="font-size:13px;color:#1a2018;font-family:Arial,sans-serif;">' + esc(pair[1]) + '</div></div>';
+    }).join('');
+
+  // Arvode + arvodesräknare — beroende på offerttyp
+  var arvodeBlock, calcBlock;
+  if (offerType === 'andel') {
+    arvodeBlock = '<div style="padding:18px 52px 0;"><div style="background:#f4f7f2;border:1px solid #d0dac8;border-radius:8px;padding:16px 18px;"><div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2A4125;margin-bottom:14px;font-family:Arial,sans-serif;">Arvode</div>'
+      + '<div style="display:flex;gap:14px;flex-wrap:wrap;">'
+      + '<div style="flex:1;min-width:200px;background:white;border:1px solid #ddd8cc;border-radius:6px;padding:14px 16px;"><div style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8b634b;margin-bottom:6px;font-family:Arial,sans-serif;">Fast arvode</div><div style="font-size:22px;font-weight:700;color:#2A4125;font-family:Georgia,serif;">' + fmt(andelFee) + '</div><div style="font-size:11px;color:#5a6455;margin-top:4px;font-family:Arial,sans-serif;">Fast arvode oavsett slutlig köpeskilling. Inkl. moms.</div></div>'
+      + '</div></div></div>';
+    calcBlock = '';
+  } else {
+    arvodeBlock = '<div style="padding:18px 52px 0;"><div style="background:#f4f7f2;border:1px solid #d0dac8;border-radius:8px;padding:16px 18px;"><div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2A4125;margin-bottom:14px;font-family:Arial,sans-serif;">Arvode</div>'
+      + '<div style="display:flex;gap:14px;flex-wrap:wrap;">'
+      + '<div style="flex:1;min-width:200px;background:white;border:1px solid #ddd8cc;border-radius:6px;padding:14px 16px;"><div style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8b634b;margin-bottom:6px;font-family:Arial,sans-serif;">Alt 1 – Procent av köpeskilling</div><div style="font-size:22px;font-weight:700;color:#2A4125;font-family:Georgia,serif;">' + pct.toLocaleString('sv',{minimumFractionDigits:1}) + '%</div><div style="font-size:11px;color:#5a6455;margin-top:4px;font-family:Arial,sans-serif;">Arvodet = ' + pct + '% av slutlig köpeskilling.</div></div>'
+      + '<div style="flex:1;min-width:200px;background:white;border:1px solid #ddd8cc;border-radius:6px;padding:14px 16px;"><div style="font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8b634b;margin-bottom:6px;font-family:Arial,sans-serif;">Alt 2 – Fast belopp + tillägg</div><div style="font-size:22px;font-weight:700;color:#2A4125;font-family:Georgia,serif;">' + fmt(fixed) + '</div><div style="font-size:11px;color:#5a6455;margin-top:4px;font-family:Arial,sans-serif;">Fast ' + fmt(fixed) + ' t.o.m. ' + fmt(thresh) + ' + ' + extra + '% på överskj. del.</div></div>'
+      + '</div></div></div>';
+    calcBlock = '<div style="padding:14px 52px 0;">'
+      + '<div style="background:#faf9f7;border:1px solid #ddd8cc;border-radius:8px;padding:16px 18px;">'
+      + '<div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2A4125;margin-bottom:12px;font-family:Arial,sans-serif;">Arvodesräknare – ange slutpris för att se arvode</div>'
+      + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+      + '<label style="font-size:12px;color:#5a6455;white-space:nowrap;font-family:Arial,sans-serif;">Slutpris (kr):</label>'
+      + '<input id="exp-calcPrice" type="number" placeholder="ex. 2 800 000" step="10000" min="0" oninput="expCalc()" style="flex:1;border:1px solid #ddd8cc;border-radius:5px;padding:8px 12px;font-size:13px;font-family:Arial,sans-serif;outline:none;">'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      + '<div style="background:#2A4125;border-radius:7px;padding:12px 14px;">'
+      + '<div style="font-size:8.5px;color:rgba(240,237,232,.55);text-transform:uppercase;letter-spacing:.08em;font-family:Arial,sans-serif;">Alt 1 – Procent</div>'
+      + '<div id="exp-r1" style="font-size:18px;font-weight:700;color:#c4a052;font-family:Georgia,serif;margin-top:4px;">—</div>'
+      + '<div id="exp-r1d" style="font-size:10px;color:rgba(240,237,232,.45);font-family:Arial,sans-serif;margin-top:2px;"></div>'
+      + '</div>'
+      + '<div style="background:#2A4125;border-radius:7px;padding:12px 14px;">'
+      + '<div style="font-size:8.5px;color:rgba(240,237,232,.55);text-transform:uppercase;letter-spacing:.08em;font-family:Arial,sans-serif;">Alt 2 – Fast + tillägg</div>'
+      + '<div id="exp-r2" style="font-size:18px;font-weight:700;color:#c4a052;font-family:Georgia,serif;margin-top:4px;">—</div>'
+      + '<div id="exp-r2d" style="font-size:10px;color:rgba(240,237,232,.45);font-family:Arial,sans-serif;margin-top:2px;"></div>'
+      + '</div></div></div></div>'
+      + '<scr'+'ipt>'
+      + 'function expFmt(n){return Math.round(n).toLocaleString("sv")+" kr";}'
+      + 'function expCalc(){'
+      + 'var p=parseFloat(document.getElementById("exp-calcPrice").value)||0;'
+      + 'var pct=' + pct + ',thresh=' + thresh + ',fixed=' + fixed + ',extra=' + extra + ';'
+      + 'if(p>0){'
+      + 'var r1=p*pct/100;'
+      + 'var r2=p<=thresh?fixed:fixed+(p-thresh)*extra/100;'
+      + 'document.getElementById("exp-r1").textContent=expFmt(r1);'
+      + 'document.getElementById("exp-r1d").textContent=pct+"% × "+p.toLocaleString("sv")+" kr";'
+      + 'document.getElementById("exp-r2").textContent=expFmt(r2);'
+      + 'document.getElementById("exp-r2d").textContent=p<=thresh?"Fast "+expFmt(fixed):""+expFmt(fixed)+" + "+extra+"% på "+expFmt(p-thresh);'
+      + '}else{'
+      + 'document.getElementById("exp-r1").textContent="—";'
+      + 'document.getElementById("exp-r2").textContent="—";'
+      + 'document.getElementById("exp-r1d").textContent="";'
+      + 'document.getElementById("exp-r2d").textContent="";'
+      + '}}'
+      + '<\/script>';
+  }
+
+  var printMode = document.getElementById('pdfHideLinks') && document.getElementById('pdfHideLinks').checked;
+  var html = '<!DOCTYPE html>\n<html lang="sv">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>PeakFast Offert ' + esc(offerNr) + '</title>\n<style>body{margin:0;padding:24px 16px;background:#e8e5df;font-family:Arial,sans-serif;}' + (printMode ? '.doc-links-section{display:none;}' : '') + '</style>\n</head>\n<body>'
+    + '<div style="max-width:900px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 10px 50px rgba(0,0,0,.14);">'
+    // Header
+    + '<div style="background:#2A4125;padding:28px 52px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">'
+    + '<div><img src="' + LOGO_VIT + '" alt="PeakFast" style="width:180px;height:auto;display:block;"><div style="font-size:8px;color:rgba(240,237,232,.35);letter-spacing:.14em;text-transform:uppercase;margin-top:5px;font-family:Arial,sans-serif;">Registrerad Fastighetsmäklare</div></div>'
+    + '<div style="text-align:right;"><div style="font-size:9px;color:#c4a052;letter-spacing:.2em;text-transform:uppercase;font-family:Arial,sans-serif;margin-bottom:4px;">Offert</div>'
+    + '<div style="font-size:20px;font-weight:700;color:#f0ede8;font-family:Georgia,serif;">' + titlePrefix() + esc(propAddress) + '</div>'
+    + '<div style="font-size:10px;color:rgba(240,237,232,.42);margin-top:6px;line-height:1.8;font-family:Arial,sans-serif;">Offert #' + esc(offerNr) + '<br>Datum: ' + fmtDate(offerDate) + '<br>Giltig till: ' + fmtDate(validDate) + '</div></div></div>'
+    + '<div style="height:3px;background:linear-gradient(90deg,#c4a052,#8b634b);"></div>'
+    // Parties
+    + '<div style="padding:28px 52px 0;display:flex;gap:28px;flex-wrap:wrap;">'
+    + '<div style="flex:1;min-width:190px;"><div style="font-size:8.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#8b634b;margin-bottom:8px;font-family:Arial,sans-serif;">Till</div>'
+    + '<div style="font-size:17px;font-weight:700;color:#2A4125;font-family:Georgia,serif;margin-bottom:6px;">' + esc(clientName||'—') + '</div>'
+    + '<div style="font-size:12px;color:#5a6455;line-height:1.8;font-family:Arial,sans-serif;">' + esc(clientContact) + (clientEmail?'<br><a href="mailto:'+esc(clientEmail)+'" style="color:#3d6037">'+esc(clientEmail)+'</a>':'') + (clientPhone?'<br>'+esc(clientPhone):'') + '</div></div>'
+    + '<div style="flex:1;min-width:190px;"><div style="font-size:8.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#8b634b;margin-bottom:8px;font-family:Arial,sans-serif;">Från</div>'
+    + '<div style="font-size:17px;font-weight:700;color:#2A4125;font-family:Georgia,serif;margin-bottom:6px;">PeakFast</div>'
+    + '<div style="font-size:12px;color:#5a6455;line-height:1.8;font-family:Arial,sans-serif;">Jimmy Blomgren<br>070-788 57 00<br><a href="mailto:jimmy@peakfast.se" style="color:#3d6037">jimmy@peakfast.se</a><br><a href="https://www.peakfast.se" style="color:#3d6037">www.peakfast.se</a></div></div></div>'
+    + '<div style="margin:20px 52px;height:1px;background:#ddd8cc;position:relative;"><div style="position:absolute;left:0;top:0;width:32px;height:1px;background:#c4a052;"></div></div>'
+    // Property
+    + '<div style="margin:0 52px;"><div style="background:#eef2ea;border-left:3px solid #2A4125;border-radius:0 8px 0 0;padding:14px 18px;">'
+    + '<div style="font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#4a7340;margin-bottom:12px;font-family:Arial,sans-serif;">Objektsuppgifter</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:16px;">' + propGrid + '</div></div>' + imgBlock + '</div>'
+    // Intro
+    + '<div style="margin:18px 52px;background:#eef2ea;border-left:3px solid #c4a052;border-radius:0 6px 6px 0;padding:13px 16px;font-size:12px;line-height:1.8;color:#5a6455;font-style:italic;font-family:Arial,sans-serif;">'
+    + (introHTML || 'Tack f\u00f6r att jag f\u00e5r m\u00f6jligheten att l\u00e4mna offert \u2014 jag tycker det vore kul att f\u00e5 f\u00f6rtroendet att hj\u00e4lpa er med f\u00f6rs\u00e4ljningen av <strong style="color:#2A4125;font-style:normal;">' + esc(propAddress||'\u2014') + '</strong>. Min bed\u00f6mning av v\u00e4rdet p\u00e5 marknaden idag \u00e4r i spannet <strong style="color:#2A4125;font-style:normal;">' + esc(valueRange) + '</strong> och jag rekommenderar ett utg\u00e5ngspris p\u00e5 <strong style="color:#2A4125;font-style:normal;">' + esc(valueStart) + '</strong>.') + '</div>'
+    // Services
+    + '<div style="padding:0 52px;"><div style="font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#2A4125;padding-bottom:10px;border-bottom:2px solid #2A4125;margin-bottom:0;font-family:Arial,sans-serif;">Ingående tjänster</div></div>'
+    + '<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#2A4125;">'
+    + '<th style="padding:10px 18px;text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(240,237,232,.8);font-family:Arial,sans-serif;width:55%">Tjänst</th>'
+    + '<th style="padding:10px 18px;text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(240,237,232,.8);font-family:Arial,sans-serif;">Kategori</th>'
+    + '<th style="padding:10px 18px;text-align:right;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(240,237,232,.8);font-family:Arial,sans-serif;">Pris / Villkor</th>'
+    + '</tr></thead><tbody>' + sRows + totalsBlock + '</tbody></table>'
+    + '<div style="padding:4px 52px 0;font-size:10px;color:#5a6455;font-style:italic;font-family:Arial,sans-serif;">' + momsNoteText + '</div>'
+    // Arvode (+ ev. arvodesräknare) — byggda ovan beroende på offerttyp
+    + arvodeBlock
+    + calcBlock
+    // Terms
+    + '<div style="margin:18px 52px;background:#faf9f7;border:1px solid #ddd8cc;border-radius:8px;padding:16px 20px;display:flex;flex-wrap:wrap;gap:16px;">' + termsGrid + '</div>'
+    // Closing
+    + '<div style="margin:0 52px 22px;font-size:13px;line-height:1.85;color:#5a6455;font-family:Arial,sans-serif;">Du är varmt välkommen att återkomma med eventuella frågor eller synpunkter på offerten. Jag ser fram emot ett gott samarbete och hoppas att vi kan hjälpa dig att sälja din bostad på bästa möjliga villkor.<br><br>Med vänliga hälsningar,<br><strong style="color:#2A4125;">Jimmy Blomgren</strong> – Registrerad Fastighetsmäklare, PeakFast</div>'
+    // Links
+    + '<div class="doc-links-section" style="padding:0 52px 26px;"><div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2A4125;padding-bottom:10px;border-bottom:1px solid #ddd8cc;margin-bottom:14px;font-family:Arial,sans-serif;">Mer information &amp; Användbara länkar</div>'
+    + '<div style="display:flex;flex-wrap:wrap;">' + chips + '</div></div>'
+    // Footer
+    + '<div style="background:#2A4125;padding:18px 52px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">'
+    + '<div style="font-size:10.5px;color:rgba(240,237,232,.5);line-height:1.8;font-family:Arial,sans-serif;"><div style="font-weight:700;color:rgba(240,237,232,.9);font-size:13px;margin-bottom:2px;">PeakFast</div>'
+    + '<a href="mailto:jimmy@peakfast.se" style="color:rgba(240,237,232,.62);text-decoration:none;">jimmy@peakfast.se</a> · 070-788 57 00<br><a href="https://www.peakfast.se" style="color:rgba(240,237,232,.62);text-decoration:none;">www.peakfast.se</a> · Registrerad Fastighetsmäklare</div>'
+    + '<div style="font-size:15px;color:#c4a052;font-style:italic;font-family:Georgia,serif;text-align:right;">Din fastighet.<br>Vårt engagemang.</div></div>'
+    + '</div></body></html>';
+
+  var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url;
+  a.download = 'PeakFast_Offert_' + (clientName||'Kund').replace(/\s+/g,'_') + '_' + (offerDate.replace(/-/g,'').slice(0,8)||'datum') + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ HTML-offert sparad – bifoga i mailet till kunden!');
+}
+
+
+function generatePDF() {
+  // If there's a property image, measure its real dimensions via canvas first
+  if (propImageData) {
+    var measureImg = new Image();
+    measureImg.onload = function() {
+      // Draw to canvas to get true pixel dimensions
+      var cvs = document.createElement('canvas');
+      cvs.width = measureImg.naturalWidth || measureImg.width;
+      cvs.height = measureImg.naturalHeight || measureImg.height;
+      window._pdfImgW = cvs.width;
+      window._pdfImgH = cvs.height;
+      // Now load logo
+      var logoImg = new Image();
+      logoImg.onload  = function() { _renderPDF(logoImg); };
+      logoImg.onerror = function() { _renderPDF(null); };
+      logoImg.src = LOGO_VIT;
+    };
+    measureImg.onerror = function() {
+      window._pdfImgW = 1920; window._pdfImgH = 1080; // fallback 16:9
+      var logoImg = new Image();
+      logoImg.onload  = function() { _renderPDF(logoImg); };
+      logoImg.onerror = function() { _renderPDF(null); };
+      logoImg.src = LOGO_VIT;
+    };
+    measureImg.src = propImageData;
+  } else {
+    window._pdfImgW = 0; window._pdfImgH = 0;
+    var logoImg = new Image();
+    logoImg.onload  = function() { _renderPDF(logoImg); };
+    logoImg.onerror = function() { _renderPDF(null); };
+    logoImg.src = LOGO_VIT;
+  }
+}
+
+function _renderPDF(logoImg, processFile) {
+  var pdfLib = window.jspdf;
+  var doc    = new pdfLib.jsPDF({format:'a4', unit:'mm'});
+  var W=210, H=297, m=16, footerH=20;
+  var col2 = W/2 + 4;
+  var contentW = W - m*2;
+  var safeBottom = H - footerH - 8;
+  var y = 0;
+
+  function drawFooter() {
+    doc.setFillColor(42,65,37); doc.rect(0, H-footerH, W, footerH, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(230,225,220);
+    doc.text('PeakFast', m, H-12);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(155,148,138);
+    doc.text('jimmy@peakfast.se  \u00b7  070-788 57 00  \u00b7  www.peakfast.se  \u00b7  Registrerad Fastighetsm\u00e4klare', m, H-6);
+    doc.setFont('helvetica','italic'); doc.setFontSize(9.5); doc.setTextColor(196,160,82);
+    doc.text('Din fastighet. V\u00e5rt engagemang.', W-m, H-10, {align:'right'});
+  }
+
+  function checkSpace(needed) {
+    if (y + needed > safeBottom) {
+      drawFooter();
+      doc.addPage();
+      y = 14;
+    }
+  }
+
+  // Read values
+  var clientName    = gv('clientName'), clientContact = gv('clientContact'),
+      clientEmail   = gv('clientEmail'), clientPhone   = gv('clientPhone');
+  var propAddress   = gv('propAddress'), propCity = gv('propCity'),
+      propType      = gv('propType'),    propSize  = gv('propSize');
+  var offerDate     = gv('offerDate');
+  var payTerms      = (document.getElementById('d-payTerms') && document.getElementById('d-payTerms').value) || gv('payTerms');
+  var valueRange    = gv('valueRange'), valueStart = gv('valueStart');
+  var offerNr       = 'PF-' + offerDate.replace(/-/g,'').slice(0,8);
+  var typeLabel     = PROP_TYPES[propType] || propType;
+  var pct           = parseFloat(gv('feePercent'))            || 0;
+  var thresh        = parseFloat(gv('feeFixedThreshold'))     || 0;
+  var fixed         = parseFloat(gv('feeFixedAmount'))        || 0;
+  var extra         = parseFloat(gv('feeFixedExtra'))         || 0;
+  var validDateDisp = (document.getElementById('d-validDate2') && document.getElementById('d-validDate2').value) || '—';
+  var momsLabel     = momsMode === 'inkl' ? 'inkl. moms' : 'exkl. moms';
+  var chosen        = getChosenServices();
+  var extras        = chosen.filter(function(s){ return prices[s.id] > 0; });
+  var subtotalInkl  = extras.reduce(function(sum,s){ return sum + prices[s.id]; }, 0);
+  var subtotalExkl  = subtotalInkl / 1.25;
+  var vatAmount     = subtotalInkl - subtotalExkl;
+
+  // ─── HEADER ──────────────────────────────────────────────────────────────────
+  var headerH = 42;
+  doc.setFillColor(42,65,37); doc.rect(0, 0, W, headerH, 'F');
+
+  if (logoImg && logoImg.complete) {
+    var natW = logoImg.naturalWidth  || logoImg.width  || 300;
+    var natH = logoImg.naturalHeight || logoImg.height || 104;
+    var logoW = 52;
+    var logoH = Math.round(logoW * natH / natW);
+    var logoY = Math.round((headerH - logoH) / 2) - 1;
+    doc.addImage(logoImg, 'PNG', m, logoY, logoW, logoH);
+    doc.setFont('helvetica','normal'); doc.setFontSize(5.5); doc.setTextColor(120,113,102);
+    doc.text('REGISTRERAD FASTIGHETSM\u00c4KLARE', m, logoY + logoH + 4);
+  }
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(196,160,82);
+  doc.text('OFFERT', W-m, 10, {align:'right'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(240,237,232);
+  doc.text(titlePrefix() + propAddress, W-m, 19, {align:'right', maxWidth: W/2 - 8});
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(160,152,140);
+  doc.text('Offert #' + offerNr + '   |   Datum: ' + fmtDate(offerDate) + '   |   Giltig till: ' + validDateDisp, W-m, 29, {align:'right'});
+
+  doc.setFillColor(196,160,82); doc.rect(0, headerH, W, 2, 'F');
+  y = headerH + 9;
+
+  // ─── PARTIES ─────────────────────────────────────────────────────────────────
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(139,99,75);
+  doc.text('TILL', m, y); doc.text('FR\u00c5N', col2, y);
+  y += 5;
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(42,65,37);
+  doc.text(clientName || '\u2014', m, y); doc.text('PeakFast', col2, y);
+  y += 5;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,100,85);
+  var leftLines = [clientContact, clientEmail, clientPhone].filter(Boolean);
+  if (leftLines.length) doc.text(leftLines.join('\n'), m, y);
+  doc.text(['Jimmy Blomgren','070-788 57 00','jimmy@peakfast.se','www.peakfast.se'].join('\n'), col2, y);
+  y += Math.max(leftLines.length, 4) * 4.0 + 5;
+
+  doc.setDrawColor(221,216,204); doc.setLineWidth(.3); doc.line(m, y, W-m, y);
+  doc.setFillColor(196,160,82); doc.rect(m, y-.2, 24, .4, 'F');
+  y += 6;
+
+  // ─── PROPERTY BOX ────────────────────────────────────────────────────────────
+  var propBoxH = 28;
+  doc.setFillColor(238,242,234); doc.roundedRect(m, y, contentW, propBoxH, 2, 2, 'F');
+  doc.setFillColor(42,65,37); doc.rect(m, y, 2, propBoxH, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(74,115,64);
+  doc.text('OBJEKTSUPPGIFTER', m+5, y+5.5);
+  // Row 1
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,100,85);
+  doc.text('Adress', m+5, y+10); doc.text('Ort', col2, y+10);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,32,24);
+  doc.text(propAddress || '\u2014', m+5, y+15); doc.text(propCity || '\u2014', col2, y+15);
+  // Row 2
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,100,85);
+  doc.text('Typ', m+5, y+21); doc.text('Storlek', col2, y+21);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,32,24);
+  doc.text(typeLabel, m+5, y+26); doc.text(propSize ? propSize + ' m\u00b2' : '\u2014', col2, y+26);
+  y += propBoxH + 4;
+
+  // ─── PROPERTY IMAGE ───────────────────────────────────────────────────────────
+  if (propImageData) {
+    var pxW = window._pdfImgW || 1920;
+    var pxH = window._pdfImgH || 1080;
+    var aspect = pxH / pxW;
+    var imgW   = contentW;
+    var imgH   = Math.min(Math.round(imgW * aspect), 75);
+    checkSpace(imgH + 5);
+    doc.addImage(propImageData, 'JPEG', m, y, imgW, imgH, '', 'MEDIUM');
+    y += imgH + 5;
+  }
+
+  // ─── INTRO BOX ───────────────────────────────────────────────────────────────
+  // Build intro text as continuous paragraph like the HTML version
+  var introPara = 'Tack f\u00f6r att jag f\u00e5r m\u00f6jligheten att l\u00e4mna offert \u2014 jag tycker det vore kul att f\u00e5 f\u00f6rtroendet att hj\u00e4lpa er med f\u00f6rs\u00e4ljningen av ' + (propAddress||'\u2014') + '.';
+  if (valueRange || valueStart) {
+    introPara += ' Min bed\u00f6mning av v\u00e4rdet p\u00e5 marknaden idag \u00e4r i spannet ' + (valueRange||'\u2014') + ' och jag rekommenderar ett utg\u00e5ngspris p\u00e5 ' + (valueStart||'\u2014') + '.';
+  }
+  // Measure how many lines this wraps to at fontSize 8, maxWidth=contentW-10
+  // jsPDF splitTextToSize gives us the split lines
+  doc.setFont('helvetica','italic'); doc.setFontSize(9);
+  var splitIntro = doc.splitTextToSize(introPara, contentW - 10);
+  var introBoxH = 6 + splitIntro.length * 5.8;
+  checkSpace(introBoxH + 5);
+  doc.setFillColor(238,242,234); doc.roundedRect(m, y, contentW, introBoxH, 2, 2, 'F');
+  doc.setFillColor(196,160,82); doc.rect(m, y, 2, introBoxH, 'F');
+  doc.setTextColor(90,100,85);
+  doc.text(splitIntro, m+5, y + 6);
+  y += introBoxH + 6;
+
+  // ─── SERVICES TABLE ───────────────────────────────────────────────────────────
+  function drawTableHeader() {
+    doc.setFillColor(42,65,37); doc.rect(m, y, contentW, 8, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(220,215,210);
+    doc.text('TJ\u00c4NST', m+3, y+5.5);
+    doc.text('KATEGORI', m+92, y+5.5);
+    doc.text('VILLKOR', W-m-3, y+5.5, {align:'right'});
+    y += 8;
+  }
+
+  checkSpace(20);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(26,32,24);
+  doc.text('ING\u00c5ENDE TJ\u00c4NSTER', m, y);
+  y += 2;
+  doc.setDrawColor(26,32,24); doc.setLineWidth(.4); doc.line(m, y, W-m, y); y += 1;
+  drawTableHeader();
+
+  chosen.forEach(function(s, i) {
+    var rH = 12;
+    if (y + rH > safeBottom) {
+      drawFooter();
+      doc.addPage();
+      y = 14;
+      drawTableHeader();
+    }
+    if (i % 2 === 1) { doc.setFillColor(250,249,247); doc.rect(m, y, contentW, rH, 'F'); }
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,32,24);
+    doc.text(s.name, m+3, y+5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(90,100,85);
+    doc.text(s.desc.slice(0,60), m+3, y+9.5);
+    doc.text(s.cat, m+92, y+5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+    if (prices[s.id] > 0) {
+      doc.setTextColor(191,106,0);
+      doc.text(dispPrice(prices[s.id]), W-m-3, y+5, {align:'right'});
+    } else {
+      doc.setTextColor(74,115,64);
+      doc.text('Ing\u00e5r i arvodet', W-m-3, y+5, {align:'right'});
+    }
+    doc.setDrawColor(221,216,204); doc.setLineWidth(.2); doc.line(m, y+rH, W-m, y+rH);
+    y += rH;
+  });
+
+  checkSpace(8);
+  doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(90,100,85);
+  doc.text('Priser angivna ' + momsLabel, m, y+4); y += 8;
+
+  // Totals
+  if (extras.length > 0) {
+    if (momsMode === 'exkl') {
+      checkSpace(8);
+      doc.setFillColor(250,249,247); doc.rect(m, y, contentW, 8, 'F');
+      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,100,85);
+      doc.text('Exkl. moms + moms (25%)', m+3, y+5.5);
+      doc.text(fmt(subtotalExkl) + '  +  ' + fmt(vatAmount), W-m-3, y+5.5, {align:'right'}); y += 8;
+    }
+    checkSpace(10);
+    doc.setFillColor(238,242,234); doc.rect(m, y, contentW, 10, 'F');
+    doc.setDrawColor(180,190,172); doc.setLineWidth(.5); doc.line(m, y, W-m, y);
+    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(42,65,37);
+    doc.text('Till\u00e4ggstj\u00e4nster totalt inkl. moms', m+3, y+6.5);
+    doc.text(fmt(subtotalInkl), W-m-3, y+6.5, {align:'right'});
+    y += 14;
+  }
+
+  // ─── ARVODE BOX ───────────────────────────────────────────────────────────────
+  var feeH = 38;
+  checkSpace(feeH + 5);
+  doc.setFillColor(244,247,242); doc.setDrawColor(208,218,200); doc.setLineWidth(.3);
+  doc.roundedRect(m, y, contentW, feeH, 2, 2, 'FD');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(42,65,37);
+  doc.text('ARVODE', m+4, y+6);
+  if (offerType === 'andel') {
+    // Fast arvode \u2014 enda alternativet vid andelsr\u00e4tt
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(139,99,75);
+    doc.text('FAST ARVODE', m+4, y+12);
+    doc.setFont('helvetica','bold'); doc.setFontSize(19); doc.setTextColor(42,65,37);
+    doc.text(fmt(andelFee) + ' inkl. moms', m+4, y+26);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,100,85);
+    doc.text('Fast arvode oavsett slutlig k\u00f6peskilling.', m+4, y+33);
+  } else {
+    // Alt 1
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(139,99,75);
+    doc.text('ALT 1 \u2013 PROCENT AV K\u00d6PESKILLING', m+4, y+12);
+    doc.setFont('helvetica','bold'); doc.setFontSize(19); doc.setTextColor(42,65,37);
+    doc.text(pct.toLocaleString('sv',{minimumFractionDigits:1}) + '%', m+4, y+26);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,100,85);
+    doc.text('Arvodet = ' + pct + '% av slutlig k\u00f6peskilling.', m+4, y+33);
+    // Divider
+    doc.setDrawColor(208,218,200); doc.setLineWidth(.4);
+    doc.line(col2-4, y+8, col2-4, y+feeH-4);
+    // Alt 2
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(139,99,75);
+    doc.text('ALT 2 \u2013 FAST BELOPP + TILL\u00c4GG', col2, y+12);
+    doc.setFont('helvetica','bold'); doc.setFontSize(19); doc.setTextColor(42,65,37);
+    doc.text(fmt(fixed), col2, y+26);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(90,100,85);
+    doc.text('Fast ' + fmt(fixed) + ' t.o.m. ' + fmt(thresh) + ' + ' + extra + '% \u00f6verskj.', col2, y+33, {maxWidth: W/2 - m - 8});
+  }
+  y += feeH + 6;
+
+  // ─── TERMS ────────────────────────────────────────────────────────────────────
+  var termsH = 26;
+  checkSpace(termsH + 5);
+  doc.setFillColor(250,249,247); doc.setDrawColor(221,216,204); doc.setLineWidth(.3);
+  doc.roundedRect(m, y, contentW, termsH, 2, 2, 'FD');
+  [
+    ['BETALNINGSVILLKOR', payTerms,                'GILTIG TILL',    validDateDisp],
+    ['LEVERANSTID',       'Enligt \u00f6verenskommelse','OFFERTANSVARIG','Jimmy Blomgren'],
+  ].forEach(function(row, ri) {
+    var ty = y + 7 + ri * 12;
+    doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(139,99,75);
+    doc.text(row[0], m+4, ty); doc.text(row[2], col2, ty);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(26,32,24);
+    doc.text(row[1], m+4, ty+5); doc.text(row[3], col2, ty+5);
+  });
+  y += termsH + 7;
+
+  // ─── CLOSING ──────────────────────────────────────────────────────────────────
+  var closingLine1 = 'Du \u00e4r varmt v\u00e4lkommen att \u00e5terkomma med eventuella fr\u00e5gor eller synpunkter p\u00e5 offerten. Jag ser fram emot ett gott samarbete och hoppas att vi kan hj\u00e4lpa dig att s\u00e4lja din bostad p\u00e5 b\u00e4sta m\u00f6jliga villkor.';
+  doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(90,100,85);
+  var splitClosing = doc.splitTextToSize(closingLine1, contentW);
+  checkSpace(splitClosing.length * 5 + 14);
+  doc.text(splitClosing, m, y);
+  y += splitClosing.length * 5 + 7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(42,65,37);
+  doc.text('Jimmy Blomgren \u2013 Registrerad Fastighetsm\u00e4klare, PeakFast', m, y);
+
+
+  // ─── BACK PAGE ────────────────────────────────────────────────────────────
+  var showBackPage = document.getElementById('pdfBackPage') && document.getElementById('pdfBackPage').checked;
+  if (showBackPage) {
+    drawFooter();
+    doc.addPage();
+    // Full green back cover
+    doc.setFillColor(42,65,37); doc.rect(0,0,W,H,'F');
+    // Gold bar top
+    doc.setFillColor(196,160,82); doc.rect(0,0,W,4,'F');
+    // Logo centered
+    if (logoImg && logoImg.complete) {
+      var bLogoW = 100, bLogoH = Math.round(bLogoW * 104/300);
+      doc.addImage(logoImg,'PNG',(W-bLogoW)/2, 60, bLogoW, bLogoH);
+    }
+    // Tagline
+    doc.setFont('helvetica','italic'); doc.setFontSize(18); doc.setTextColor(196,160,82);
+    doc.text('Din fastighet. V\u00e5rt engagemang.', W/2, 110, {align:'center'});
+    // Divider
+    doc.setFillColor(196,160,82); doc.setFillColor(196,160,82);
+    doc.rect(W/2-30, 116, 60, 0.5,'F');
+    // Contact info
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(240,237,232);
+    doc.text('Jimmy Blomgren', W/2, 128, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(180,172,160);
+    var contactLines = ['Registrerad Fastighetsm\u00e4klare','070-788 57 00','jimmy@peakfast.se','www.peakfast.se'];
+    contactLines.forEach(function(line, i) {
+      doc.text(line, W/2, 136 + i*7, {align:'center'});
+    });
+    // S\u00e4ljprocess box
+    doc.setFillColor(255,255,255,0.07);
+    doc.setDrawColor(196,160,82); doc.setLineWidth(0.5);
+    doc.roundedRect(m, 170, W-m*2, 80, 4, 4, 'D');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(196,160,82);
+    doc.text('S\u00c4LJPROCESSEN', W/2, 182, {align:'center'});
+    var steps = [
+      '1. V\u00e4rdering & r\u00e5dgivning',
+      '2. F\u00f6rberedelse & fotografering',
+      '3. Annonsering & marknadsf\u00f6ring',
+      '4. Visningar & budgivning',
+      '5. Kontrakt & tilltr\u00e4de',
+    ];
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(200,195,185);
+    steps.forEach(function(step, i) {
+      doc.text(step, W/2, 192 + i*9, {align:'center'});
+    });
+    // Gold bar bottom
+    doc.setFillColor(196,160,82); doc.rect(0,H-4,W,4,'F');
+    // Don't draw regular footer on back page
+  } else {
+    drawFooter();
+  }
+
+  doc.save('PeakFast_Offert_' + (clientName||'Kund').replace(/\s+/g,'_') + '_' + (offerDate.replace(/-/g,'').slice(0,8)||'datum') + '.pdf');
+  if (processFile) {
+    setTimeout(function() {
+      var url = URL.createObjectURL(processFile);
+      window.open(url, '_blank');
+      showToast('\u2139\ufe0f S\u00e4ljprocess-PDF \u00f6ppnad separat — bifoga den manuellt till offerten.');
+    }, 800);
+  }
+}
+
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── COLOUR THEMES ────────────────────────────────────────────────────────────
+const THEMES = {
+  classic:  { primary: [42,65,37],   accent: [196,160,82],  accentDark: [139,99,75],  name: 'Classic Green' },
+  slate:    { primary: [30,58,95],   accent: [126,184,201], accentDark: [70,120,145], name: 'Slate Blue' },
+  charcoal: { primary: [44,44,44],   accent: [184,160,144], accentDark: [130,110,95], name: 'Charcoal' },
+  burgundy: { primary: [92,26,46],   accent: [196,144,106], accentDark: [150,100,70], name: 'Burgundy' },
+  custom:   { primary: [42,65,37],   accent: [196,160,82],  accentDark: [139,99,75],  name: 'Eget val' },
+};
+let currentTheme = 'classic';
+
+function hexToRgb(hex) {
+  var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return [r,g,b];
+}
+function rgbToHex(rgb) {
+  return '#' + rgb.map(function(v){return ('0'+v.toString(16)).slice(-2);}).join('');
+}
+function rgbToCss(rgb) { return 'rgb('+rgb.join(',')+')'; }
+
+function getTheme() {
+  var t = THEMES[currentTheme] || THEMES.classic;
+  if (currentTheme === 'custom') {
+    t.primary    = hexToRgb(document.getElementById('customPrimary').value);
+    t.accent     = hexToRgb(document.getElementById('customAccent').value);
+    // derive dark accent: darken by ~20%
+    t.accentDark = t.accent.map(function(v){ return Math.max(0, Math.floor(v*0.75)); });
+  }
+  return t;
+}
+
+function applyThemeToPreview() {
+  var t = getTheme();
+  var root = document.documentElement;
+  root.style.setProperty('--green',     rgbToCss(t.primary));
+  root.style.setProperty('--green-mid', rgbToCss(t.primary.map(function(v){return Math.min(255,v+20);})));
+  root.style.setProperty('--gold',      rgbToCss(t.accent));
+  root.style.setProperty('--gold-dark', rgbToCss(t.accentDark));
+}
+
+function initThemePicker() {
+  document.querySelectorAll('.theme-swatch').forEach(function(sw) {
+    sw.addEventListener('click', function() {
+      document.querySelectorAll('.theme-swatch').forEach(function(s){ s.classList.remove('active'); });
+      sw.classList.add('active');
+      currentTheme = sw.dataset.theme;
+      var pickers = document.getElementById('customColorPickers');
+      pickers.style.display = currentTheme === 'custom' ? 'flex' : 'none';
+      pickers.style.flexDirection = 'column';
+      applyThemeToPreview();
+    });
+  });
+  ['customPrimary','customAccent'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', function() {
+      if (currentTheme === 'custom') applyThemeToPreview();
+    });
+  });
+}
+
+// ── A3 BROCHURE PDF ──────────────────────────────────────────────────────────
+// ── BROSCHYR PANEL (inline in sidebar) ───────────────────────────────────────
+var currentPreview = 'offert';
+
+function toggleBrochurePanel() {
+  var panel = document.getElementById('brochurePanel');
+  var btn   = document.getElementById('btnBrochure');
+  var open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn.style.background = open ? 'rgba(196,160,82,.15)' : 'transparent';
+  if (open) {
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+    // Show view toggle
+    var toggle = document.getElementById('brochureViewToggle');
+    if (toggle) toggle.style.display = 'flex';
+    switchPreview('brochure');
+  } else {
+    var toggle = document.getElementById('brochureViewToggle');
+    if (toggle) toggle.style.display = 'none';
+    switchPreview('offert');
+  }
+}
+
+function switchPreview(mode) {
+  currentPreview = mode;
+  var offertEl   = document.getElementById('doc');
+  var brochureEl = document.getElementById('brochurePreviewWrap');
+  var btnO = document.getElementById('btnViewOffert');
+  var btnB = document.getElementById('btnViewBrochure');
+  if (mode === 'brochure') {
+    offertEl.style.display   = 'none';
+    brochureEl.style.display = 'block';
+    if (btnO) { btnO.style.background='transparent'; btnO.style.color='#888'; btnO.style.fontWeight='400'; }
+    if (btnB) { btnB.style.background='white'; btnB.style.color='#2A4125'; btnB.style.fontWeight='600'; }
+    renderBrochurePreview();
+  } else {
+    offertEl.style.display   = 'flex';
+    brochureEl.style.display = 'none';
+    if (btnO) { btnO.style.background='white'; btnO.style.color='#2A4125'; btnO.style.fontWeight='600'; }
+    if (btnB) { btnB.style.background='transparent'; btnB.style.color='#888'; btnB.style.fontWeight='400'; }
+  }
+}
+
+function renderBrochurePreview() {
+  var t = getTheme(), pri = 'rgb('+t.primary.join(',')+')', acc = 'rgb('+t.accent.join(',') + ')';
+  var coverImg  = document.getElementById('brochureCoverImg');
+  var backImg   = document.getElementById('brochureBackImg');
+  var innerImg  = document.getElementById('brochureInnerImg');
+  var coverSrc  = (coverImg && coverImg.src && !coverImg.src.endsWith('/')) ? coverImg.src : (propImageData||'');
+  var backSrc   = (backImg  && backImg.src  && !backImg.src.endsWith('/'))  ? backImg.src  : (propImageData||'');
+  var innerSrc  = (innerImg && innerImg.src && !innerImg.src.endsWith('/')) ? innerImg.src : '';
+  var addr  = gv('propAddress'), city = gv('propCity');
+  var typ   = PROP_TYPES[gv('propType')]||gv('propType'), sz = gv('propSize');
+  var cName = gv('clientName'), cContact = gv('clientContact'), cEmail = gv('clientEmail');
+  var addPdf2 = !!(document.getElementById('brochureAddPdf') && document.getElementById('brochureAddPdf').checked);
+  var pct2  = parseFloat(gv('feePercent'))||1.5;
+  var fix2  = Math.round(parseFloat(gv('feeFixedAmount'))||45000);
+  var valid2 = document.getElementById('d-validDate2') ? document.getElementById('d-validDate2').value : '—';
+  var chosen2 = getChosenServices();
+
+  // ── PAGE 1: Back (left) + Front (right) — landscape A3 aspect ~1.41:1 ───
+  var p1 = '<div style="width:100%;aspect-ratio:420/297;display:flex;border-radius:4px;overflow:hidden;">'
+    // BACK
+    + '<div style="flex:1;position:relative;background:'+pri+';overflow:hidden;">'
+    + (backSrc ? '<img src="'+backSrc+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4;">' : '')
+    + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:5% 6%;">'
+    + '<div style="text-align:center;">'
+    + '<img src="'+LOGO_VIT+'" style="width:50%;max-width:110px;margin-bottom:4px;">'
+    + '<div style="font-style:italic;color:'+acc+';font-size:12px;margin:3px 0 5px;">Din fastighet. Vårt engagemang.</div>'
+    + '<div style="width:25%;height:1px;background:'+acc+';margin:0 auto 5px;"></div>'
+    + '<div style="color:#f0ede8;font-weight:700;font-size:11px;">Jimmy Blomgren</div>'
+    + '<div style="color:rgba(240,237,232,.55);font-size:9px;line-height:1.7;margin-top:2px;">Registrerad Fastighetsmäklare<br>070-788 57 00</div>'
+    + '</div>'
+    + '<div style="text-align:center;">'
+    + '<div style="width:25%;height:1px;background:'+acc+';margin:0 auto 4px;"></div>'
+    + '<div style="color:'+acc+';font-size:8px;font-weight:700;letter-spacing:.06em;margin-bottom:3px;">SÄLJPROCESSEN</div>'
+    + '<div style="color:rgba(240,237,232,.45);font-size:7.5px;line-height:1.8;">1. Värdering & rådgivning<br>2. Förberedelse & fotografering<br>3. Annonsering & marknadsföring<br>4. Visningar & budgivning<br>5. Kontrakt & tillträde</div>'
+    + '</div></div>'
+    + '<div style="position:absolute;top:0;left:0;right:0;height:2px;background:'+acc+'"></div>'
+    + '<div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:'+acc+'"></div>'
+    + '</div>'
+    // FRONT
+    + '<div style="flex:1;position:relative;overflow:hidden;">'
+    + (coverSrc ? '<img src="'+coverSrc+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">' : '<div style="position:absolute;inset:0;background:#2c3646;"></div>')
+    + '<div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.2) 0%,rgba(0,0,0,.05) 40%,rgba(0,0,0,.7) 100%);"></div>'
+    + '<div style="position:absolute;top:0;left:0;right:0;padding:4%;">'
+    + '<img src="'+LOGO_VIT+'" style="width:28%;max-width:80px;">'
+    + '<div style="color:'+acc+';font-size:8px;letter-spacing:.12em;margin-top:2px;">OFFERT</div>'
+    + '</div>'
+    + '<div style="position:absolute;bottom:0;left:0;right:0;padding:3% 4% 4%;">'
+    + '<div style="color:white;font-weight:700;font-size:14px;line-height:1.2;text-shadow:0 1px 4px rgba(0,0,0,.5);margin-bottom:3px;">'+titlePrefix()+(addr||'—')+'</div>'
+    + '<div style="color:rgba(240,237,232,.75);font-size:8.5px;">'+(city||'')+(city&&typ?' · ':'')+typ+(sz?' · '+sz+' m²':'')+'</div>'
+    + '</div>'
+    + '<div style="position:absolute;bottom:0;left:0;right:0;height:2px;background:'+acc+'"></div>'
+    + '</div>'
+    + '</div>';
+
+  // ── PAGE 2: LEFT = all content, RIGHT = images or pdf ────────────────────
+  // Build service rows
+  var svcRows = chosen2.map(function(s,i){
+    var pr = prices[s.id]>0
+      ? '<span style="color:#bf6a00;font-weight:700;">'+dispPrice(prices[s.id])+'</span>'
+      : '<span style="color:#4a7340;">Ingår</span>';
+    return '<div style="display:flex;align-items:center;padding:3px 6px;border-bottom:1px solid #e8e4dc;background:'+(i%2?'#faf9f7':'white')+';">'
+      + '<div style="flex:2.5;font-weight:600;font-size:8px;">'+s.name+'</div>'
+      + '<div style="flex:2;font-size:7px;color:#5a6455;">'+s.cat+'</div>'
+      + '<div style="flex:1.5;text-align:right;font-size:7.5px;">'+pr+'</div>'
+      + '</div>';
+  }).join('');
+
+  var hdr2 = function(lbl) {
+    return '<div style="background:'+pri+';padding:4px 7px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<img src="'+LOGO_VIT+'" style="height:14px;"><span style="color:'+acc+';font-size:7.5px;font-weight:700;">'+lbl+'</span></div>'
+      + '<div style="height:1.5px;background:'+acc+'"></div>';
+  };
+
+  var leftC = hdr2(titlePrefix()+(addr||'—'))
+    + '<div style="padding:6px 7px 0;font-size:8px;">'
+    // Parties
+    + '<div style="display:flex;gap:3%;margin-bottom:4px;">'
+    + '<div><div style="font-size:6.5px;color:#5a6455;font-weight:700;letter-spacing:.06em;">TILL</div>'
+    + '<div style="font-weight:700;font-size:9px;color:'+pri+';">'+(cName||'—')+'</div>'
+    + '<div style="font-size:7px;color:#5a6455;">'+(cContact||'')+(cContact&&cEmail?', ':'')+cEmail+'</div></div>'
+    + '<div><div style="font-size:6.5px;color:#5a6455;font-weight:700;letter-spacing:.06em;">FRÅN</div>'
+    + '<div style="font-weight:700;font-size:9px;color:'+pri+';">PeakFast</div>'
+    + '<div style="font-size:7px;color:#5a6455;">Jimmy Blomgren, 070-788 57 00</div></div>'
+    + '</div>'
+    // Objekt
+    + '<div style="background:#eef2ea;border-left:2px solid '+pri+';padding:4px 5px;margin-bottom:4px;border-radius:0 3px 3px 0;">'
+    + '<div style="font-size:6px;color:#4a7340;font-weight:700;margin-bottom:2px;">OBJEKTSUPPGIFTER</div>'
+    + '<div style="display:flex;gap:3%;font-size:7px;">'
+    + '<div><div style="color:#5a6455;font-size:6px;">Adress</div><b>'+(addr||'—')+'</b></div>'
+    + '<div><div style="color:#5a6455;font-size:6px;">Ort</div><b>'+(city||'—')+'</b></div>'
+    + '<div><div style="color:#5a6455;font-size:6px;">Typ</div><b>'+typ+'</b></div>'
+    + '<div><div style="color:#5a6455;font-size:6px;">Storlek</div><b>'+(sz?sz+' m²':'—')+'</b></div>'
+    + '</div></div>'
+    // Intro
+    + '<div style="background:#eef2ea;border-left:2px solid '+acc+';padding:4px 5px;margin-bottom:4px;font-size:7px;color:#5a6455;font-style:italic;border-radius:0 3px 3px 0;">Tack för möjligheten att lämna offert för försäljningen av '+(addr||'—')+'.</div>'
+    // Services
+    + '<div style="font-size:7.5px;font-weight:700;color:'+pri+';border-bottom:1.5px solid '+pri+';padding-bottom:2px;margin-bottom:0;">INGÅENDE TJÄNSTER</div>'
+    + '<div style="background:'+pri+';display:flex;padding:3px 6px;"><span style="flex:2.5;color:rgba(240,237,232,.8);font-size:6.5px;font-weight:700;">TJÄNST</span><span style="flex:2;color:rgba(240,237,232,.8);font-size:6.5px;font-weight:700;">KATEGORI</span><span style="flex:1.5;text-align:right;color:rgba(240,237,232,.8);font-size:6.5px;font-weight:700;">VILLKOR</span></div>'
+    + svcRows
+    // Arvode
+    + '<div style="background:#f4f7f2;border:1px solid #d0dac8;border-radius:3px;padding:5px 6px;margin-top:4px;">'
+    + '<div style="font-size:7px;font-weight:700;color:'+pri+';margin-bottom:3px;">ARVODE</div>'
+    + '<div style="display:flex;gap:3%;">'
+    + (offerType === 'andel'
+      ? '<div style="flex:1;background:white;border-radius:2px;padding:3px 4px;"><div style="font-size:6px;color:#8b634b;font-weight:700;">FAST ARVODE</div><div style="font-size:12px;font-weight:700;color:'+pri+';">'+andelFee.toLocaleString('sv')+' kr inkl. moms</div></div>'
+      : '<div style="flex:1;background:white;border-radius:2px;padding:3px 4px;"><div style="font-size:6px;color:#8b634b;font-weight:700;">ALT 1</div><div style="font-size:12px;font-weight:700;color:'+pri+';">'+pct2.toLocaleString('sv',{minimumFractionDigits:1})+'%</div></div>'
+      + '<div style="flex:1;background:white;border-radius:2px;padding:3px 4px;"><div style="font-size:6px;color:#8b634b;font-weight:700;">ALT 2</div><div style="font-size:12px;font-weight:700;color:'+pri+';">'+fix2.toLocaleString('sv')+' kr</div></div>')
+    + '</div></div>'
+    // Terms
+    + '<div style="background:#faf9f7;border:1px solid #ddd8cc;border-radius:3px;padding:4px 6px;margin-top:3px;display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:7.5px;">'
+    + '<div><div style="font-size:6px;color:#8b634b;font-weight:700;">BETALNINGSVILLKOR</div>'+gv('payTerms')+'</div>'
+    + '<div><div style="font-size:6px;color:#8b634b;font-weight:700;">GILTIG TILL</div>'+valid2+'</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="background:'+pri+';padding:3px 7px;font-size:6.5px;color:rgba(240,237,232,.4);margin-top:auto;">jimmy@peakfast.se · 070-788 57 00</div>';
+
+  // Right: 2 images or PDF placeholder
+  var img1Src = innerSrc || coverSrc;
+  var img2Src = coverSrc;
+  var rightC = hdr2(addPdf2 ? 'Bifogad bilaga' : 'Bilder');
+  if (addPdf2) {
+    rightC += '<div style="display:flex;align-items:center;justify-content:center;flex:1;min-height:200px;background:#f5f3ef;">'
+      + '<div style="text-align:center;padding:12px;"><div style="font-size:11px;font-weight:700;color:'+pri+';margin-bottom:4px;">Bifogad bilaga</div>'
+      + '<div style="font-size:8px;color:#5a6455;">PDF visas korrekt i genererad broschyr.</div></div></div>';
+  } else {
+    rightC += '<div style="display:flex;flex-direction:column;gap:2px;padding:4px;flex:1;">'
+      + (img1Src ? '<img src="'+img1Src+'" style="width:100%;flex:1;object-fit:cover;border-radius:2px;max-height:49%;">' : '<div style="flex:1;background:#e0ddd6;border-radius:2px;"></div>')
+      + (img2Src ? '<img src="'+img2Src+'" style="width:100%;flex:1;object-fit:cover;border-radius:2px;max-height:49%;">' : '<div style="flex:1;background:#e0ddd6;border-radius:2px;"></div>')
+      + '</div>';
+  }
+  rightC += '<div style="background:'+pri+';padding:3px 7px;font-size:6.5px;color:rgba(240,237,232,.4);">Din fastighet. Vårt engagemang.</div>';
+
+  var p2 = '<div style="width:100%;aspect-ratio:420/297;display:flex;border-radius:4px;overflow:hidden;border:1px solid #e0ddd6;">'
+    + '<div style="flex:1;display:flex;flex-direction:column;border-right:2px dashed #ccc;background:white;overflow:hidden;">'+leftC+'</div>'
+    + '<div style="flex:1;display:flex;flex-direction:column;background:white;overflow:hidden;">'+rightC+'</div>'
+    + '</div>';
+
+  document.getElementById('brochurePrevPages').innerHTML =
+    [['Uppslag 1 — Framsida & Baksida', p1], ['Uppslag 2 — Offertinnehåll', p2]].map(function(item) {
+      return '<div style="width:100%;">'
+        + '<div style="font-size:8px;color:#5a5046;padding:3px 6px;background:#b8b4ad;border-radius:3px 3px 0 0;letter-spacing:.05em;">'+item[0]+'</div>'
+        + item[1] + '</div>';
+    }).join('');
+}
+function previewBrochure() {
+  switchPreview('brochure');
+  renderBrochurePreview();
+}
+
+function initBrochureModal() {
+  function setupThumb(inputId, thumbWrapId, thumbImgId) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    el.addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById(thumbImgId).src = e.target.result;
+        document.getElementById(thumbWrapId).style.display = 'block';
+        if (currentPreview === 'brochure') renderBrochurePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  setupThumb('brochureCoverImage', 'brochureCoverThumb', 'brochureCoverImg');
+  setupThumb('brochureBackImage',  'brochureBackThumb',  'brochureBackImg');
+  setupThumb('brochureInnerImage', 'brochureInnerThumb', 'brochureInnerImg');
+
+  var pdfCb = document.getElementById('brochureAddPdf');
+  if (pdfCb) pdfCb.addEventListener('change', function() {
+    document.getElementById('brochurePdfOptions').style.display = this.checked ? 'block' : 'none';
+  });
+}
+
+function readFileAsDataURL(file, cb) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() { cb(e.target.result, img.naturalWidth, img.naturalHeight); };
+    img.onerror = function() { cb(e.target.result, 1920, 1080); };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+
+// ── PDF PAGE → IMAGE (pdf.js) ─────────────────────────────────────────────
+function renderPdfPageAsImage(file, pageNum, scale, callback) {
+  if (!file) { callback(null); return; }
+  if (typeof pdfjsLib === 'undefined') { callback(null); return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var data = new Uint8Array(e.target.result);
+    pdfjsLib.getDocument({data: data}).promise.then(function(pdfDoc) {
+      pdfDoc.getPage(pageNum || 1).then(function(page) {
+        var viewport = page.getViewport({scale: scale || 2});
+        var canvas = document.createElement('canvas');
+        canvas.width  = viewport.width;
+        canvas.height = viewport.height;
+        page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise.then(function() {
+          callback(canvas.toDataURL('image/jpeg', 0.92), canvas.width, canvas.height);
+        });
+      });
+    }).catch(function() { callback(null); });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function generateBrochure() {
+  var coverFile = (document.getElementById('brochureCoverImage') || {files:[]}).files[0];
+  var backFile  = (document.getElementById('brochureBackImage')  || {files:[]}).files[0];
+  var innerFile = (document.getElementById('brochureInnerImage') || {files:[]}).files[0];
+  var pdfFile   = (document.getElementById('brochurePdfFile')    || {files:[]}).files[0];
+  var addPdf    = document.getElementById('brochureAddPdf') && document.getElementById('brochureAddPdf').checked;
+
+  if (!coverFile && !propImageData) {
+    showToast('OBS: Ladda upp en framsidebild eller en objektsbild.');
+    return;
+  }
+
+  var images = {
+    cover: propImageData, coverW: window._pdfImgW||1920, coverH: window._pdfImgH||1080,
+    back:  propImageData, backW:  window._pdfImgW||1920, backH:  window._pdfImgH||1080,
+    inner: null,          innerW: 1920,                  innerH: 1080
+  };
+
+  var files = [];
+  if (coverFile) files.push({file: coverFile, dk:'cover', wk:'coverW', hk:'coverH'});
+  if (backFile)  files.push({file: backFile,  dk:'back',  wk:'backW',  hk:'backH'});
+  if (innerFile) files.push({file: innerFile, dk:'inner', wk:'innerW', hk:'innerH'});
+
+  var pending = files.length;
+
+  function afterLoad() {
+    var logoImg = new Image();
+    logoImg.onload  = function() { _renderBrochure(logoImg, images, true, addPdf, pdfFile); };
+    logoImg.onerror = function() { _renderBrochure(null,    images, true, addPdf, pdfFile); };
+    logoImg.src = LOGO_VIT;
+  }
+
+  if (pending === 0) {
+    afterLoad();
+  } else {
+    files.forEach(function(entry) {
+      readFileAsDataURL(entry.file, function(data, w, h) {
+        images[entry.dk] = data;
+        images[entry.wk] = w;
+        images[entry.hk] = h;
+        pending--;
+        if (pending === 0) afterLoad();
+      });
+    });
+  }
+}
+
+function _renderBrochure(logoImg, images, showBackPage, addPdf, pdfFile) {
+  var jsPDF  = window.jspdf.jsPDF;
+  var doc    = new jsPDF({ format: 'a3', orientation: 'landscape', unit: 'mm' });
+  var PW = 420, PH = 297, HW = 210, m = 16;
+  var t = getTheme(), P = t.primary, A = t.accent, AD = t.accentDark;
+
+  // Data
+  var propAddress = gv('propAddress'), propCity = gv('propCity');
+  var propType    = PROP_TYPES[gv('propType')] || gv('propType'), propSize = gv('propSize');
+  var clientName  = gv('clientName'), offerDate = gv('offerDate');
+  var clientContact = gv('clientContact'), clientEmail = gv('clientEmail'), clientPhone = gv('clientPhone');
+  var typeLabel   = propType;
+  var pct         = parseFloat(gv('feePercent')) || 0;
+  var thresh      = parseFloat(gv('feeFixedThreshold')) || 0;
+  var fixed       = parseFloat(gv('feeFixedAmount')) || 0;
+  var extra       = parseFloat(gv('feeFixedExtra')) || 0;
+  var payTerms    = gv('payTerms');
+  var validDisp   = (document.getElementById('d-validDate2') && document.getElementById('d-validDate2').value) || '—';
+  var valueRange  = gv('valueRange'), valueStart = gv('valueStart');
+  var chosen      = getChosenServices();
+  var extras      = chosen.filter(function(s){ return prices[s.id] > 0; });
+  var subTotal    = extras.reduce(function(sum,s){ return sum + prices[s.id]; }, 0);
+
+  // Images
+  var coverData = images.cover || propImageData;
+  var backData  = images.back  || propImageData;
+  var innerData = images.inner;  // sida 2 bild
+  var innerW    = images.innerW || 1920, innerH = images.innerH || 1080;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function fillRect(x, y, w, h, rgb) {
+    doc.setFillColor(rgb[0], rgb[1], rgb[2]); doc.rect(x, y, w, h, 'F');
+  }
+  function drawLogo(x, y, width) {
+    if (logoImg && logoImg.complete) {
+      doc.addImage(logoImg, 'PNG', x, y, width, Math.round(width * 104/300));
+    }
+  }
+  function textC(txt, x, y, sz, rgb, bold) {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setFontSize(sz); doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+    doc.text(txt, x, y, {align:'center'});
+  }
+  function textL(txt, x, y, sz, rgb, bold, maxW) {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setFontSize(sz); doc.setTextColor(rgb[0], rgb[1], rgb[2]);
+    if (maxW) doc.text(txt, x, y, {maxWidth: maxW});
+    else doc.text(txt, x, y);
+  }
+  function foldLine() {
+    doc.setDrawColor(180,175,168); doc.setLineWidth(.3);
+    doc.setLineDashPattern([3,3], 0);
+    doc.line(HW, 0, HW, PH);
+    doc.setLineDashPattern([], 0);
+  }
+  function footer(x, w, label) {
+    fillRect(x, PH-14, w, 14, P);
+    textL('jimmy@peakfast.se  ·  070-788 57 00  ·  www.peakfast.se', x+m, PH-6, 6.5, [155,148,138], false);
+    doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(A[0],A[1],A[2]);
+    doc.text(label||'Din fastighet. Vårt engagemang.', x+w-m, PH-6, {align:'right'});
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // UPPSLAG 1 — PAGE 1: BAKSIDA (LEFT) + FRAMSIDA (RIGHT)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── FRAMSIDA (right) ──────────────────────────────────────────────────────
+  if (coverData) doc.addImage(coverData, 'JPEG', HW, 0, HW, PH, '', 'MEDIUM');
+  doc.setFillColor(0,0,0); doc.setGState(new doc.GState({opacity:0.38}));
+  doc.rect(HW, 0, HW, PH, 'F');
+  doc.setGState(new doc.GState({opacity:1}));
+
+  // Logo + OFFERT label
+  drawLogo(HW+m, m, 55);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(A[0],A[1],A[2]);
+  doc.text('OFFERT', HW+m, m+22);
+
+  // Title bottom of cover
+  doc.setFillColor(0,0,0); doc.setGState(new doc.GState({opacity:0.45}));
+  doc.rect(HW, PH-52, HW, 52, 'F');
+  doc.setGState(new doc.GState({opacity:1}));
+  fillRect(HW, PH-3, HW, 3, A);
+  doc.setFont('helvetica','bold'); doc.setFontSize(28); doc.setTextColor(255,255,255);
+  var titleLines = doc.splitTextToSize(titlePrefix() + propAddress, HW-m*2);
+  var titleY = PH - 42 - (titleLines.length-1)*11;
+  doc.text(titleLines, HW+m, titleY);
+  doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(220,215,205);
+  doc.text(propCity + (propCity?' · ':'') + typeLabel + (propSize?' · '+propSize+' m²':''), HW+m, PH-18);
+
+  // ── BAKSIDA (left) ───────────────────────────────────────────────────────
+  if (backData) {
+    doc.addImage(backData, 'JPEG', 0, 0, HW, PH, '', 'MEDIUM');
+    doc.setFillColor(20,32,18); doc.setGState(new doc.GState({opacity:0.62}));
+    doc.rect(0, 0, HW, PH, 'F');
+    doc.setGState(new doc.GState({opacity:1}));
+  } else {
+    fillRect(0, 0, HW, PH, P);
+  }
+  fillRect(0, 0, HW, 3, A); fillRect(0, PH-3, HW, 3, A);
+
+  drawLogo((HW-80)/2, 28, 80);
+  textC('Din fastighet. Vårt engagemang.', HW/2, 70, 16, A, false);
+  doc.setFont('helvetica','italic');
+  fillRect(HW/2-25, 76, 50, 0.5, A);
+
+  textC('Jimmy Blomgren', HW/2, 90, 11, [240,237,232], true);
+  ['Registrerad Fastighetsmäklare','070-788 57 00','jimmy@peakfast.se','www.peakfast.se'].forEach(function(l,i){
+    textC(l, HW/2, 99+i*7, 8.5, [175,167,155], false);
+  });
+
+  fillRect(HW/2-30, 153, 60, 0.4, A);
+  textC('SÄLJPROCESSEN', HW/2, 161, 8, A, true);
+  ['Värdering & rådgivning','Förberedelse & fotografering','Annonsering & marknadsföring','Visningar & budgivning','Kontrakt & tillträde'].forEach(function(s,i){
+    textC((i+1)+'. '+s, HW/2, 170+i*9, 7.5, [165,157,145], false);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // UPPSLAG 2 — PAGE 2: LEFT = ALL CONTENT, RIGHT = 2 IMAGES or PDF
+  // ══════════════════════════════════════════════════════════════════════════
+  doc.addPage();
+
+  var propAddress = gv('propAddress'), propCity = gv('propCity');
+  var propType    = PROP_TYPES[gv('propType')] || gv('propType');
+  var propSize    = gv('propSize');
+  var clientName  = gv('clientName');
+  var clientContact = gv('clientContact'), clientEmail = gv('clientEmail'), clientPhone = gv('clientPhone');
+  var valueRange  = gv('valueRange'), valueStart = gv('valueStart');
+  var payTerms    = gv('payTerms');
+  var validDisp   = (document.getElementById('d-validDate2') && document.getElementById('d-validDate2').value) || '—';
+  var pct         = parseFloat(gv('feePercent')) || 0;
+  var thresh      = parseFloat(gv('feeFixedThreshold')) || 0;
+  var fixed       = parseFloat(gv('feeFixedAmount')) || 0;
+  var extra       = parseFloat(gv('feeFixedExtra')) || 0;
+  var chosen      = getChosenServices();
+  var extras      = chosen.filter(function(s){ return prices[s.id] > 0; });
+  var subTotal    = extras.reduce(function(sum,s){ return sum + prices[s.id]; }, 0);
+
+  // ── LEFT HALF: ALL CONTENT ───────────────────────────────────────────────
+  fillRect(0, 0, HW, 22, P);
+  drawLogo(m, (22-14)/2, 40);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(A[0],A[1],A[2]);
+  doc.text('OFFERT', HW-m, 9, {align:'right'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(240,237,232);
+  doc.text(titlePrefix()+propAddress, HW-m, 16, {align:'right', maxWidth:HW/2});
+  fillRect(0, 22, HW, 1.5, A);
+
+  var y = 28;
+
+  // Parties
+  textL('TILL', m, y, 6, AD, true); textL('FRÅN', HW/2+2, y, 6, AD, true); y += 4;
+  textL(clientName||'—', m, y, 9, P, true); textL('PeakFast', HW/2+2, y, 9, P, true); y += 4;
+  var contactStr = [clientContact,clientEmail,clientPhone].filter(Boolean).join('  ');
+  textL(contactStr, m, y, 7, [90,100,85], false, HW/2-m-4);
+  textL('Jimmy Blomgren  070-788 57 00', HW/2+2, y, 7, [90,100,85], false, HW/2-m-4);
+  textL('jimmy@peakfast.se  www.peakfast.se', HW/2+2, y+5, 7, [90,100,85], false, HW/2-m-4);
+  y += 14;
+
+  // Divider
+  doc.setDrawColor(221,216,204); doc.setLineWidth(.3); doc.line(m, y, HW-m, y);
+  fillRect(m, y-.2, 18, .4, A); y += 5;
+
+  // Property box
+  var pbH = 20;
+  doc.setFillColor(238,242,234); doc.roundedRect(m, y, HW-m*2, pbH, 2, 2, 'F');
+  fillRect(m, y, 2, pbH, P);
+  textL('OBJEKTSUPPGIFTER', m+4, y+4, 6, [74,115,64], true);
+  [[propAddress||'—','Adress'],[propCity||'—','Ort'],[propType,'Typ'],[propSize?propSize+' m²':'—','Storlek']].forEach(function(col,i){
+    var cx = m+4 + i*(HW-m*2-8)/4;
+    textL(col[1], cx, y+9, 6.5, [90,100,85], false);
+    textL(col[0], cx, y+14.5, 7.5, [26,32,24], true);
+  });
+  y += pbH + 4;
+
+  // Intro
+  doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(90,100,85);
+  var intro = 'Tack för att jag får möjligheten att lämna offert — jag tycker det vore kul att få förtroendet att hjälpa er med försäljningen av '+(propAddress||'—')+'. Min bedömning av värdet idag är i spannet '+(valueRange||'—')+' och jag rekommenderar ett utgångspris på '+(valueStart||'—')+'.';
+  var introSplit = doc.splitTextToSize(intro, HW-m*2-6);
+  var iH = 4 + introSplit.length * 4.2;
+  doc.setFillColor(238,242,234); doc.roundedRect(m, y, HW-m*2, iH, 2, 2, 'F');
+  fillRect(m, y, 2, iH, A);
+  doc.text(introSplit, m+4, y+5);
+  y += iH + 4;
+
+  // Services table
+  textL('INGÅENDE TJÄNSTER', m, y, 7, P, true); y += 2;
+  doc.setDrawColor(P[0],P[1],P[2]); doc.setLineWidth(.4); doc.line(m, y, HW-m, y); y++;
+  fillRect(m, y, HW-m*2, 6.5, P);
+  textL('TJÄNST', m+3, y+4.5, 6, [220,215,210], true);
+  textL('KATEGORI', HW*0.55, y+4.5, 6, [220,215,210], true);
+  textL('VILLKOR', HW-m-3, y+4.5, 6, [220,215,210], true);
+  y += 6.5;
+
+  var rowH = 8, maxY = PH-20;
+  chosen.forEach(function(s,i){
+    if (y+rowH > maxY) return;
+    if(i%2===1){doc.setFillColor(250,249,247);doc.rect(m,y,HW-m*2,rowH,'F');}
+    textL(s.name, m+3, y+5, 7.5, [26,32,24], true);
+    textL(s.cat, HW*0.55, y+5, 6.5, [90,100,85], false);
+    if(prices[s.id]>0) textL(dispPrice(prices[s.id]), HW-m-3, y+5, 7.5, [191,106,0], true);
+    else textL('Ingår i arvodet', HW-m-3, y+5, 6.5, [74,115,64], true);
+    doc.setDrawColor(221,216,204); doc.setLineWidth(.2); doc.line(m, y+rowH, HW-m, y+rowH);
+    y += rowH;
+  });
+  if (extras.length > 0 && y+8 < maxY) {
+    doc.setFillColor(238,242,234); doc.rect(m,y,HW-m*2,8,'F');
+    doc.setDrawColor(180,190,172); doc.setLineWidth(.4); doc.line(m,y,HW-m,y);
+    textL('Tilläggstjänster totalt inkl. moms', m+3, y+5.5, 7.5, P, true);
+    textL(fmt(subTotal), HW-m-3, y+5.5, 7.5, P, true);
+    y += 10;
+  }
+  y += 3;
+
+  // Arvode
+  if (y + 30 < maxY) {
+    var fH = 30;
+    doc.setFillColor(244,247,242); doc.setDrawColor(208,218,200); doc.setLineWidth(.3);
+    doc.roundedRect(m, y, HW-m*2, fH, 2, 2, 'FD');
+    textL('ARVODE', m+4, y+5.5, 6.5, P, true);
+    var mid = HW/2;
+    if (offerType === 'andel') {
+      textL('FAST ARVODE', m+4, y+11, 6, AD, true);
+      doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(P[0],P[1],P[2]);
+      doc.text(fmt(andelFee)+' inkl. moms', m+4, y+23);
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(90,100,85);
+      doc.text('Fast arvode oavsett slutlig köpeskilling.', m+4, y+28);
+    } else {
+      textL('ALT 1 – PROCENT', m+4, y+11, 6, AD, true);
+      doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(P[0],P[1],P[2]);
+      doc.text(pct.toLocaleString('sv',{minimumFractionDigits:1})+'%', m+4, y+23);
+      doc.setDrawColor(208,218,200); doc.setLineWidth(.3); doc.line(mid, y+5, mid, y+fH-4);
+      textL('ALT 2 – FAST + TILLÄGG', mid+4, y+11, 6, AD, true);
+      doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(P[0],P[1],P[2]);
+      doc.text(fmt(fixed), mid+4, y+23);
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(90,100,85);
+      doc.text(pct+'% av köpeskilling.', m+4, y+28);
+      doc.text('Fast '+fmt(fixed)+' + '+extra+'% överskj.', mid+4, y+28);
+    }
+    y += fH + 4;
+  }
+
+  // Terms
+  if (y + 20 < maxY) {
+    var tH = 20;
+    doc.setFillColor(250,249,247); doc.setDrawColor(221,216,204); doc.setLineWidth(.3);
+    doc.roundedRect(m, y, HW-m*2, tH, 2, 2, 'FD');
+    var c1 = m+4, c2 = m+(HW-m*2)/2+2, cW = (HW-m*2)/2-6;
+    [['BETALNINGSVILLKOR',payTerms,'GILTIG TILL',validDisp],
+     ['LEVERANSTID','Enligt överenskommelse','OFFERTANSVARIG','Jimmy Blomgren']
+    ].forEach(function(row,ri){
+      var ty = y+6+ri*10;
+      textL(row[0], c1, ty, 6, AD, true); textL(row[2], c2, ty, 6, AD, true);
+      textL(row[1], c1, ty+4.5, 8, [26,32,24], false, cW);
+      textL(row[3], c2, ty+4.5, 8, [26,32,24], false, cW);
+    });
+    y += tH + 4;
+  }
+
+  // Closing
+  if (y + 10 < maxY) {
+    doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(90,100,85);
+    textL('Jimmy Blomgren – Registrerad Fastighetsmäklare, PeakFast', m, y, 7, P, true);
+  }
+
+  footer(0, HW);
+
+  // ── RIGHT HALF: 2 IMAGES or RENDERED PDF ─────────────────────────────────
+  fillRect(HW, 0, HW, 22, P);
+  fillRect(HW, 22, HW, 1.5, A);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(240,237,232);
+  var rLabel = addPdf ? 'Bifogad bilaga' : 'Bilder';
+  doc.text(rLabel, HW+m, 14);
+
+  var imgAreaTop   = 26;
+  var imgAreaBot   = PH - 14;
+  var imgAreaH     = imgAreaBot - imgAreaTop;
+  var imgW         = HW - m*2;
+
+  if (addPdf && images.pdfImg) {
+    // Render PDF page — scale to fill right half, centered vertically
+    var pdfAspect = images.pdfImgH / images.pdfImgW;
+    var renderH   = Math.min(imgAreaH, imgW * pdfAspect);
+    var renderW   = renderH / pdfAspect;
+    var renderX   = HW + m + (imgW - renderW) / 2;
+    var renderY   = imgAreaTop + (imgAreaH - renderH) / 2;
+    doc.addImage(images.pdfImg, 'JPEG', renderX, renderY, renderW, renderH, '', 'MEDIUM');
+    // Subtle border
+    doc.setDrawColor(200,195,188); doc.setLineWidth(.3);
+    doc.rect(renderX, renderY, renderW, renderH, 'S');
+  } else if (addPdf && !images.pdfImg) {
+    // pdf.js not available — info box
+    var rX = HW + HW/2;
+    textC('Se bifogad PDF', rX, imgAreaTop + imgAreaH/2 - 8, 14, P, true);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90,100,85);
+    doc.text('PDF-preview kräver internetuppkoppling.', rX, imgAreaTop + imgAreaH/2 + 4, {align:'center'});
+  } else {
+    // Two landscape images stacked
+    var gap    = 4;
+    var eachH  = (imgAreaH - gap) / 2;
+    var img1   = images.inner  || propImageData;
+    var img2   = propImageData || images.inner;
+    var img1W  = images.innerW || window._pdfImgW || 1920;
+    var img1H  = images.innerH || window._pdfImgH || 1080;
+    var img2W  = window._pdfImgW || 1920;
+    var img2H  = window._pdfImgH || 1080;
+
+    if (img1) {
+      var i1H = Math.min(eachH, imgW * (img1H/img1W));
+      doc.addImage(img1, 'JPEG', HW+m, imgAreaTop, imgW, i1H, '', 'MEDIUM');
+    }
+    if (img2) {
+      var i2H = Math.min(eachH, imgW * (img2H/img2W));
+      doc.addImage(img2, 'JPEG', HW+m, imgAreaTop + eachH + gap, imgW, i2H, '', 'MEDIUM');
+    }
+  }
+
+  footer(HW, HW, 'Din fastighet. Vårt engagemang.');
+  foldLine();
+
+  var fname = 'PeakFast_Broschyr_'+(propAddress||'Objekt').replace(/\s+/g,'_')+'_'+(gv('offerDate').replace(/-/g,'').slice(0,8)||'datum')+'.pdf';
+  doc.save(fname);
+  showToast('Broschyr sparad! Skriv ut dubbelsidigt, vik pa mitten.');
+}
+
+
+window.addEventListener('DOMContentLoaded', function() {
+  try {
+    initSidebar();
+    initThemePicker();
+    initBrochureModal();
+    refresh();
+
+    document.getElementById('pdfHideLinks').addEventListener('change', function() {
+      var linksEl = document.querySelector('.doc-links');
+      var calcEl  = document.querySelector('.doc-calc');
+      if (linksEl) linksEl.style.opacity = this.checked ? '0.2' : '1';
+      if (calcEl)  calcEl.style.opacity  = this.checked ? '0.2' : '1';
+    });
+
+    document.getElementById('d-intro').addEventListener('input', function() { this._manualEdit = true; });
+    document.getElementById('d-payTerms').addEventListener('input', function() { this._manualEdit = true; });
+  } catch(e) {
+    console.error('Init error:', e);
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c00;color:#fff;padding:12px 16px;font-family:monospace;font-size:13px;z-index:9999;';
+    errDiv.textContent = 'JS-fel vid start: ' + e.message + ' (rad ' + (e.lineNumber||'?') + ')';
+    document.body.appendChild(errDiv);
+  }
+});
+</script>
+</body>
+</html>
