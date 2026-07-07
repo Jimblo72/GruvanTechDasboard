@@ -112,7 +112,10 @@ async function fetchThread(conversationId, opts = {}) {
   const maxMessages = opts.maxMessages || MAX_TRANSCRIPT_MESSAGES;
   const maxChars = opts.maxChars || MAX_TRANSCRIPT_CHARS;
 
-  const mailbox = MAILBOX();
+  // Vilken brevlåda vi läser tråden i OCH jämför "från Jimmy" mot. Anroparen
+  // skickar in opts.mailbox (multi-mailbox); faller tillbaka på MAILBOX() för
+  // säkerhet/bakåtkompatibilitet.
+  const mailbox = opts.mailbox || MAILBOX();
   const mailboxLower = mailbox.toLowerCase();
   const select = 'subject,from,receivedDateTime,sentDateTime,body,bodyPreview,isDraft,conversationId';
   const filter = `conversationId eq '${odataQuote(cid)}'`;
@@ -187,18 +190,18 @@ async function fetchThread(conversationId, opts = {}) {
 //
 // Dedupe på conversationId, exkludera aktuell tråd, behåll ~5 senaste ANDRA
 // trådar. Returnerar [{ subject, date, preview }]. Tom om adressen saknas/är oss.
-async function fetchOtherThreadsFromSender(senderAddress, excludeConversationId) {
+async function fetchOtherThreadsFromSender(senderAddress, excludeConversationId, mailbox) {
   const addr = String(senderAddress || '').trim();
   if (!addr) return [];
-  const mailbox = MAILBOX();
-  if (addr.toLowerCase() === mailbox.toLowerCase()) return []; // inte oss själva
+  const mb = mailbox || MAILBOX();
+  if (addr.toLowerCase() === mb.toLowerCase()) return []; // inte oss själva
 
   // INGEN $orderby (samma "too complex"-begränsning som tråd-frågan när man
   // filtrerar på ett annat fält än man sorterar). Vi sorterar klient-sidan.
   const filter = `from/emailAddress/address eq '${odataQuote(addr)}'`;
   const select = 'subject,conversationId,receivedDateTime,bodyPreview';
   const path =
-    `/users/${encodeURIComponent(mailbox)}/messages` +
+    `/users/${encodeURIComponent(mb)}/messages` +
     `?$filter=${encodeFilter(filter)}` +
     `&$select=${select}` +
     `&$top=50`;

@@ -15,9 +15,9 @@
 
 const { graphJson } = require('./lib/graph');
 const { writeJsonFile } = require('./lib/store');
-const { htmlToText, STYLE_FILE_PATH } = require('./lib/triage');
+const { htmlToText } = require('./lib/triage');
+const { getMailbox, isAllowed, defaultMailbox } = require('./lib/mailboxes');
 
-const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 
 // Antal skickade mejl att hämta, och hur många rensade brödtexter vi matar in
@@ -57,9 +57,9 @@ function wordCount(s) {
   return (s.match(/\S+/g) || []).length;
 }
 
-// Hämtar och rensar skickade mejl → lista med { subject, body }.
-async function fetchSentSamples() {
-  const mailbox = MAILBOX();
+// Hämtar och rensar skickade mejl → lista med { subject, body }. `mailbox` är
+// brevlådan vars Sent Items vi lär av (multi-mailbox).
+async function fetchSentSamples(mailbox) {
   const select = 'subject,body,bodyPreview,toRecipients,receivedDateTime,sentDateTime';
   const path =
     `/users/${encodeURIComponent(mailbox)}/mailFolders/sentitems/messages` +
@@ -172,8 +172,17 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  // Multi-mailbox: valfri ?mailbox=. Måste vara konfigurerad (säkerhet).
+  // Utelämnad → dagens enda brevlåda. Skriv till brevlådans egen styleFile
+  // (legacy jimmy@peakfast.se → data/mail-style.json, bakåtkompatibelt).
+  const q = String((event.queryStringParameters && event.queryStringParameters.mailbox) || '').trim();
+  if (q && !(await isAllowed(q))) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd brevlåda: ${q}` }) };
+  }
+  const mbConfig = (q && (await getMailbox(q))) || defaultMailbox();
+
   try {
-    const { fetched, samples } = await fetchSentSamples();
+    const { fetched, samples } = await fetchSentSamples(mbConfig.address);
     if (!samples.length) {
       return {
         statusCode: 422,
@@ -195,15 +204,15 @@ exports.handler = async (event) => {
     };
 
     await writeJsonFile(
-      STYLE_FILE_PATH,
+      mbConfig.styleFile,
       profile,
-      `Uppdatera inlärd mejlstil (${samples.length} skickade mejl)`
+      `Uppdatera inlärd mejlstil för ${mbConfig.address} (${samples.length} skickade mejl)`
     );
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ ...profile, fetched, used: samples.length }),
+      body: JSON.stringify({ ...profile, mailbox: mbConfig.address, fetched, used: samples.length }),
     };
   } catch (e) {
     return {
