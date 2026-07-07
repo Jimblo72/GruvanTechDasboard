@@ -557,7 +557,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     </div>
 
     <div class="stats">
-      <div class="stat"><div class="stat-label">Totalt appar</div><div class="stat-value">11</div><div class="stat-note">Aktiva + parkerade</div></div>
+      <div class="stat"><div class="stat-label">Totalt appar</div><div class="stat-value">12</div><div class="stat-note">Aktiva + parkerade</div></div>
       <div class="stat"><div class="stat-label">Aktiv build</div><div class="stat-value" style="color:var(--green)">2</div><div class="stat-note">Mäklargruvan + Qvickr</div></div>
       <div class="stat"><div class="stat-label">GitHub-repon</div><div class="stat-value" style="color:var(--accent)">4</div><div class="stat-note">Aktiva repon</div></div>
       <div class="stat"><div class="stat-label">MCP-servrar</div><div class="stat-value" style="color:var(--green)">3</div><div class="stat-note">memory · fs · github</div></div>
@@ -695,6 +695,22 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
         <div class="app-name">Energikontroll</div>
         <div class="app-desc">Styr värmepump + sovrumselement via elpris och inomhustemp.</div>
         <div class="card-footer"><div class="card-tags"><span class="tag">Netlify</span><span class="tag">Shelly Cloud</span></div><div class="card-actions"></div></div>
+      </div>
+    </div>
+
+    <!-- INFRASTRUKTUR -->
+    <div class="sec-head"><div class="sec-title">Infrastruktur</div><div class="sec-line"></div><div class="sec-count">1 verktyg</div></div>
+    <div class="app-grid">
+      <div class="app-card c-accent" onclick="openModal('gruvandashboard')">
+        <div class="card-top"><div class="app-icon" style="background:var(--accent-glow);color:var(--accent)">GT</div><span class="badge b-active">Aktiv</span></div>
+        <div class="app-name">Gruvan Tech Dashboard</div>
+        <div class="app-desc">Det interna navet — kontrollpanel för hela portföljen. Granskningsöversikt, repo-hälsa, PR:ar, systemflöde.</div>
+        <div class="card-footer">
+          <div class="card-tags"><span class="tag">Netlify</span><span class="tag">Single-file</span></div>
+          <div class="card-actions">
+            <a class="icon-btn" href="https://github.com/Jimblo72/GruvanTechDasboard" target="_blank" onclick="event.stopPropagation()" title="GitHub">⌥</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1235,6 +1251,20 @@ const APPS = {
       { t: 'Notiser', d: 'Pushnotis när värmepumpen slås på/av av ekonomiska skäl' },
     ],
     links: []
+  },
+  gruvandashboard: {
+    icon: 'GT', iconStyle: 'background:var(--accent-glow);color:#c8854a',
+    title: 'Gruvan Tech Dashboard', subtitle: 'Internt nav · Netlify',
+    status: 'active',
+    reviewRepos: ['GruvanTechDasboard'],
+    about: 'Det interna navet och kontrollpanelen för hela Gruvan-portföljen: samlad AI-granskningsöversikt, repo-hälsobrickor, öppna PR:ar, systemflöde och en granskningspanel. Single-file (index.html) + Netlify-funktioner som proxar GitHub och AI-modeller server-side.',
+    planned: [
+      { t: 'Idé-generator i dashboarden', d: 'Kodbas- och strategimedveten idé-backlog per app (porterar /ideer-skillen)' },
+      { t: 'Mail/kalender-hub', d: 'MS Graph → Supabase → dashboard (del av 7-delsplanen)' },
+    ],
+    links: [
+      { label: '⌥ GitHub', href: 'https://github.com/Jimblo72/GruvanTechDasboard', cls: 'secondary' },
+    ]
   },
 };
 

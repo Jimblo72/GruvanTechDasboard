@@ -40,7 +40,7 @@ svg{width:100%;height:auto;display:block;overflow:visible;}
 
 .hex-fill{transition:fill 0.4s ease, filter 0.4s ease;}
 .hex-stroke{transition:stroke 0.4s ease, stroke-width 0.3s ease;fill:none;}
-.node-label{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;fill:var(--text2);text-anchor:middle;transition:fill 0.4s ease;}
+.node-label{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;fill:var(--text2);text-anchor:middle;dominant-baseline:central;transition:fill 0.4s ease;}
 .node-sub{font-family:'JetBrains Mono',monospace;font-size:7.5px;fill:var(--text3);text-anchor:middle;letter-spacing:0.04em;text-transform:uppercase;}
 
 .hex-node{cursor:pointer;}
@@ -111,14 +111,9 @@ svg{width:100%;height:auto;display:block;overflow:visible;}
 <div class="header">
   <div class="eyebrow">Gruvan Tech · Prototyp</div>
   <div class="title-row">
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-      <line x1="6" y1="20" x2="16" y2="8" stroke="#8fb5d2" stroke-width="1.6" stroke-linecap="round"/>
-      <path d="M11 4 C15 3, 20 5, 21 9 C17 8.5, 13 8, 11 4 Z" stroke="#f2c14e" stroke-width="1.4" fill="none" stroke-linejoin="round"/>
-    </svg>
     <div class="title">Systemflöde</div>
   </div>
   <div class="subtitle">Silver är rådata, koppar är maskineriet, guld är det förädlade resultatet. Klicka en nod för att simulera en händelse — en röd, andande nod betyder att något väntar på dig.</div>
-  <div class="hud">⛏ Malm bearbetat idag: <b id="ore-count">0</b></div>
 </div>
 
 <div class="stage">
@@ -190,8 +185,7 @@ NODES.forEach((n, i) => {
 svgHTML += `<g class="hex-node hub" id="node-hub">
   <polygon class="hex-fill" points="${hexPoints(CX, CY, HUB_R)}"/>
   <polygon class="hex-stroke" points="${hexPoints(CX, CY, HUB_R)}"/>
-  <text class="node-label" x="${CX}" y="${CY-1}">Kärnan</text>
-  <text class="node-sub" x="${CX}" y="${CY+13}">smältverk</text>
+  <text class="node-label" x="${CX}" y="${CY}">Kärnan</text>
 </g>`;
 
 NODES.forEach(n => {
@@ -200,8 +194,7 @@ NODES.forEach(n => {
     <circle class="pulse-ring" id="ring-${n.id}" cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${HEX_R}" stroke="${n.color}"/>
     <polygon class="hex-fill" points="${hexPoints(n.x, n.y, HEX_R)}" fill="rgba(255,255,255,0.04)"/>
     <polygon class="hex-stroke" points="${hexPoints(n.x, n.y, HEX_R)}" stroke="var(--border2)"/>
-    <text class="node-label" x="${n.x.toFixed(1)}" y="${n.y.toFixed(1)-2}">${n.label}</text>
-    <text class="node-sub" x="${n.x.toFixed(1)}" y="${n.y.toFixed(1)+12}">${n.sub}</text>
+    <text class="node-label" x="${n.x.toFixed(1)}" y="${n.y.toFixed(1)}">${n.label}</text>
     <g class="alert-badge"><circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="5"/></g>
   </g>`;
 });
@@ -238,8 +231,6 @@ document.querySelectorAll('.hex-node[data-id]').forEach(g => {
 });
 
 const timers = {};
-let oreCount = 0;
-const oreEl = document.getElementById('ore-count');
 
 function trigger(id) {
   const node = document.getElementById(`node-${id}`);
@@ -254,9 +245,6 @@ function trigger(id) {
   void ring.getBBox();
   ring.classList.add('firing');
   sparkBurst(n.x, n.y, n.color);
-
-  oreCount++;
-  oreEl.textContent = oreCount;
 
   clearTimeout(timers[id]);
   timers[id] = setTimeout(() => {
