@@ -22,6 +22,7 @@
 
 const { graphJson } = require('./graph');
 const { readJsonFile } = require('./store');
+const { loadAndelMall, buildAndelOffertText, insertOffertBlock, OFFERT_TOKEN } = require('./offert-text');
 
 const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
 
@@ -282,7 +283,17 @@ async function classify(message, opts = {}) {
 // ── Claude: utkastgenerering ──────────────────────────────────
 function draftCategoryHint(category) {
   if (category === 'offert_andelsratt') {
-    return 'Detta gäller andelsförsäljning (avsändaren vill sälja — det är en förfrågan). Nämn kort att PeakFast har ett fast arvode på 37 500 kr (alt. 40 000 kr) inkl. moms för andelsförsäljning, och erbjud dig att skicka en fullständig offert.';
+    // Avsändaren har uttryckligen frågat om pris/villkor — därför är det RÄTT
+    // att inkludera offerten här (ingen konflikt med återhållsamhetsregeln).
+    // Själva offertblocket (priser + vad som ingår) är deterministiskt och
+    // byggs från data/offert-mall-andel.json — LLM:en skriver det ALDRIG själv.
+    return (
+      'Detta gäller andelsförsäljning (avsändaren vill sälja sin andel och frågar om pris/villkor — offerten ska med i svaret). ' +
+      'Strukturera utkastet så här: (1) en kort personlig inledning som bekräftar förfrågan, ' +
+      `(2) därefter EXAKT tokenen ${OFFERT_TOKEN} helt ensam på en egen rad — den ersätts automatiskt med vårt färdiga offertblock, ` +
+      '(3) sedan en kort avslutning där du erbjuder dig att svara på frågor eller boka ett samtal. ' +
+      'VIKTIGT: skriv INTE några priser, belopp eller uppräkningar av vad som ingår — offertblocket innehåller redan allt det. Nämn inga siffror alls.'
+    );
   }
   if (category === 'offert_forsaljning') {
     return 'Detta gäller en vanlig försäljning/värdering (avsändaren efterfrågar hjälp). Tacka kort för förfrågan, erbjud en kostnadsfri värdering och föreslå att boka en tid.';
@@ -344,7 +355,13 @@ async function generateDraft(message, category, opts = {}) {
 
   // Läs den precomputerade stilprofilen (en liten GitHub-läsning). Ingen
   // hämtning av skickade mejl sker här — det håller triage under 10 s-gränsen.
-  const styleProfile = opts.styleProfile || (await loadStyleProfile());
+  // För andelsoffert läses även offertmallen — parallellt (Promise.all) så de
+  // två GitHub-läsningarna inte adderar latens ovanpå varandra.
+  const isAndelOffert = category === 'offert_andelsratt';
+  const [styleProfile, andelMall] = await Promise.all([
+    opts.styleProfile ? Promise.resolve(opts.styleProfile) : loadStyleProfile(),
+    isAndelOffert ? loadAndelMall() : Promise.resolve(null),
+  ]);
 
   const userPrompt =
     `Inkommande mejl att besvara:\n\n` +
@@ -379,11 +396,20 @@ async function generateDraft(message, category, opts = {}) {
     }
     return r.json();
   }, delays);
-  const text = (data.content || [])
+  let text = (data.content || [])
     .filter(b => b.type === 'text')
     .map(b => b.text)
     .join('\n')
     .trim();
+
+  // Andelsoffert: byt [OFFERT]-tokenen mot det deterministiska offertblocket
+  // (byggt från data/offert-mall-andel.json — priserna kommer ALDRIG från
+  // LLM:en). Saknar utkastet tokenen läggs blocket in före sign-offen så
+  // offerten aldrig tappas — och aldrig dupliceras.
+  if (isAndelOffert && text) {
+    text = insertOffertBlock(text, buildAndelOffertText(andelMall));
+  }
+
   return text || '(tomt svar)';
 }
 
