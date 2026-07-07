@@ -156,18 +156,21 @@ const CLASSIFY_SCHEMA = {
 
 const CLASSIFY_SYSTEM = `Du är en assistent åt fastighetsmäklaren Jimmy Blomgren (PeakFast). Klassificera ETT inkommande mejl i exakt EN kategori:
 
-- offert_andelsratt: kunden vill sälja en andel/andelsrätt (fast pris 37 500 / 40 000 kr-fallet).
-- offert_forsaljning: vanlig fastighetsförsäljning — värdering eller offertförfrågan för en bostad/fastighet.
+- offert_andelsratt: EN KUND vill sälja sin andel/andelsrätt och Jimmy ska förmedla den (fast pris 37 500 / 40 000 kr-fallet).
+- offert_forsaljning: Jimmy ombeds agera MÄKLARE åt en KUND — värdera eller sälja KUNDENS bostad/fastighet. Gäller BARA när Jimmy är den säljande mäklaren åt någon annan.
 - support: fråga om ett pågående ärende eller allmän support.
 - abonnemang: en Mäklargruvan-kund vill lägga till eller säga upp ett abonnemangstillägg. FLAGGA endast — vidta ingen åtgärd.
-- privat: personlig/privat korrespondens där Jimmy INTE agerar mäklare (t.ex. Jimmys egna ärenden, familj, privata inköp som eget husbygge). Svara naturligt och personligt.
+- privat: personlig/privat korrespondens där Jimmy INTE agerar säljande mäklare — t.ex. Jimmys egna ärenden, familj, privata inköp (som eget husbygge), eller när en leverantör/säljare kontaktar JIMMY SJÄLV som kund/köpare. Svara naturligt och personligt.
 - brus: nyhetsbrev, spam, notifieringar eller annat som inte kräver svar.
+
+AVGÖRANDE FRÅGA för offert_forsaljning vs privat: agerar Jimmy MÄKLARE åt en kund i detta mejl (dvs. hjälper någon ANNAN att sälja sin bostad)? Om JA → offert_forsaljning. Om NEJ — Jimmy är själv köpare/privatperson, eller någon säljer/pitchar TILL Jimmy → privat. Ett husföretag/leverantör som mejlar Jimmy om HANS EGET husbygge är alltså privat, INTE offert_forsaljning, även om det handlar om fastighet/hus.
 
 Regler:
 - Svara på svenska.
 - confidence är 0–1 (hur säker du är).
 - reason: kort motivering (1–2 meningar).
 - suggested_action: kort förslag på nästa steg för Jimmy.
+- Använd HELA TRÅDEN (om den finns med) för att avgöra vem som är köpare/säljare.
 - Hitta inte på — om osäkert, välj den rimligaste kategorin och sänk confidence.`;
 
 function classifyUserText(message, context) {
@@ -503,16 +506,26 @@ async function triageMessage(messageId, opts = {}) {
   const force = !!opts.force;
   const message = opts.message || (await fetchFullMessage(messageId));
 
-  // Hämta hela tråden + andra trådar från samma avsändare PARALLELLT (Promise.all)
+  // Latens: den synkrona on-click-vägen håller kontexten lätt (ingen tvärtråds-
+  // sökning, mindre transkription) så vi ryms under Netlifys 10 s-gräns. Pollern
+  // (opts.includeCrossThread=true) har lång timeout och tar full kontext.
+  const includeCrossThread = !!opts.includeCrossThread;
+  const threadCaps = includeCrossThread
+    ? { maxMessages: 12, maxChars: 6000 }
+    : { maxMessages: 8, maxChars: 3000 };
+
+  // Hämta hela tråden (+ i pollern: andra trådar från samma avsändare) PARALLELLT
   // så de extra Graph-anropen inte staplar latens. Saknas conversationId →
   // degradera tyst (bara senaste meddelandet, precis som förr).
-  let thread = { transcript: '', messages: [], latestNonDraft: null, latestIsFromJimmy: false, hasDraftReply: false };
+  let thread = { transcript: '', messages: [], latestNonDraft: null, latestIsFromJimmy: false, hasDraftReply: false, ok: false, threadCount: 0 };
   let otherThreads = [];
   if (message.conversationId) {
     try {
       const [t, others] = await Promise.all([
-        fetchThread(message.conversationId),
-        fetchOtherThreadsFromSender(message.fromAddress, message.conversationId),
+        fetchThread(message.conversationId, threadCaps),
+        includeCrossThread
+          ? fetchOtherThreadsFromSender(message.fromAddress, message.conversationId)
+          : Promise.resolve([]),
       ]);
       if (t) thread = t;
       otherThreads = others || [];
@@ -545,6 +558,15 @@ async function triageMessage(messageId, opts = {}) {
     duplicateDraft: false,
     skipReason: null,
     timestamp: new Date().toISOString(),
+    // TILLFÄLLIG diagnostik (tas bort när tråd/guard är verifierade live).
+    _debug: {
+      threadFetchOk: !!thread.ok,
+      threadCount: thread.threadCount || 0,
+      hasDraftReply: !!thread.hasDraftReply,
+      latestFromJimmy: !!thread.latestIsFromJimmy,
+      otherThreadCount: otherThreads.length,
+      includeCrossThread,
+    },
   };
 
   if (!needsReply) return result; // brus → inget utkast
