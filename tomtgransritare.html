@@ -11,135 +11,185 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-         background: var(--bg); color: var(--text); padding: 16px; }
-  h1 { font-size: 1.2rem; margin-bottom: 4px; }
-  .sub { font-size: .82rem; color: var(--muted); margin-bottom: 14px; }
-  .hint { font-size: .84rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
-  .hint b { color: #cdd4da; }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
-  button { border: 0; border-radius: 8px; padding: 9px 14px; font-size: .9rem;
+         background: var(--bg); color: var(--text); padding: 14px 16px 24px; }
+  h1 { font-size: 1.15rem; margin-bottom: 2px; }
+  .sub { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
+  button { border: 0; border-radius: 8px; padding: 8px 12px; font-size: .88rem;
            cursor: pointer; background: var(--panel2); color: var(--text); }
   button:active { transform: scale(.97); }
   button:disabled { opacity: .4; cursor: not-allowed; }
+  .ok { color: #7be48a; font-size: .8rem; }
+
+  /* ── Editor-layout: panel · bildyta · panel ── */
+  .editor { display: flex; gap: 14px; align-items: stretch; }
+  .panel { flex: 0 0 220px; width: 220px; background: var(--panel);
+           border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px;
+           align-self: flex-start; }
+  .panel.right { flex-basis: 250px; width: 250px; }
+  .stage { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .psec { margin-bottom: 14px; }
+  .psec:last-child { margin-bottom: 0; }
+  .psec h3 { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btns button, .fullbtn { font-size: .84rem; }
+  .fullbtn { width: 100%; margin-top: 6px; text-align: left; }
+  .seg { display: inline-flex; border-radius: 8px; overflow: hidden; width: 100%; }
+  .seg button { border-radius: 0; flex: 1; }
+  .mode { background: #444b54; }
+  .mode.on { background: var(--accent); font-weight: 700; }
   .lot { border: 2px solid transparent; font-weight: 700; }
   .lot.active { border-color: #fff; }
   .util { background: var(--panel2); }
-  .mode { background: #444b54; }
-  .mode.on { background: var(--accent); font-weight: 700; }
-  .seg { display: inline-flex; border-radius: 8px; overflow: hidden; }
-  .seg button { border-radius: 0; }
-  #export { background: var(--accent); font-weight: 700; }
+  #export { background: var(--accent); font-weight: 700; width: 100%; }
   #export:hover { background: var(--accent2); }
-  .ok { color: #7be48a; font-size: .85rem; margin-left: 6px; }
-  #wrap { position: relative; width: 100%; max-width: 1400px;
-          border: 1px dashed var(--line); border-radius: 10px; min-height: 220px;
-          display: flex; align-items: center; justify-content: center; }
-  #wrap.empty::after { content: "Ladda upp en drönarbild för att börja";
-          color: var(--muted); font-size: .95rem; }
-  canvas { max-width: 100%; max-height: 66vh; width: auto; height: auto;
-           display: block; margin: 0 auto; border-radius: 10px; touch-action: none; }
-  /* Verktygsraden följer med när man scrollar så kontrollerna alltid är nåbara
-     även med en stor uppladdad bild. */
-  #modebar { position: sticky; top: 0; z-index: 20; background: var(--bg);
-             padding: 8px 0 6px; margin-bottom: 2px; }
-  canvas.hidden { display: none; }
-  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-top: 12px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-          padding: 12px 14px; flex: 1; min-width: 260px; }
-  .card h3 { font-size: .9rem; margin-bottom: 8px; color: #cdd4da; }
-  .field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: .85rem; }
-  .field label { width: 130px; color: var(--muted); }
-  .field input[type=text] { flex: 1; background: #14161a; color: var(--text);
-          border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font-size: .85rem; }
-  .field input[type=range] { flex: 1; }
-  .lotlist { font-size: .8rem; color: var(--muted); line-height: 1.6; }
-  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px;
-            vertical-align: middle; }
-  #out { width: 100%; margin-top: 10px; background: #14161a; color: #9fdc9f;
-         border: 1px solid var(--line); border-radius: 8px; padding: 10px;
-         font: .76rem/1.4 monospace; min-height: 60px; resize: vertical; }
+
+  .field { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; font-size: .82rem; }
+  .field label { width: 92px; color: var(--muted); flex: 0 0 92px; }
+  .field input[type=text] { flex: 1; min-width: 0; background: #14161a; color: var(--text);
+          border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-size: .82rem; }
+  .field input[type=range] { flex: 1; min-width: 0; }
+  .lotlist { font-size: .78rem; color: var(--muted); line-height: 1.7; margin-top: 8px; }
+  .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+  .tip { font-size: .74rem; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+  .tip b { color: #cdd4da; }
+
+  /* ── Verktygsrad ovanför bilden (uppladdning + zoom) ── */
+  .stagebar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .filebtn { background: #1f7ac2; font-weight: 600; }
-  details { margin-top: 12px; font-size: .82rem; color: var(--muted); }
+  .spacer { flex: 1 1 auto; }
+  .zoomctl { display: inline-flex; align-items: center; gap: 4px; background: var(--panel2);
+             border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .zoomctl button { background: transparent; padding: 5px 10px; font-size: 1rem; line-height: 1; }
+  .zoomctl button:hover:not(:disabled) { background: #363c44; }
+  #zval { min-width: 48px; text-align: center; font-size: .82rem; color: var(--muted);
+          font-variant-numeric: tabular-nums; }
+  .zoomctl .fit { font-size: .8rem; padding: 5px 9px; }
+
+  /* ── Själva bildytan (stor, scroll-/zoombar) ── */
+  .viewport { position: relative; overflow: auto; background: #101216;
+              border: 1px solid var(--line); border-radius: 10px;
+              height: 78vh; min-height: 340px; }
+  .viewport.dragover { border: 2px dashed var(--accent); }
+  #zoomwrap { margin: auto; line-height: 0; }
+  canvas { display: block; width: 100%; height: auto; touch-action: none; border-radius: 4px; }
+  canvas.hidden { display: none; }
+  .overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+             pointer-events: none; text-align: center; padding: 20px; }
+  .viewport.empty #emptyhint { display: flex; }
+  .viewport.dragover #drophint { display: flex; }
+  #emptyhint, #drophint { color: var(--muted); font-size: .95rem; line-height: 1.6; }
+  #drophint { color: var(--accent2); font-weight: 700; font-size: 1.05rem; }
+
+  #out { width: 100%; margin-top: 8px; background: #14161a; color: #9fdc9f;
+         border: 1px solid var(--line); border-radius: 8px; padding: 9px;
+         font: .72rem/1.4 monospace; min-height: 54px; resize: vertical; }
+  details { margin-top: 12px; font-size: .8rem; color: var(--muted); }
   summary { cursor: pointer; color: #cdd4da; }
   code { background: #14161a; padding: 1px 5px; border-radius: 4px; }
+
+  /* ── Smala skärmar: stapla panelerna ── */
+  @media (max-width: 980px) {
+    .editor { flex-direction: column; }
+    .panel, .panel.right { flex: 1 1 auto; width: 100%; }
+    .viewport { height: 58vh; }
+  }
 </style>
 </head>
 <body>
 <h1>Tomtgränsritare</h1>
 <div class="sub">Rita ungefärliga tomtgränser på drönarbilder – PeakFast / Mäklargruvan</div>
 
-<div class="toolbar">
-  <button class="filebtn" onclick="document.getElementById('file').click()">📷 Ladda upp drönarbild</button>
-  <input type="file" id="file" accept="image/*" style="display:none" onchange="loadImage(event)">
-  <span id="fmsg" class="ok"></span>
+<div class="editor">
+
+  <!-- ── VÄNSTERPANEL ── -->
+  <aside class="panel left">
+    <div class="psec">
+      <h3>Läge</h3>
+      <div class="seg">
+        <button id="mAdjust" class="mode on" onclick="setMode('adjust')">✥ Justera</button>
+        <button id="mDraw" class="mode" onclick="setMode('draw')">✎ Rita</button>
+      </div>
+      <div class="tip"><b>Justera:</b> dra i ett hörn · dra i en linjes mitt för att lägga till hörn · dubbelklicka på ett hörn för att ta bort det.<br><b>Rita:</b> klicka för att lägga till hörn i tur och ordning.</div>
+    </div>
+
+    <div class="psec">
+      <h3>Tomter</h3>
+      <div class="btns" id="lotButtons"></div>
+      <button class="util fullbtn" onclick="addLot()">＋ Ny tomt</button>
+    </div>
+
+    <div class="psec">
+      <h3>Åtgärder</h3>
+      <div class="btns">
+        <button class="util" onclick="undo()">↶ Ångra punkt</button>
+        <button class="util" onclick="clearLot()">Rensa vald</button>
+        <button class="util" onclick="clearAll()">Rensa allt</button>
+      </div>
+    </div>
+
+    <div class="psec">
+      <h3>Tomtbeteckning</h3>
+      <div class="field" style="margin-bottom:0;">
+        <input type="text" id="lotName" placeholder="t.ex. 1:55" oninput="renameLot(this.value)" style="flex:1;">
+      </div>
+      <div class="lotlist" id="lotlist"></div>
+    </div>
+  </aside>
+
+  <!-- ── MITTEN: uppladdning + zoom + bildyta ── -->
+  <main class="stage">
+    <div class="stagebar">
+      <button class="filebtn" onclick="document.getElementById('file').click()">📷 Ladda upp drönarbild</button>
+      <input type="file" id="file" accept="image/*" style="display:none" onchange="onFileInput(event)">
+      <span id="fmsg" class="ok"></span>
+      <span class="spacer"></span>
+      <div class="zoomctl">
+        <button onclick="zoomBy(1/1.25)" title="Zooma ut">−</button>
+        <span id="zval">100%</span>
+        <button onclick="zoomBy(1.25)" title="Zooma in">+</button>
+        <button class="fit" onclick="fitView()" title="Anpassa till vyn">Anpassa</button>
+      </div>
+    </div>
+
+    <div class="viewport empty" id="viewport">
+      <div id="zoomwrap"><canvas id="cv" class="hidden"></canvas></div>
+      <div class="overlay" id="emptyhint">Ladda upp eller <b>&nbsp;dra &amp; släpp&nbsp;</b> en drönarbild för att börja</div>
+      <div class="overlay" id="drophint">Släpp drönarbilden här</div>
+    </div>
+    <div class="tip">Zooma med <b>+ / −</b> eller <b>scrollhjulet</b> (vid muspekaren). Panorera med scrollbarerna eller <b>mellanslag + dra</b>.</div>
+  </main>
+
+  <!-- ── HÖGERPANEL ── -->
+  <aside class="panel right">
+    <div class="psec">
+      <h3>Utseende</h3>
+      <div class="field"><label>Linjetjocklek</label><input type="range" id="lw" min="4" max="20" value="11" oninput="draw()"></div>
+      <div class="field"><label>Etikettstorlek</label><input type="range" id="fs" min="40" max="120" value="76" oninput="draw()"></div>
+      <div class="field"><label>Fyllnad</label><input type="range" id="fill" min="0" max="40" value="15" oninput="draw()"></div>
+      <div class="field" style="margin-bottom:0;"><label>Disclaimer</label><input type="text" id="disc" value="Ungefärliga tomtgränser – ej juridiskt gällande" oninput="draw()"></div>
+    </div>
+
+    <div class="psec">
+      <h3>Export</h3>
+      <button id="export" onclick="exportImage()" disabled>⬇ Exportera bild (full upplösning)</button>
+      <button id="copy" class="util fullbtn" onclick="copyJSON()" disabled style="text-align:center;">📋 Kopiera koordinater</button>
+      <span id="msg" class="ok"></span>
+      <textarea id="out" readonly placeholder="Koordinater uppdateras automatiskt medan du ritar/justerar…"></textarea>
+    </div>
+
+    <details>
+      <summary>Om verktyget &amp; tips</summary>
+      <p style="margin-top:8px; line-height:1.6">
+      Allt körs lokalt i webbläsaren – ingen bild laddas upp någonstans. Koordinaterna sparas som andelar (0–1)
+      av bildens bredd/höjd, så samma inritning fungerar oavsett upplösning.<br>
+      <b>Tips:</b> ta drönarbilden så rakt ovanifrån som möjligt (liten vinkel) – då blir gränserna enklare att placera. Exporten sker i bildens fulla originalupplösning med etiketter och disclaimer inbränd.
+      </p>
+    </details>
+  </aside>
+
 </div>
-
-<p class="hint">
-  <b>Justera:</b> dra i ett hörn för att flytta det · dra i en linjes mittpunkt för att lägga till hörn · dubbelklicka på ett hörn för att ta bort det.<br>
-  <b>Rita:</b> välj tomt och klicka för att lägga till hörn i tur och ordning.
-</p>
-
-<div class="toolbar" id="modebar">
-  <div class="seg">
-    <button id="mAdjust" class="mode on" onclick="setMode('adjust')">✥ Justera</button>
-    <button id="mDraw" class="mode" onclick="setMode('draw')">✎ Rita</button>
-  </div>
-  <span id="lotButtons"></span>
-  <button class="util" onclick="addLot()">＋ Ny tomt</button>
-  <button class="util" onclick="undo()">↶ Ångra punkt</button>
-  <button class="util" onclick="clearLot()">Rensa vald</button>
-  <button class="util" onclick="clearAll()">Rensa allt</button>
-</div>
-
-<div id="wrap" class="empty"><canvas id="cv" class="hidden"></canvas></div>
-
-<div class="row">
-  <div class="card">
-    <h3>Tomtbeteckningar</h3>
-    <div class="sub" style="margin:0 0 8px">Byt namn på vald tomt – syns som etikett i bilden.</div>
-    <div class="field">
-      <label>Vald tomts namn</label>
-      <input type="text" id="lotName" placeholder="t.ex. 1:55" oninput="renameLot(this.value)">
-    </div>
-    <div class="lotlist" id="lotlist"></div>
-  </div>
-  <div class="card">
-    <h3>Utseende</h3>
-    <div class="field">
-      <label>Linjetjocklek</label>
-      <input type="range" id="lw" min="4" max="20" value="11" oninput="draw()">
-    </div>
-    <div class="field">
-      <label>Etikettstorlek</label>
-      <input type="range" id="fs" min="40" max="120" value="76" oninput="draw()">
-    </div>
-    <div class="field">
-      <label>Fyllnad</label>
-      <input type="range" id="fill" min="0" max="40" value="15" oninput="draw()">
-    </div>
-    <div class="field">
-      <label>Disclaimertext</label>
-      <input type="text" id="disc" value="Ungefärliga tomtgränser – ej juridiskt gällande" oninput="draw()">
-    </div>
-  </div>
-</div>
-
-<div class="toolbar" style="margin-top:12px">
-  <button id="export" onclick="exportImage()" disabled>⬇ Exportera bild (full upplösning)</button>
-  <button id="copy" class="util" onclick="copyJSON()" disabled>📋 Kopiera koordinater</button>
-  <span id="msg" class="ok"></span>
-</div>
-<textarea id="out" readonly placeholder="Koordinater uppdateras automatiskt medan du ritar/justerar..."></textarea>
-
-<details>
-  <summary>Om verktyget &amp; tips</summary>
-  <p style="margin-top:8px; line-height:1.6">
-  Allt körs lokalt i webbläsaren – ingen bild laddas upp någonstans. Koordinaterna sparas som andelar (0–1)
-  av bildens bredd/höjd, så samma inritning fungerar oavsett upplösning.<br>
-  <b>Tips för drönarfoto:</b> ta bilden så rakt ovanifrån som möjligt (liten vinkel) – då blir gränserna enklare att placera korrekt.<br>
-  Exporten sker i bildens fulla originalupplösning med etiketter och disclaimer inbränd.
-  </p>
-</details>
 
 <script>
 const PALETTE = ['#c1121f','#e36414','#1f7ac2','#2a9d5c','#8e44ad','#d4a017','#118ab2','#ef476f'];
@@ -148,133 +198,195 @@ let order = [];        // ordning på tomtnamn
 let colorOf = {};      // namn -> färg
 let current = null;
 let mode = 'adjust';
-const HIT = 14, MID = 12;
+const HIT = 14, MID = 12;   // träfftolerans i SKÄRM-pixlar (skalas med dispScale)
 
 let img = null;
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
+const viewport = document.getElementById('viewport');
+const zoomwrap = document.getElementById('zoomwrap');
 
-function loadImage(e){
-  const f = e.target.files[0]; if(!f) return;
+let zoom = 1;      // multiplikator av "anpassa"-skalan (1 = bilden får plats i vyn)
+let fitW = 0;      // canvas-bredd i px vid zoom=1
+const ZMIN = 0.25, ZMAX = 8;
+let panMode = false, panning = null;
+
+// ── Bildinläsning (delas av fil-input OCH drag & släpp) ──
+function loadFile(f){
+  if(!f || !/^image\//.test(f.type)) return;
   const rd = new FileReader();
   rd.onload = ev => {
     const im = new Image();
     im.onload = () => {
       img = im;
-      cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+      cv.width = im.naturalWidth; cv.height = im.naturalHeight;  // BUFFER = full upplösning
       cv.classList.remove('hidden');
-      document.getElementById('wrap').classList.remove('empty');
+      viewport.classList.remove('empty');
       document.getElementById('export').disabled = false;
       document.getElementById('copy').disabled = false;
       if (order.length === 0){ addLot('1:55'); addLot('1:56'); addLot('1:57'); setCurrent('1:55'); }
-      draw();
+      fitView();
       document.getElementById('fmsg').textContent = f.name + ' · ' + im.naturalWidth + '×' + im.naturalHeight + ' px';
     };
     im.src = ev.target.result;
   };
   rd.readAsDataURL(f);
 }
+function onFileInput(e){ const f = e.target.files[0]; if(f) loadFile(f); e.target.value=''; }
 
-function addLot(name){
-  if (!name || name === undefined){
-    let n = 1; while (order.includes('Tomt '+n)) n++;
-    name = 'Tomt ' + n;
+// ── Zoom & panorering ──
+function aspect(){ return img ? img.naturalWidth/img.naturalHeight : 1; }
+function computeFit(){
+  if(!img) return;
+  const pad = 20;
+  const availW = Math.max(80, viewport.clientWidth - pad);
+  const availH = Math.max(80, viewport.clientHeight - pad);
+  fitW = Math.min(availW, availH * aspect());
+}
+function applyZoom(){
+  if(!img) return;
+  zoomwrap.style.width = Math.round(fitW * zoom) + 'px';
+  document.getElementById('zval').textContent = Math.round(zoom*100) + '%';
+  draw();  // rita om så hörn-handtagen behåller sin skärmstorlek
+}
+function fitView(){
+  if(!img) return;
+  computeFit(); zoom = 1; applyZoom();
+  viewport.scrollLeft = Math.max(0, (zoomwrap.offsetWidth - viewport.clientWidth)/2);
+  viewport.scrollTop  = Math.max(0, (zoomwrap.offsetHeight - viewport.clientHeight)/2);
+}
+function zoomBy(factor){
+  if(!img) return;
+  // zooma mot vyns mitt
+  const rect = viewport.getBoundingClientRect();
+  zoomAt(factor, rect.width/2, rect.height/2);
+}
+function zoomAt(factor, offX, offY){
+  const prevW = fitW*zoom, prevH = prevW/aspect();
+  const cx = offX + viewport.scrollLeft, cy = offY + viewport.scrollTop;
+  const fx = prevW ? cx/prevW : .5, fy = prevH ? cy/prevH : .5;
+  zoom = Math.min(ZMAX, Math.max(ZMIN, zoom*factor));
+  applyZoom();
+  const newW = fitW*zoom, newH = newW/aspect();
+  viewport.scrollLeft = fx*newW - offX;
+  viewport.scrollTop  = fy*newH - offY;
+}
+viewport.addEventListener('wheel', e=>{
+  if(!img) return;
+  e.preventDefault();
+  const rect = viewport.getBoundingClientRect();
+  zoomAt(e.deltaY < 0 ? 1.15 : 1/1.15, e.clientX - rect.left, e.clientY - rect.top);
+}, {passive:false});
+
+function isTyping(e){ const t=e.target; return t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA'); }
+window.addEventListener('keydown', e=>{ if(e.code==='Space' && !isTyping(e)){ panMode=true; viewport.style.cursor='grab'; e.preventDefault(); }});
+window.addEventListener('keyup',   e=>{ if(e.code==='Space'){ panMode=false; if(!panning) viewport.style.cursor=''; }});
+viewport.addEventListener('pointerdown', e=>{
+  if(panMode || e.button===1){
+    e.preventDefault();
+    panning = { x:e.clientX, y:e.clientY, sl:viewport.scrollLeft, st:viewport.scrollTop };
+    viewport.setPointerCapture(e.pointerId);
+    viewport.style.cursor='grabbing';
   }
+});
+viewport.addEventListener('pointermove', e=>{
+  if(panning){ viewport.scrollLeft = panning.sl - (e.clientX - panning.x);
+               viewport.scrollTop  = panning.st - (e.clientY - panning.y); }
+});
+viewport.addEventListener('pointerup', ()=>{ if(panning){ panning=null; viewport.style.cursor = panMode?'grab':''; } });
+
+// ── Drag & släpp (fungerar var som helst i fönstret) ──
+window.addEventListener('dragover', e=>{ e.preventDefault(); });
+viewport.addEventListener('dragenter', e=>{ e.preventDefault(); viewport.classList.add('dragover'); });
+viewport.addEventListener('dragover',  e=>{ e.preventDefault(); viewport.classList.add('dragover'); });
+viewport.addEventListener('dragleave', e=>{ if(e.target===viewport) viewport.classList.remove('dragover'); });
+window.addEventListener('drop', e=>{
+  e.preventDefault(); viewport.classList.remove('dragover');
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f) loadFile(f);
+});
+window.addEventListener('resize', ()=>{ if(img){ computeFit(); applyZoom(); } });
+
+// ── Tomter ──
+function addLot(name){
+  if (!name || name === undefined){ let n=1; while(order.includes('Tomt '+n)) n++; name='Tomt '+n; }
   if (polys[name]) return;
-  polys[name] = [];
-  order.push(name);
+  polys[name] = []; order.push(name);
   colorOf[name] = PALETTE[(order.length-1) % PALETTE.length];
   renderLotButtons(); setCurrent(name); refreshList();
 }
-function setCurrent(name){
-  current = name;
-  document.getElementById('lotName').value = name;
-  renderLotButtons();
-}
+function setCurrent(name){ current=name; document.getElementById('lotName').value=name; renderLotButtons(); }
 function renderLotButtons(){
-  const c = document.getElementById('lotButtons'); c.innerHTML = '';
+  const c = document.getElementById('lotButtons'); c.innerHTML='';
   order.forEach(name => {
-    const b = document.createElement('button');
-    b.className = 'lot' + (name===current?' active':'');
-    b.style.background = colorOf[name];
-    b.textContent = name;
-    b.onclick = () => setCurrent(name);
-    c.appendChild(b);
+    const b=document.createElement('button');
+    b.className='lot'+(name===current?' active':''); b.style.background=colorOf[name];
+    b.textContent=name; b.onclick=()=>setCurrent(name); c.appendChild(b);
   });
 }
 function renameLot(newName){
-  if (!current || !newName || polys[newName]) return;
-  const old = current;
-  polys[newName] = polys[old]; delete polys[old];
-  colorOf[newName] = colorOf[old]; delete colorOf[old];
-  order[order.indexOf(old)] = newName;
-  current = newName;
+  if(!current||!newName||polys[newName]) return;
+  const old=current;
+  polys[newName]=polys[old]; delete polys[old];
+  colorOf[newName]=colorOf[old]; delete colorOf[old];
+  order[order.indexOf(old)]=newName; current=newName;
   renderLotButtons(); refreshList(); draw(); updateOut();
 }
 function refreshList(){
-  const el = document.getElementById('lotlist');
-  el.innerHTML = order.map(n =>
-    `<div><span class="swatch" style="background:${colorOf[n]}"></span>${n} — ${polys[n].length} hörn</div>`
-  ).join('');
+  document.getElementById('lotlist').innerHTML = order.map(n =>
+    `<div><span class="swatch" style="background:${colorOf[n]}"></span>${n} — ${polys[n].length} hörn</div>`).join('');
 }
 
+// ── Koordinatmappning (buffer-pixlar). Fungerar vid ALLA zoomnivåer eftersom
+//    getBoundingClientRect ger canvasens faktiska renderade storlek/position. ──
 function toPx(p){ return [p[0]*cv.width, p[1]*cv.height]; }
 function evtPos(e){
   const r = cv.getBoundingClientRect();
   return [ (e.clientX-r.left)/r.width*cv.width, (e.clientY-r.top)/r.height*cv.height ];
 }
+function dispScale(){ const r=cv.getBoundingClientRect(); return r.width ? cv.width/r.width : 1; }
 function dist(a,b){ return Math.hypot(a[0]-b[0], a[1]-b[1]); }
-function findVertex(pos){
-  for (const k of order) for (let i=0;i<polys[k].length;i++)
-    if (dist(toPx(polys[k][i]),pos) < HIT) return {lot:k,i};
-  return null;
-}
-function findEdge(pos){
-  for (const k of order){ const P=polys[k];
-    for (let i=0;i<P.length;i++){
-      const a=toPx(P[i]), b=toPx(P[(i+1)%P.length]);
-      const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
-      if (dist(m,pos)<MID) return {lot:k,i};
-    } }
-  return null;
-}
+function findVertex(pos){ const H=HIT*dispScale();
+  for(const k of order) for(let i=0;i<polys[k].length;i++)
+    if(dist(toPx(polys[k][i]),pos)<H) return {lot:k,i}; return null; }
+function findEdge(pos){ const M=MID*dispScale();
+  for(const k of order){ const P=polys[k];
+    for(let i=0;i<P.length;i++){ const a=toPx(P[i]),b=toPx(P[(i+1)%P.length]);
+      const m=[(a[0]+b[0])/2,(a[1]+b[1])/2]; if(dist(m,pos)<M) return {lot:k,i}; } }
+  return null; }
 
 function setMode(m){
-  mode = m;
+  mode=m;
   document.getElementById('mAdjust').classList.toggle('on', m==='adjust');
   document.getElementById('mDraw').classList.toggle('on', m==='draw');
   flash('msg', m==='adjust'?'Justera: dra i hörn/linjer':'Rita: klicka för nya hörn');
 }
 
-let drag = null;
+let drag=null;
 cv.addEventListener('pointerdown', e=>{
-  if(!img) return;
+  if(!img || panMode || e.button===1) return;
   cv.setPointerCapture(e.pointerId);
-  const pos = evtPos(e);
-  if (mode==='draw'){
+  const pos=evtPos(e);
+  if(mode==='draw'){
     if(!current) return;
     polys[current].push([+(pos[0]/cv.width).toFixed(4), +(pos[1]/cv.height).toFixed(4)]);
     draw(); updateOut(); refreshList(); return;
   }
-  const v = findVertex(pos);
-  if (v){ drag=v; setCurrent(v.lot); return; }
-  const ed = findEdge(pos);
-  if (ed){
+  const v=findVertex(pos);
+  if(v){ drag=v; setCurrent(v.lot); return; }
+  const ed=findEdge(pos);
+  if(ed){
     polys[ed.lot].splice(ed.i+1,0,[+(pos[0]/cv.width).toFixed(4),+(pos[1]/cv.height).toFixed(4)]);
     drag={lot:ed.lot,i:ed.i+1}; setCurrent(ed.lot); draw(); updateOut(); refreshList();
   }
 });
 cv.addEventListener('pointermove', e=>{
-  if(!img) return;
-  if(!drag){
-    const pos=evtPos(e);
-    cv.style.cursor = mode==='adjust' ? ((findVertex(pos)||findEdge(pos))?'grab':'default') : 'crosshair';
-    return;
-  }
+  if(!img || panMode) return;
+  if(!drag){ const pos=evtPos(e);
+    cv.style.cursor = mode==='adjust' ? ((findVertex(pos)||findEdge(pos))?'grab':'default') : 'crosshair'; return; }
   const pos=evtPos(e);
-  polys[drag.lot][drag.i]=[
-    +Math.min(1,Math.max(0,pos[0]/cv.width)).toFixed(4),
-    +Math.min(1,Math.max(0,pos[1]/cv.height)).toFixed(4)];
+  polys[drag.lot][drag.i]=[ +Math.min(1,Math.max(0,pos[0]/cv.width)).toFixed(4),
+                            +Math.min(1,Math.max(0,pos[1]/cv.height)).toFixed(4) ];
   cv.style.cursor='grabbing'; draw(); updateOut();
 });
 cv.addEventListener('pointerup', ()=>{ drag=null; refreshList(); });
@@ -288,74 +400,53 @@ function undo(){ if(current){ polys[current].pop(); draw(); updateOut(); refresh
 function clearLot(){ if(current){ polys[current]=[]; draw(); updateOut(); refreshList(); } }
 function clearAll(){ for(const k of order) polys[k]=[]; draw(); updateOut(); refreshList(); }
 
-function hexToRgba(hex, a){
-  const n = parseInt(hex.slice(1),16);
-  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
-}
+function hexToRgba(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
 
+// Renderar bild + polygoner + etiketter + disclaimer i ett godtyckligt sammanhang
+// (skärm-canvas eller export-canvas). scale skalar linje/etikett efter bildbredd.
 function render(context, W, H, scale){
   context.drawImage(img,0,0,W,H);
-  const lw = +document.getElementById('lw').value * scale;
-  const fs = +document.getElementById('fs').value * scale;
-  const fillA = +document.getElementById('fill').value/100;
-  for (const k of order){
-    const P = polys[k]; if (P.length<1) continue;
-    const col = colorOf[k];
-    if (P.length>=2){
-      context.beginPath();
-      context.moveTo(P[0][0]*W, P[0][1]*H);
-      for (let i=1;i<P.length;i++) context.lineTo(P[i][0]*W, P[i][1]*H);
+  const lw=+document.getElementById('lw').value*scale;
+  const fs=+document.getElementById('fs').value*scale;
+  const fillA=+document.getElementById('fill').value/100;
+  for(const k of order){ const P=polys[k]; if(P.length<1) continue; const col=colorOf[k];
+    if(P.length>=2){
+      context.beginPath(); context.moveTo(P[0][0]*W,P[0][1]*H);
+      for(let i=1;i<P.length;i++) context.lineTo(P[i][0]*W,P[i][1]*H);
       context.closePath();
-      if (fillA>0){ context.fillStyle=hexToRgba(col,fillA); context.fill(); }
-      context.strokeStyle=col; context.lineWidth=lw; context.setLineDash([]);
-      context.lineJoin='round'; context.stroke();
+      if(fillA>0){ context.fillStyle=hexToRgba(col,fillA); context.fill(); }
+      context.strokeStyle=col; context.lineWidth=lw; context.setLineDash([]); context.lineJoin='round'; context.stroke();
     }
-    // etikett
-    if (P.length>=3){
-      const cx=P.reduce((s,p)=>s+p[0],0)/P.length*W;
-      const cy=P.reduce((s,p)=>s+p[1],0)/P.length*H;
+    if(P.length>=3){
+      const cx=P.reduce((s,p)=>s+p[0],0)/P.length*W, cy=P.reduce((s,p)=>s+p[1],0)/P.length*H;
       context.font=`700 ${fs}px sans-serif`;
       const tw=context.measureText(k).width, pad=fs*0.28;
-      context.fillStyle='rgba(0,0,0,.78)';
-      context.fillRect(cx-tw/2-pad, cy-fs/2-pad, tw+2*pad, fs+2*pad);
-      context.strokeStyle='#ff2828'; context.lineWidth=Math.max(2,fs*0.06);
-      context.strokeRect(cx-tw/2-pad, cy-fs/2-pad, tw+2*pad, fs+2*pad);
-      context.fillStyle='#fff'; context.textBaseline='middle';
-      context.fillText(k, cx-tw/2, cy);
-      context.textBaseline='alphabetic';
+      context.fillStyle='rgba(0,0,0,.78)'; context.fillRect(cx-tw/2-pad,cy-fs/2-pad,tw+2*pad,fs+2*pad);
+      context.strokeStyle='#ff2828'; context.lineWidth=Math.max(2,fs*0.06); context.strokeRect(cx-tw/2-pad,cy-fs/2-pad,tw+2*pad,fs+2*pad);
+      context.fillStyle='#fff'; context.textBaseline='middle'; context.fillText(k,cx-tw/2,cy); context.textBaseline='alphabetic';
     }
   }
-  // disclaimer
-  const disc = document.getElementById('disc').value.trim();
-  if (disc){
-    const dfs = Math.round(H*0.022);
-    context.font = `${dfs}px sans-serif`;
-    const tw = context.measureText(disc).width, pad = dfs*0.5;
-    const x=(W-tw)/2, y=H-dfs-pad*2;
-    context.fillStyle='rgba(0,0,0,.82)';
-    context.fillRect(x-pad, y-pad, tw+2*pad, dfs+2*pad);
-    context.fillStyle='#e1e1e1'; context.textBaseline='top';
-    context.fillText(disc, x, y);
-    context.textBaseline='alphabetic';
+  const disc=document.getElementById('disc').value.trim();
+  if(disc){
+    const dfs=Math.round(H*0.022); context.font=`${dfs}px sans-serif`;
+    const tw=context.measureText(disc).width, pad=dfs*0.5, x=(W-tw)/2, y=H-dfs-pad*2;
+    context.fillStyle='rgba(0,0,0,.82)'; context.fillRect(x-pad,y-pad,tw+2*pad,dfs+2*pad);
+    context.fillStyle='#e1e1e1'; context.textBaseline='top'; context.fillText(disc,x,y); context.textBaseline='alphabetic';
   }
 }
 
 function draw(){
   if(!img) return;
   render(ctx, cv.width, cv.height, cv.width/1400);
-  if (mode==='adjust'){
-    for (const k of order){ const P=polys[k];
-      for (let i=0;i<P.length;i++){
-        const a=toPx(P[i]), b=toPx(P[(i+1)%P.length]);
-        const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
-        ctx.beginPath(); ctx.arc(m[0],m[1],5,0,7);
-        ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fill();
-      }
-      for (const p of P){ const [x,y]=toPx(p);
-        ctx.beginPath(); ctx.arc(x,y,8,0,7);
-        ctx.fillStyle=colorOf[k]; ctx.fill();
-        ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.stroke();
-      }
+  if(mode==='adjust'){
+    const s=dispScale();                 // buffer-px per skärm-px
+    const R=8*s, MR=5*s, lw=Math.max(1,2.5*s);
+    for(const k of order){ const P=polys[k];
+      for(let i=0;i<P.length;i++){ const a=toPx(P[i]),b=toPx(P[(i+1)%P.length]); const m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+        ctx.beginPath(); ctx.arc(m[0],m[1],MR,0,7); ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fill(); }
+      for(const p of P){ const [x,y]=toPx(p);
+        ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.fillStyle=colorOf[k]; ctx.fill();
+        ctx.strokeStyle='#fff'; ctx.lineWidth=lw; ctx.stroke(); }
     }
   }
 }
@@ -370,25 +461,18 @@ function copyJSON(){
   navigator.clipboard.writeText(t).then(()=>flash('msg','Kopierat!'))
     .catch(()=>{ const o=document.getElementById('out'); o.select(); document.execCommand('copy'); flash('msg','Kopierat!'); });
 }
-
 function exportImage(){
   if(!img) return;
   const W=img.naturalWidth, H=img.naturalHeight;
   const oc=document.createElement('canvas'); oc.width=W; oc.height=H;
-  const octx=oc.getContext('2d');
-  render(octx, W, H, W/1400);
+  render(oc.getContext('2d'), W, H, W/1400);
   oc.toBlob(b=>{
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(b);
-    a.download='tomtgranser.jpg';
-    a.click();
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='tomtgranser.jpg'; a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
     flash('msg','Bild exporterad i full upplösning');
   }, 'image/jpeg', 0.93);
 }
-
-function flash(id,m){ const el=document.getElementById(id); el.textContent=m;
-  clearTimeout(el._t); el._t=setTimeout(()=>el.textContent='',3500); }
+function flash(id,m){ const el=document.getElementById(id); el.textContent=m; clearTimeout(el._t); el._t=setTimeout(()=>el.textContent='',3500); }
 </script>
 </body>
 </html>
