@@ -352,6 +352,27 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .contacts-stats{display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap;}
 .contacts-stat{font-size:11px;color:var(--text4);}
 .contacts-stat strong{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);font-weight:600;display:block;}
+
+/* KONTEXT-HUB */
+.kh-links{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.kh-link{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:7px;font-size:12px;text-decoration:none;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);transition:all 0.15s;}
+.kh-link:hover{border-color:var(--accent);color:var(--accent);}
+.kh-link .kh-glyph{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:11px;font-weight:700;background:var(--accent-glow);color:var(--accent);}
+.kh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+.kh-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px;position:relative;transition:all 0.2s;display:flex;flex-direction:column;}
+.kh-card:hover{background:var(--surface2);border-color:var(--line-warm);}
+.kh-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.kh-card-id{flex:1;min-width:0;}
+.kh-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--text);line-height:1.15;}
+.kh-project{display:inline-block;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;padding:2px 8px;border-radius:4px;margin-top:5px;color:var(--blue);background:rgba(125,184,212,0.12);border:1px solid rgba(125,184,212,0.28);}
+.kh-card-actions{display:flex;gap:4px;flex-shrink:0;}
+.kh-body{font-size:11.5px;color:var(--text2);line-height:1.55;white-space:pre-wrap;word-break:break-word;background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-height:220px;overflow-y:auto;margin-bottom:10px;}
+.kh-meta{font-size:10px;color:var(--text4);margin-top:auto;}
+.kh-empty{border:1px dashed var(--border2);border-radius:12px;padding:50px 30px;text-align:center;color:var(--text4);grid-column:1/-1;}
+.kh-empty-icon{font-size:30px;opacity:0.4;margin-bottom:12px;}
+.kh-editor{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:18px;margin-bottom:20px;}
+.kh-editor-row{display:flex;gap:12px;flex-wrap:wrap;}
+.kh-editor-row .field{flex:1;min-width:200px;}
 </style>
 </head>
 <body>
@@ -507,6 +528,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" onclick="showSection('flode',this)"><div class="nav-dot" style="background:var(--accent)"></div>Systemflöde</button>
       <button class="nav-item" data-sec="offert" onclick="showSection('offert',this)"><div class="nav-dot" style="background:var(--amber)"></div>Offertgenerator</button>
       <button class="nav-item" onclick="showSection('mail',this)"><div class="nav-dot" style="background:var(--green)"></div>Mail-hub</button>
+      <button class="nav-item" onclick="showSection('kontext',this)"><div class="nav-dot" style="background:var(--blue)"></div>Kontext-hub</button>
     </div>
     <div class="nav-group">
       <div class="nav-group-label">Gruvan-serien</div>
@@ -1019,6 +1041,78 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     </div>
   </div>
 
+  <!-- KONTEXT-HUB (Claude-brygga) -->
+  <div class="section" id="sec-kontext">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Kontext-hub</div>
+        <div class="page-sub">Delad projektkontext + handoffs du klistrar mellan Claude Chatt, Code och Design</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="fillHandoffTemplate()">📝 Skapa handoff-mall</button>
+        <button class="btn btn-solid" onclick="openContextEditor()">＋ Ny kontext</button>
+      </div>
+    </div>
+
+    <div class="config-note" style="background:var(--surface);border-color:var(--border)">
+      <strong style="color:var(--accent)">Manuell brygga — ärligt talat.</strong>
+      Claude Chatt, Claude Code och Claude Design är separata produkter utan live-integration. Det här är en central plats
+      där du sparar delad kontext och handoffs så att inget tappas mellan verktygen: skriv/klistra in en gång här, kopiera
+      in i vilket Claude-verktyg som helst. Sparas versionerat i repot (data/context-hub.json) via samma GH-proxy som nätverket.
+    </div>
+
+    <!-- Snabblänkar -->
+    <div class="kh-links">
+      <a class="kh-link" href="https://claude.ai/" target="_blank" rel="noopener"><span class="kh-glyph">C</span>Claude Chatt ↗</a>
+      <a class="kh-link" href="https://claude.ai/code" target="_blank" rel="noopener"><span class="kh-glyph">Co</span>Claude Code ↗</a>
+      <a class="kh-link" href="https://claude.ai/" target="_blank" rel="noopener"><span class="kh-glyph">De</span>Claude Design ↗</a>
+    </div>
+
+    <!-- Inline-editor (dold tills man skapar/redigerar) -->
+    <div class="kh-editor" id="kh-editor" style="display:none">
+      <input type="hidden" id="kh-edit-id">
+      <div class="kh-editor-row">
+        <div class="field">
+          <label class="field-label">Titel</label>
+          <input class="input" id="kh-title" placeholder="t.ex. Ritprogram — bygglovs-PDF handoff">
+        </div>
+        <div class="field">
+          <label class="field-label">Projekt / tagg</label>
+          <input class="input" id="kh-project" placeholder="t.ex. Ritprogram">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Delad kontext / handoff</label>
+        <textarea class="textarea" id="kh-body" style="min-height:180px;font-family:inherit;font-size:13px" placeholder="Klistra in eller skriv den kontext du vill dela mellan Claude-verktygen…"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-solid" id="kh-save-btn" onclick="saveContext()">Spara kontext</button>
+        <button class="btn" onclick="closeContextEditor()">Avbryt</button>
+        <div class="hint" id="kh-save-status" style="align-self:center"></div>
+      </div>
+    </div>
+
+    <!-- Config-note om funktionen inte är tillgänglig (t.ex. lokal preview utan GH_TOKEN) -->
+    <div class="config-note" id="kh-config-note" style="display:none">
+      <strong>⚠ Kontext-hub-funktionen svarar inte.</strong>
+      Panelen anropar Netlify-funktionen <code>context-hub</code> som lagrar posterna i repot. Sätt <code>GH_TOKEN</code> som
+      environment variable i Netlify så aktiveras spar/läs. Lokalt (utan funktioner) visas den här noten i stället för att krascha.
+    </div>
+
+    <!-- Tavla med sparade poster -->
+    <div class="kh-grid" id="kh-grid">
+      <div class="kh-empty"><div class="kh-empty-icon">⬡</div><div>Öppna fliken för att ladda sparad kontext…</div></div>
+    </div>
+
+    <!-- Framtida lokal komponent (platshållarnot, ingen trasig knapp) -->
+    <div class="config-note" style="background:var(--surface);border-color:var(--border);margin-top:20px">
+      <strong style="color:var(--text3)">Framtida: automatisk inläsning av Claude Code-sessioner.</strong>
+      Claude Codes <code>.jsonl</code>-sessionsloggar ligger lokalt på din dator. En hostad dashboard kan inte läsa lokala filer,
+      så automatisk inläsning kräver en framtida lokal komponent (t.ex. ett litet Windows-verktyg som pushar loggarna hit).
+      Tills dess är Kontext-hub en manuell brygga — det du klistrar in här är det som delas.
+    </div>
+  </div>
+
 </main>
 </div>
 
@@ -1077,7 +1171,8 @@ const FN = {
   mailFetch: '/.netlify/functions/mail-fetch',     // läser inkorgen (vald brevlåda) via Graph
   mailTriage:'/.netlify/functions/mail-triage',    // klassificerar + skapar svarsutkast i Outlook
   mailQueue: '/.netlify/functions/mail-queue',     // godkännandekö som pollern skrivit (data/mail-queue.json)
-  mailLearnStyle:'/.netlify/functions/mail-learn-style' // lär in mejlstil från Sent Items → per-brevlåde-stilprofil
+  mailLearnStyle:'/.netlify/functions/mail-learn-style', // lär in mejlstil från Sent Items → per-brevlåde-stilprofil
+  contextHub:'/.netlify/functions/context-hub'   // delad projektkontext + handoffs (data/context-hub.json)
 };
 const GH_USER = 'Jimblo72';
 
@@ -1914,6 +2009,7 @@ function showSection(id, btn) {
   if (id === 'review' && !reviewsOverviewLoaded) loadReviewOverview();
   if (id === 'ideer') initIdeerPicker();
   if (id === 'mail') initMailHub();
+  if (id === 'kontext' && !contextLoaded) loadContext();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
 
@@ -2794,6 +2890,182 @@ async function persistContacts(list){
   });
   if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.error || `HTTP ${r.status}`); }
   return r.json();
+}
+
+// ── KONTEXT-HUB (Claude-brygga) ───────────────────────────────
+// Central plats för delad projektkontext + handoffs som klistras mellan
+// Claude Chatt / Code / Design. Läser/skriver via context-hub-funktionen
+// (data/context-hub.json). Degraderar med config-note om funktionen 404:ar.
+let contextEntries = [];
+let contextLoaded = false;
+
+async function loadContext(){
+  const grid = document.getElementById('kh-grid');
+  const note = document.getElementById('kh-config-note');
+  grid.innerHTML = '<div class="kh-empty"><div class="kh-empty-icon"><span class="spinner"></span></div><div>Laddar kontext…</div></div>';
+  try {
+    const r = await fetch(FN.contextHub);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    contextEntries = Array.isArray(d.entries) ? d.entries : [];
+    contextLoaded = true;
+    if (note) note.style.display = 'none';
+    renderContext();
+  } catch(e) {
+    // Funktionen svarar inte (t.ex. lokal preview utan Netlify-funktioner) → visa
+    // config-note i stället för att krascha. Behåll ev. redan laddade poster.
+    if (note) note.style.display = '';
+    if (!contextEntries.length) {
+      grid.innerHTML = '<div class="kh-empty"><div class="kh-empty-icon">⬡</div><div>Ingen sparad kontext att visa (funktionen är inte tillgänglig här).</div></div>';
+    } else {
+      renderContext();
+    }
+  }
+}
+
+function renderContext(){
+  const grid = document.getElementById('kh-grid');
+  if (!contextEntries.length) {
+    grid.innerHTML = '<div class="kh-empty"><div class="kh-empty-icon">⬡</div><div>Ingen kontext sparad än. Klicka <strong>＋ Ny kontext</strong> eller <strong>📝 Skapa handoff-mall</strong> för att lägga till den första.</div></div>';
+    return;
+  }
+  const list = contextEntries.slice().sort((a,b)=> String(b.updated||'').localeCompare(String(a.updated||'')));
+  grid.innerHTML = list.map(e => {
+    const when = e.updated ? new Date(e.updated).toLocaleString('sv-SE',{dateStyle:'medium',timeStyle:'short'}) : '';
+    return `<div class="kh-card">
+      <div class="kh-card-top">
+        <div class="kh-card-id">
+          <div class="kh-title">${esc(e.title||'Namnlös')}</div>
+          ${e.project?`<span class="kh-project">${esc(e.project)}</span>`:''}
+        </div>
+        <div class="kh-card-actions">
+          <button class="icon-btn" title="Kopiera texten" onclick="copyContext('${esc(e.id)}',this)">📋</button>
+          <button class="icon-btn" title="Redigera" onclick="editContext('${esc(e.id)}')">✏️</button>
+          <button class="icon-btn" title="Ta bort" onclick="deleteContext('${esc(e.id)}')">🗑</button>
+        </div>
+      </div>
+      ${e.body?`<div class="kh-body">${esc(e.body)}</div>`:''}
+      ${when?`<div class="kh-meta">Uppdaterad ${esc(when)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openContextEditor(){
+  document.getElementById('kh-edit-id').value = '';
+  document.getElementById('kh-title').value = '';
+  document.getElementById('kh-project').value = '';
+  document.getElementById('kh-body').value = '';
+  document.getElementById('kh-save-status').textContent = '';
+  document.getElementById('kh-editor').style.display = '';
+  setTimeout(()=>document.getElementById('kh-title').focus(), 60);
+}
+
+function closeContextEditor(){
+  document.getElementById('kh-editor').style.display = 'none';
+}
+
+function editContext(id){
+  const e = contextEntries.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('kh-edit-id').value = e.id;
+  document.getElementById('kh-title').value = e.title || '';
+  document.getElementById('kh-project').value = e.project || '';
+  document.getElementById('kh-body').value = e.body || '';
+  document.getElementById('kh-save-status').textContent = '';
+  document.getElementById('kh-editor').style.display = '';
+  document.getElementById('kh-editor').scrollIntoView({behavior:'smooth',block:'nearest'});
+  setTimeout(()=>document.getElementById('kh-title').focus(), 60);
+}
+
+const HANDOFF_TEMPLATE = `Projekt:
+
+Nuläge:
+-
+
+Beslut:
+-
+
+Öppna trådar:
+-
+
+Nästa steg:
+- `;
+
+function fillHandoffTemplate(){
+  openContextEditor();
+  document.getElementById('kh-title').value = 'Handoff — ';
+  document.getElementById('kh-body').value = HANDOFF_TEMPLATE;
+  setTimeout(()=>{
+    const t = document.getElementById('kh-title');
+    t.focus();
+    t.setSelectionRange(t.value.length, t.value.length);
+  }, 60);
+}
+
+async function saveContext(){
+  const status = document.getElementById('kh-save-status');
+  const entry = {
+    id: document.getElementById('kh-edit-id').value || undefined,
+    title: document.getElementById('kh-title').value.trim(),
+    project: document.getElementById('kh-project').value.trim(),
+    body: document.getElementById('kh-body').value.trim(),
+  };
+  if (!entry.title && !entry.body) { status.textContent = 'Ange minst en titel eller en text.'; return; }
+  const btn = document.getElementById('kh-save-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Sparar…';
+  try {
+    const r = await fetch(FN.contextHub, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'save', entry })
+    });
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    contextEntries = Array.isArray(d.entries) ? d.entries : contextEntries;
+    contextLoaded = true;
+    renderContext();
+    closeContextEditor();
+  } catch(e) {
+    status.textContent = `Kunde inte spara: ${e.message}. (Kräver context-hub-funktionen + GH_TOKEN i Netlify.)`;
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Spara kontext';
+  }
+}
+
+async function deleteContext(id){
+  const e = contextEntries.find(x => x.id === id);
+  if (!confirm(`Ta bort "${e?e.title||'posten':'posten'}"? Detta går inte att ångra.`)) return;
+  try {
+    const r = await fetch(FN.contextHub, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'delete', id })
+    });
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    contextEntries = Array.isArray(d.entries) ? d.entries : contextEntries.filter(x=>x.id!==id);
+    renderContext();
+  } catch(err) {
+    alert(`Kunde inte ta bort: ${err.message}`);
+  }
+}
+
+async function copyContext(id, btn){
+  const e = contextEntries.find(x => x.id === id);
+  if (!e) return;
+  const text = e.body || '';
+  const done = () => { if (btn){ const o = btn.innerHTML; btn.innerHTML = '✓'; setTimeout(()=>btn.innerHTML = o, 1200); } };
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    done();
+  } catch(err) {
+    alert('Kunde inte kopiera till urklipp.');
+  }
 }
 
 // ── CHATT: DRA FÖR ATT ÄNDRA STORLEK ──────────────────────────
