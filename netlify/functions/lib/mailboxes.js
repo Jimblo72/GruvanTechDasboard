@@ -81,26 +81,33 @@ function defaultMailbox() {
   return envMailbox();
 }
 
-// Modulnivå-cache för varm återanvändning (samma mönster som Graph-token-cachen).
-// data/mailboxes.json läses högst en gång per varm instans; env/fallback är
-// deterministiska. Ändringar i data/mailboxes.json syns efter nästa kallstart.
+// Modulnivå-cache för varm återanvändning (samma mönster som Graph-token-cachen),
+// men med KORT TTL så ändringar i data/mailboxes.json slår igenom inom en minut
+// UTAN deploy. (Tomma deploy-commits ändrar inte funktionskoden → Netlify
+// återanvänder varma containrar → permanent cache skulle annars visa gammal
+// config tills containern idle-timeoutar.)
 let _cache = null;
+let _cacheAt = 0;
+const CACHE_TTL_MS = 60000; // 1 min
+
+function setCache(list) {
+  _cache = list;
+  _cacheAt = Date.now();
+  return _cache;
+}
 
 // Löser upp hela brevlådelistan enligt precedensen ovan. Async (kan läsa
 // data/mailboxes.json). Degraderar tyst: kan JSON:en inte läsas (t.ex. GH_TOKEN
 // saknas) faller vi igenom till MAILBOX_USERS och sedan fallback-brevlådan.
 async function getMailboxes() {
-  if (_cache) return _cache;
+  if (_cache && (Date.now() - _cacheAt) < CACHE_TTL_MS) return _cache;
 
   // 1) data/mailboxes.json
   try {
     const { data } = await readJsonFile(MAILBOXES_FILE_PATH, null);
     if (Array.isArray(data) && data.length) {
       const list = data.map(normalizeEntry).filter(Boolean);
-      if (list.length) {
-        _cache = list;
-        return _cache;
-      }
+      if (list.length) return setCache(list);
     }
   } catch (_) {
     /* faller igenom till env/fallback */
@@ -115,15 +122,11 @@ async function getMailboxes() {
       .filter(Boolean)
       .map(a => normalizeEntry({ address: a }))
       .filter(Boolean);
-    if (list.length) {
-      _cache = list;
-      return _cache;
-    }
+    if (list.length) return setCache(list);
   }
 
   // 3) Fallback: dagens enda brevlåda.
-  _cache = [envMailbox()];
-  return _cache;
+  return setCache([envMailbox()]);
 }
 
 // Slår upp EN brevlådas fulla konfig (case-insensitivt). Returnerar objekt eller
@@ -144,6 +147,7 @@ async function isAllowed(address) {
 // Endast för tester: nollställ modulnivå-cachen mellan env-varianter.
 function __clearCache() {
   _cache = null;
+  _cacheAt = 0;
 }
 
 module.exports = {
