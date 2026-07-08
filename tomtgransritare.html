@@ -36,8 +36,12 @@
           display: flex; align-items: center; justify-content: center; }
   #wrap.empty::after { content: "Ladda upp en drönarbild för att börja";
           color: var(--muted); font-size: .95rem; }
-  canvas { width: 100%; height: auto; display: block; border-radius: 10px;
-           touch-action: none; }
+  canvas { max-width: 100%; max-height: 66vh; width: auto; height: auto;
+           display: block; margin: 0 auto; border-radius: 10px; touch-action: none; }
+  /* Verktygsraden följer med när man scrollar så kontrollerna alltid är nåbara
+     även med en stor uppladdad bild. */
+  #modebar { position: sticky; top: 0; z-index: 20; background: var(--bg);
+             padding: 8px 0 6px; margin-bottom: 2px; }
   canvas.hidden { display: none; }
   .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; margin-top: 12px; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
@@ -75,7 +79,7 @@
   <b>Rita:</b> välj tomt och klicka för att lägga till hörn i tur och ordning.
 </p>
 
-<div class="toolbar">
+<div class="toolbar" id="modebar">
   <div class="seg">
     <button id="mAdjust" class="mode on" onclick="setMode('adjust')">✥ Justera</button>
     <button id="mDraw" class="mode" onclick="setMode('draw')">✎ Rita</button>
