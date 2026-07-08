@@ -114,6 +114,10 @@ exports.handler = async () => {
             fromAddress: m.from?.emailAddress?.address || '',
             received: m.receivedDateTime || '',
             conversationId: m.conversationId || '',
+            // Kalender-detektering: @odata.type kommer per-post för härledda typer
+            // (mötesmeddelanden) i inkorgskollektionen även utan explicit $select.
+            odataType: m['@odata.type'] || '',
+            meetingMessageType: m.meetingMessageType || '',
             text: m.bodyPreview || '',
           };
           // Pollern har lång timeout → större retry-budget + full kontext

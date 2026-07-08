@@ -79,7 +79,21 @@ async function withRetry(fn, delays = SYNC_RETRY_DELAYS) {
   throw lastErr;
 }
 
-const CATEGORIES = ['offert_andelsratt', 'offert_forsaljning', 'support', 'abonnemang', 'privat', 'brus'];
+const CATEGORIES = ['offert_andelsratt', 'offert_forsaljning', 'support', 'abonnemang', 'privat', 'kalender', 'brus'];
+
+// Kalender-/mötesmeddelanden (mötesinbjudan, -svar, -avbokning) ska ALDRIG
+// besvaras med ett mejlutkast — de hanteras i kalendern. Vi upptäcker dem
+// DETERMINISTISKT via Graphs meddelandetyp (inte via LLM, som kan missförstå ett
+// kalendermeddelande som ett vanligt mejl). Graph returnerar @odata.type för
+// härledda typer (eventMessage / eventMessageRequest / eventMessageResponse) även
+// när man $select:ar, och eventMessages har meetingMessageType != 'none'.
+function isCalendarMessage(m) {
+  const t = String((m && (m.odataType || m['@odata.type'])) || '').toLowerCase();
+  if (t.includes('eventmessage') || t.includes('calendarsharing')) return true;
+  const mt = m && m.meetingMessageType;
+  if (mt && String(mt).toLowerCase() !== 'none') return true;
+  return false;
+}
 
 // ── Signatur / röstprofil ─────────────────────────────────────
 // VIKTIGT: Outlook lägger själv till Jimmys fullständiga signatur (titel,
@@ -523,6 +537,10 @@ async function fetchFullMessage(messageId, mailbox) {
     fromAddress: m.from?.emailAddress?.address || '',
     received: m.receivedDateTime || '',
     conversationId: m.conversationId || '',
+    // För kalender-detektering (isCalendarMessage). @odata.type kommer automatiskt
+    // för härledda typer (mötesmeddelanden) även med $select.
+    odataType: m['@odata.type'] || '',
+    meetingMessageType: m.meetingMessageType || '',
     text,
   };
 }
@@ -546,6 +564,34 @@ async function triageMessage(messageId, opts = {}) {
   const mbConfigP = getMailbox(mb).catch(() => null);
 
   const message = opts.message || (await fetchFullMessage(messageId, mb));
+
+  // KALENDER/MÖTESMEDDELANDE → inget mejlsvar. Kortslut FÖRE tråd-hämtning och
+  // LLM: en mötesinbjudan/-svar/-avbokning besvaras i kalendern, inte med mejl,
+  // och ska aldrig matas till klassificeraren (som kan missförstå den som ett
+  // vanligt mejl). Deterministiskt via Graphs meddelandetyp.
+  if (isCalendarMessage(message)) {
+    return {
+      messageId,
+      subject: message.subject,
+      fromName: message.fromName,
+      fromAddress: message.fromAddress,
+      conversationId: message.conversationId,
+      category: 'kalender',
+      reason: 'Kalender-/mötesmeddelande (inbjudan, svar eller avbokning) — besvaras i kalendern, inte med mejl.',
+      confidence: 1,
+      suggested_action: 'Svara ja/nej i kalendern om det behövs. Inget mejlutkast skapas.',
+      needsManualConfirm: false,
+      draftId: null,
+      draftWebLink: null,
+      draftText: null,
+      autodraft: !!opts.autodraft,
+      alreadyReplied: false,
+      duplicateDraft: false,
+      skipReason: 'mötesinbjudan/kalender — inget mejlsvar',
+      timestamp: new Date().toISOString(),
+      _debug: { calendar: true },
+    };
+  }
 
   // Latens: den synkrona on-click-vägen håller kontexten lätt (ingen tvärtråds-
   // sökning, mindre transkription) så vi ryms under Netlifys 10 s-gräns. Pollern
