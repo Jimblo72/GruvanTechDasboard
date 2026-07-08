@@ -589,7 +589,6 @@ async function triageMessage(messageId, opts = {}) {
       duplicateDraft: false,
       skipReason: 'mötesinbjudan/kalender — inget mejlsvar',
       timestamp: new Date().toISOString(),
-      _debug: { calendar: true },
     };
   }
 
@@ -650,15 +649,6 @@ async function triageMessage(messageId, opts = {}) {
     duplicateDraft: false,
     skipReason: null,
     timestamp: new Date().toISOString(),
-    // TILLFÄLLIG diagnostik (tas bort när tråd/guard är verifierade live).
-    _debug: {
-      threadFetchOk: !!thread.ok,
-      threadCount: thread.threadCount || 0,
-      hasDraftReply: !!thread.hasDraftReply,
-      latestFromJimmy: !!thread.latestIsFromJimmy,
-      otherThreadCount: otherThreads.length,
-      includeCrossThread,
-    },
   };
 
   if (!needsReply) return result; // brus → inget utkast
