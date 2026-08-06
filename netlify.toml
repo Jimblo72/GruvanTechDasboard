@@ -3,9 +3,17 @@
 # Schemalagda funktioner registreras här (module-agnostiskt och pålitligt,
 # oberoende av CommonJS/ESM). mail-poll körs var 10:e minut och läser inkorgen,
 # klassificerar och (om MAIL_AUTODRAFT=true) skapar svarsutkast via Graph.
-
-[functions."mail-poll"]
-  schedule = "*/10 * * * *"
+#
+# ⏸ PAUSAD 2026-08-06 på Jimmys begäran (AI-utkasten behöver justeras).
+# Två spärrar är lagda, båda tillfälliga:
+#   1. MAIL_AUTODRAFT=false i Netlify env → pollaren skulle ändå inte skapa utkast.
+#   2. Schemat nedan är bortkommenterat → pollaren körs inte alls.
+# SLÅ PÅ IGEN: avkommentera blocket nedan + sätt MAIL_AUTODRAFT=true i Netlify,
+# och deploya. On-click-knappen "Analysera & skapa utkast" i dashboarden är
+# opåverkad — den skapar fortfarande utkast när du själv klickar.
+#
+# [functions."mail-poll"]
+#   schedule = "*/10 * * * *"
 
 # mail-triage timeout:
 # Netlify har INGEN per-funktion timeout-nyckel i netlify.toml för synkrona
