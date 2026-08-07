@@ -338,9 +338,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 
         <div class="form-row">
           <label class="form-label">SkiStar listpris (kr)</label>
-          <!-- autocomplete/data-*ignore: lösenordshanterare fyllde annars fältet med
-               sidans lösenord. inputmode ger sifferknappsats på mobil. -->
-          <input type="text" class="form-input" id="listPrice" name="listpris"
+          <!-- Fältet autofylldes med appnamnet ("GruvanTechDashboard"). autocomplete="off"
+               och data-*ignore räcker inte — Edge/Chrome struntar i dem. readonly tas bort
+               vid fokus (se DOMContentLoaded); autofyllning hoppar över readonly-fält.
+               Namnet är avsiktligt intetsägande så heuristiken inte känner igen fältet. -->
+          <input type="text" class="form-input" id="listPrice" name="af-f4-x" readonly
                  placeholder="t.ex. 170 000" inputmode="numeric" autocomplete="off"
                  data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
           <div class="form-help">Insats enligt SkiStars prislista — totalpris för hela andelen. Pris per vecka räknas ut automatiskt.</div>
@@ -1123,7 +1125,19 @@ document.addEventListener('DOMContentLoaded', function(){
   var w = document.getElementById('weeks');
   if (w) w.addEventListener('input', updateAutoInfo);
   var p = document.getElementById('listPrice');
-  if (p) p.addEventListener('input', updateAutoInfo);
+  if (p) {
+    p.addEventListener('input', updateAutoInfo);
+    // Lås upp först när användaren själv går in i fältet. Autofyllningen
+    // sker innan dess och hoppar över readonly-fält.
+    var unlock = function(){ p.removeAttribute('readonly'); };
+    p.addEventListener('focus', unlock);
+    p.addEventListener('pointerdown', unlock);
+    // Skulle något ändå ha hunnit fylla fältet med skräp: töm det, i stället
+    // för att låta det stå kvar och se ut som ett ifyllt pris.
+    var rensa = function(){ if (p.value && !parsePriceInput(p.value)) { p.value = ''; updateAutoInfo(); } };
+    rensa();
+    window.addEventListener('load', rensa);
+  }
 });
 
 // Tolkar en fritextsumma ("170 000", "170.000 kr", "170000") till heltal.
