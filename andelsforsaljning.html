@@ -338,7 +338,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 
         <div class="form-row">
           <label class="form-label">SkiStar listpris (kr)</label>
-          <input type="text" class="form-input" id="listPrice" placeholder="t.ex. 170 000">
+          <!-- autocomplete/data-*ignore: lösenordshanterare fyllde annars fältet med
+               sidans lösenord. inputmode ger sifferknappsats på mobil. -->
+          <input type="text" class="form-input" id="listPrice" name="listpris"
+                 placeholder="t.ex. 170 000" inputmode="numeric" autocomplete="off"
+                 data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
           <div class="form-help">Insats enligt SkiStars prislista — totalpris för hela andelen. Pris per vecka räknas ut automatiskt.</div>
         </div>
 
@@ -1123,9 +1127,15 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 // Tolkar en fritextsumma ("170 000", "170.000 kr", "170000") till heltal.
+// Värdet måste SE UT som ett belopp. Att bara sålla fram siffrorna dög inte:
+// en lösenordshanterare autofyllde fältet med sidans lösenord, och siffran
+// på slutet blev ett pris i faktarutan. Ser det inte ut som ett belopp är
+// det inget belopp.
 function parsePriceInput(str) {
   if (str === null || str === undefined) return 0;
-  const n = parseInt(String(str).replace(/[^0-9]/g, ''), 10);
+  const s = String(str).trim();
+  if (!/^[\d\s., ]+(kr|sek|:-)?$/i.test(s)) return 0;
+  const n = parseInt(s.replace(/[^0-9]/g, ''), 10);
   return isNaN(n) ? 0 : n;
 }
 
