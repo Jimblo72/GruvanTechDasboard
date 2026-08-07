@@ -337,7 +337,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
         </div>
 
         <div class="form-row">
-          <label class="form-label">SkiStar listpris (kr)</label>
+          <label class="form-label">Listpris (kr) — lämna tomt för SkiStars pris</label>
           <!-- Fältet autofylldes med appnamnet ("GruvanTechDashboard"). autocomplete="off"
                och data-*ignore räcker inte — Edge/Chrome struntar i dem. readonly tas bort
                vid fokus (se DOMContentLoaded); autofyllning hoppar över readonly-fält.
@@ -345,12 +345,12 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
           <input type="text" class="form-input" id="listPrice" name="af-f4-x" readonly
                  placeholder="t.ex. 170 000" inputmode="numeric" autocomplete="off"
                  data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
-          <div class="form-help">Insats enligt SkiStars prislista — totalpris för hela andelen. Pris per vecka räknas ut automatiskt.</div>
+          <div class="form-help" id="listPriceHelp">Priset hämtas ur SkiStars paketlista när lägenhetstyp och veckor matchar ett paket. Fyll bara i här om du vill sätta ett eget pris.</div>
         </div>
 
         <div class="auto-info" id="auto-info" style="display:none;">
           <div class="auto-info-row"><span class="auto-info-label">Område</span><span class="auto-info-val" id="ai-area">—</span></div>
-          <div class="auto-info-row" id="ai-pris-row" style="display:none;"><span class="auto-info-label">SkiStar listpris</span><span class="auto-info-val" id="ai-pris">—</span></div>
+          <div class="auto-info-row" id="ai-pris-row" style="display:none;"><span class="auto-info-label" id="ai-pris-label">SkiStar listpris</span><span class="auto-info-val" id="ai-pris">—</span></div>
           <div class="auto-info-row"><span class="auto-info-label">BRF-avgift</span><span class="auto-info-val" id="ai-brf">—</span></div>
           <div class="auto-info-row"><span class="auto-info-label">Städavgift (7-11 dgr)</span><span class="auto-info-val" id="ai-stad">—</span></div>
           <div class="auto-info-row"><span class="auto-info-label">Planlösning</span><span class="auto-info-val" id="ai-storlek">—</span></div>
@@ -664,6 +664,113 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 
 <script>
 const APT_DATA = {"av1-50": {"name": "Åre Village 1 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "BRF Åre Village 1", "brf_avgift": 1602, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 903, 908, 913 (C)", "sort": 1}, "av2-50": {"name": "Åre Village 2 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "BRF Åre Village 2", "brf_avgift": 1653, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 917, 922, 927 (C)", "sort": 2}, "av1-83": {"name": "Åre Village 1 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 904, 909, 914 (D)", "sort": 3}, "av2-83": {"name": "Åre Village 2 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 918, 923, 928 (D)", "sort": 4}, "av1-85": {"name": "Åre Village 1 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 5}, "av2-85": {"name": "Åre Village 2 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 6}, "av1-87": {"name": "Åre Village 1 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 7}, "av2-87": {"name": "Åre Village 2 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 8}, "snotorget-45": {"name": "Snötorget · 45 kvm", "area": "Sälen", "size_sqm": 45, "size_label": "45 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4-5 bäddar", "extras": "modern planlösning", "brf": "BRF Snötorget", "brf_avgift": 2315, "stad_0_6": 1343, "stad_7_11": 1695, "stad_12": 2148, "stad_jul_nyar": 2542.5, "lgh_nr": "Våning 2: 1B, 1C, 1D", "sort": 10}, "snotorget-85": {"name": "Snötorget · 85 kvm", "area": "Sälen", "size_sqm": 85, "size_label": "85 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "6-8 bäddar", "extras": "modern planlösning", "brf": "BRF Snötorget", "brf_avgift": 3125, "stad_0_6": 2030, "stad_7_11": 2519, "stad_12": 3237, "stad_jul_nyar": 3778.5, "lgh_nr": "Våning 1-2: 2A-3D", "sort": 11}, "timmerbyn-1-46": {"name": "Timmerbyn 1 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 1", "brf_avgift": 2376, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 106-110C", "sort": 20}, "timmerbyn-1-100": {"name": "Timmerbyn 1 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 1", "brf_avgift": 4135, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 106-110A", "sort": 21}, "timmerbyn-2-46": {"name": "Timmerbyn 2 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 2", "brf_avgift": 2449, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 111-114C", "sort": 22}, "timmerbyn-2-100": {"name": "Timmerbyn 2 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 2", "brf_avgift": 4463, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 111-114B", "sort": 23}, "timmerbyn-3-46": {"name": "Timmerbyn 3 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 3", "brf_avgift": 2131, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 148C, 151-153C", "sort": 24}, "timmerbyn-3-100": {"name": "Timmerbyn 3 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 3", "brf_avgift": 3864, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 148A, 151-153A", "sort": 25}, "timmerbyn-4-54": {"name": "Timmerbyn 4 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 4", "brf_avgift": 2380, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 115-116C, 120-121C", "sort": 26}, "timmerbyn-4-113": {"name": "Timmerbyn 4 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 4", "brf_avgift": 4140, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 115-116A, 120-121B", "sort": 27}, "timmerbyn-5-54": {"name": "Timmerbyn 5 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 5", "brf_avgift": 2303, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 117-118C", "sort": 28}, "timmerbyn-5-113": {"name": "Timmerbyn 5 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 5", "brf_avgift": 4444, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 117-118A", "sort": 29}, "sorgardarna-80": {"name": "Sörgårdarna SAK2 · 80 kvm", "area": "Vemdalen", "size_sqm": 80, "size_label": "80 kvm", "rooms": "5 rum och kök", "bedrooms": "4 sovrum", "bed_count": "8 bäddar", "extras": "bastu", "brf": "BRF Sörgårdarna SAK2", "brf_avgift": 2200, "stad_0_6": 2583, "stad_7_11": 3072, "stad_12": 4132, "stad_jul_nyar": 4608, "lgh_nr": "BRF Sörgårdarna SAK2 (4 sovrum)", "sort": 40}};
+
+// GENERERAD — redigera inte för hand. Kör scripts/gen_prislista.py i
+// C:\dev\peakfast-verktyg när Excelen uppdaterats och klistra in resultatet.
+// Källa: Paket som ligger hos Peak Fast 260428.xlsx
+// Nyckel = aptKey|veckor (sorterade). Värde = insats i kr = TOTALPRIS för paketet.
+const PRISLISTA_KALLA = 'Paket som ligger hos Peak Fast 260428.xlsx';
+const PRISLISTA = {
+  'av1-50|10,43,44': 259000,
+  'av1-50|11,24,32': 259000,
+  'av1-50|32,49,51': 259000,
+  'av1-50|6,27,42': 189000,
+  'av1-50|7,35,49': 279000,
+  'av1-83|10,28,49': 375000,
+  'av1-83|13,33,43': 375000,
+  'av1-83|2,28,38': 245000,
+  'av1-83|26,38,52': 585000,
+  'av1-83|3,18,26': 245000,
+  'av1-83|4,18,28': 245000,
+  'av1-85|11,32,43': 419000,
+  'av1-85|12,31,43': 419000,
+  'av1-85|13,31,42': 419000,
+  'av1-85|4,27,38': 269000,
+  'av1-85|8,30,50': 517000,
+  'av1-85|8,32,49': 517000,
+  'av1-87|10,27,39': 419000,
+  'av1-87|29,43,51': 419000,
+  'av1-87|5,25,44': 319000,
+  'av1-87|6,29,50': 319000,
+  'av2-50|10,33,43': 259000,
+  'av2-50|11,36,43': 259000,
+  'av2-50|12,24,37': 259000,
+  'av2-50|2,33,42': 149000,
+  'av2-50|26,41,51': 259000,
+  'av2-50|28,43,51': 259000,
+  'av2-50|3,33,41': 149000,
+  'av2-50|31,42,52': 395000,
+  'av2-50|4,27,41': 149000,
+  'av2-50|5,28,42': 189000,
+  'av2-50|7,33,49': 279000,
+  'av2-83|11,25,44': 375000,
+  'av2-83|12,27,49': 375000,
+  'av2-83|2,25,34': 245000,
+  'av2-83|27,40,52': 585000,
+  'av2-83|28,50,51': 375000,
+  'av2-83|3,25,39': 245000,
+  'av2-83|4,32,50': 245000,
+  'av2-83|5,30,40': 289000,
+  'av2-85|10,24,44': 419000,
+  'av2-85|11,30,41': 419000,
+  'av2-85|12,30,40': 419000,
+  'av2-85|14,28,43': 419000,
+  'av2-85|2,24,34': 269000,
+  'av2-85|3,32,41': 269000,
+  'av2-85|33,40,51': 419000,
+  'av2-85|5,33,49': 319000,
+  'av2-87|10,39,44': 419000,
+  'av2-87|13,24,44': 419000,
+  'av2-87|24,44,51': 419000,
+  'av2-87|6,26,40': 319000,
+  'av2-87|8,25,44': 517000,
+  'snotorget-45|10,31': 280000,
+  'snotorget-45|11,32': 255000,
+  'snotorget-45|12,29': 255000,
+  'snotorget-45|13,29': 255000,
+  'snotorget-45|14,30': 243000,
+  'snotorget-45|3,26': 170000,
+  'snotorget-45|4,27': 183000,
+  'snotorget-45|5,28': 210000,
+  'sorgardarna-80|10,25,38': 421000,
+  'sorgardarna-80|10,33,37': 421000,
+  'sorgardarna-80|5,16,37': 421000,
+  'sorgardarna-80|8,29,43': 441000,
+  'sorgardarna-80|8,31,38': 468000,
+  'timmerbyn-1-100|4,29': 333000,
+  'timmerbyn-1-100|4,30': 333000,
+  'timmerbyn-1-46|12': 269000,
+  'timmerbyn-1-46|14': 256000,
+  'timmerbyn-1-46|3': 183000,
+  'timmerbyn-1-46|4': 198000,
+  'timmerbyn-1-46|5': 224000,
+  'timmerbyn-2-46|14,30': 256000,
+  'timmerbyn-2-46|14,31': 256000,
+  'timmerbyn-2-46|15,30': 196000,
+  'timmerbyn-2-46|3,29': 183000,
+  'timmerbyn-3-100|13,30': 456000,
+  'timmerbyn-3-100|14,29': 398000,
+  'timmerbyn-3-100|15,28': 304000,
+  'timmerbyn-3-100|15,44': 304000,
+  'timmerbyn-3-46|12,44': 269000,
+  'timmerbyn-3-46|13,29': 269000,
+  'timmerbyn-3-46|14,29': 256000,
+  'timmerbyn-3-46|14,44': 256000,
+  'timmerbyn-3-46|15,30': 196000,
+  'timmerbyn-3-46|3,44': 183000,
+  'timmerbyn-3-46|4,32': 198000,
+  'timmerbyn-4-113|13,30': 483000,
+  'timmerbyn-4-113|15,28': 328000,
+  'timmerbyn-4-113|5,28': 416000,
+  'timmerbyn-4-54|14,44': 271000,
+  'timmerbyn-4-54|15,31': 209000,
+  'timmerbyn-4-54|3,29': 193000,
+  'timmerbyn-4-54|5,30': 236000,
+  'timmerbyn-5-113|13,33': 483000,
+  'timmerbyn-5-113|14,29': 419000,
+  'timmerbyn-5-54|14,31': 271000,
+  'timmerbyn-5-54|3,29': 193000,
+};
 
 // ═══ MSPECS-projekt-mappning ════════════════════════════════════
 // Mappning från BRF → Mspecs projekt-ID. När SkiStar får fler BRF:er
@@ -1153,6 +1260,18 @@ function parsePriceInput(str) {
   return isNaN(n) ? 0 : n;
 }
 
+// Slår upp SkiStars listpris för en lägenhetstyp + veckouppsättning i PRISLISTA.
+// Matchar på HELA veckouppsättningen, inte bara vinterveckan: priset sitter på
+// paketet, och samma lägenhet kostar olika beroende på vilka veckor som ingår.
+// Ingen träff = inget pris att visa (paketet finns inte i listan, eller har sålts).
+function slaUppListpris(aptKey, weeksStr) {
+  if (!aptKey || typeof PRISLISTA === 'undefined') return 0;
+  const norm = normalizeWeeksStr(weeksStr || '');
+  if (!norm.weeks || !norm.weeks.length) return 0;
+  const unika = norm.weeks.filter(function(w, i, a){ return a.indexOf(w) === i; });
+  return PRISLISTA[aptKey + '|' + unika.sort(function(a,b){return a-b;}).join(',')] || 0;
+}
+
 // Bygger visningstexten för SkiStars listpris.
 // Flera veckor → visa både totalpris och snittpris per vecka.
 function formatListPrice(price, weekCount) {
@@ -1198,12 +1317,16 @@ function updateAutoInfo() {
     brfTxt = d.brf_avgift.toLocaleString('sv-SE') + ' kr/vecka/år (ange veckor för summering)';
   }
   document.getElementById('ai-brf').textContent = brfTxt;
-  // SkiStar listpris — raden döljs helt tills ett pris fyllts i
+  // SkiStar listpris — hämtas ur PRISLISTA, men ett eget ifyllt pris vinner alltid.
+  // Raden döljs när varken uppslagning eller egen inmatning gav något.
   const prisInp = document.getElementById('listPrice');
-  const pris = parsePriceInput(prisInp ? prisInp.value : '');
+  const egetPris = parsePriceInput(prisInp ? prisInp.value : '');
+  const pris = egetPris || slaUppListpris(v, weeksStr);
   const prisRow = document.getElementById('ai-pris-row');
   if (pris > 0) {
     document.getElementById('ai-pris').textContent = formatListPrice(pris, calc.weeks);
+    document.getElementById('ai-pris-label').textContent =
+      egetPris ? 'Listpris (eget)' : 'SkiStar listpris';
     prisRow.style.display = '';
   } else {
     prisRow.style.display = 'none';
