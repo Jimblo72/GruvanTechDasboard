@@ -1156,7 +1156,10 @@ const SPECIAL_WEEK_MAP = {
 // Normaliserar en weeksStr så "Nyår, 26, 38" → "52, 1, 26, 38".
 // Behåller också original-tokens för texter ("Nyår" snarare än "v.52").
 function normalizeWeeksStr(weeksStr) {
-  if (!weeksStr) return { numeric: '', tokens: [] };
+  // weeks MÅSTE finnas med även när strängen är tom — calcBrfMonthly gör
+  // norm.weeks.forEach och kastade annars TypeError så fort man valde
+  // lägenhetstyp innan veckorna fyllts i. Då uppdaterades hela faktarutan inte.
+  if (!weeksStr) return { numeric: '', weeks: [], tokens: [], display: '' };
   // Splitta på , + ; eller multiple spaces ("6+30" är dokumenterad syntax i UI:t)
   const tokens = String(weeksStr).split(/[,;+]+|\s{2,}/).map(s => s.trim()).filter(Boolean);
   const numericWeeks = [];
@@ -1327,6 +1330,13 @@ function updateAutoInfo() {
     document.getElementById('ai-pris').textContent = formatListPrice(pris, calc.weeks);
     document.getElementById('ai-pris-label').textContent =
       egetPris ? 'Listpris (eget)' : 'SkiStar listpris';
+    prisRow.style.display = '';
+  } else if (calc.weeks > 0) {
+    // Veckor ifyllda men ingen träff. Säg det rakt ut — en rad som bara
+    // försvinner ser ut som ett fel, och man vet inte om priset saknas
+    // eller om verktyget är trasigt.
+    document.getElementById('ai-pris').textContent = 'ingen träff i paketlistan — fyll i eget pris';
+    document.getElementById('ai-pris-label').textContent = 'SkiStar listpris';
     prisRow.style.display = '';
   } else {
     prisRow.style.display = 'none';
