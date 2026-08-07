@@ -345,7 +345,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
           <input type="text" class="form-input" id="listPrice" name="af-f4-x" readonly
                  placeholder="t.ex. 170 000" inputmode="numeric" autocomplete="off"
                  data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
-          <div class="form-help" id="listPriceHelp">Priset hämtas ur SkiStars paketlista när lägenhetstyp och veckor matchar ett paket. Fyll bara i här om du vill sätta ett eget pris.</div>
+          <div class="form-help" id="listPriceHelp">Summeras automatiskt ur SkiStars insatsprislista per vecka — valfri kombination fungerar. Fyll bara i här om du vill sätta ett eget pris.</div>
         </div>
 
         <div class="auto-info" id="auto-info" style="display:none;">
@@ -665,111 +665,35 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 <script>
 const APT_DATA = {"av1-50": {"name": "Åre Village 1 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "BRF Åre Village 1", "brf_avgift": 1602, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 903, 908, 913 (C)", "sort": 1}, "av2-50": {"name": "Åre Village 2 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "BRF Åre Village 2", "brf_avgift": 1653, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 917, 922, 927 (C)", "sort": 2}, "av1-83": {"name": "Åre Village 1 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 904, 909, 914 (D)", "sort": 3}, "av2-83": {"name": "Åre Village 2 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 918, 923, 928 (D)", "sort": 4}, "av1-85": {"name": "Åre Village 1 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 5}, "av2-85": {"name": "Åre Village 2 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 6}, "av1-87": {"name": "Åre Village 1 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 7}, "av2-87": {"name": "Åre Village 2 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 8}, "snotorget-45": {"name": "Snötorget · 45 kvm", "area": "Sälen", "size_sqm": 45, "size_label": "45 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4-5 bäddar", "extras": "modern planlösning", "brf": "BRF Snötorget", "brf_avgift": 2315, "stad_0_6": 1343, "stad_7_11": 1695, "stad_12": 2148, "stad_jul_nyar": 2542.5, "lgh_nr": "Våning 2: 1B, 1C, 1D", "sort": 10}, "snotorget-85": {"name": "Snötorget · 85 kvm", "area": "Sälen", "size_sqm": 85, "size_label": "85 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "6-8 bäddar", "extras": "modern planlösning", "brf": "BRF Snötorget", "brf_avgift": 3125, "stad_0_6": 2030, "stad_7_11": 2519, "stad_12": 3237, "stad_jul_nyar": 3778.5, "lgh_nr": "Våning 1-2: 2A-3D", "sort": 11}, "timmerbyn-1-46": {"name": "Timmerbyn 1 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 1", "brf_avgift": 2376, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 106-110C", "sort": 20}, "timmerbyn-1-100": {"name": "Timmerbyn 1 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 1", "brf_avgift": 4135, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 106-110A", "sort": 21}, "timmerbyn-2-46": {"name": "Timmerbyn 2 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 2", "brf_avgift": 2449, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 111-114C", "sort": 22}, "timmerbyn-2-100": {"name": "Timmerbyn 2 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 2", "brf_avgift": 4463, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 111-114B", "sort": 23}, "timmerbyn-3-46": {"name": "Timmerbyn 3 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 3", "brf_avgift": 2131, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 148C, 151-153C", "sort": 24}, "timmerbyn-3-100": {"name": "Timmerbyn 3 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 3", "brf_avgift": 3864, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 148A, 151-153A", "sort": 25}, "timmerbyn-4-54": {"name": "Timmerbyn 4 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 4", "brf_avgift": 2380, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 115-116C, 120-121C", "sort": 26}, "timmerbyn-4-113": {"name": "Timmerbyn 4 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 4", "brf_avgift": 4140, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 115-116A, 120-121B", "sort": 27}, "timmerbyn-5-54": {"name": "Timmerbyn 5 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 5", "brf_avgift": 2303, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 117-118C", "sort": 28}, "timmerbyn-5-113": {"name": "Timmerbyn 5 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 5", "brf_avgift": 4444, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 117-118A", "sort": 29}, "sorgardarna-80": {"name": "Sörgårdarna SAK2 · 80 kvm", "area": "Vemdalen", "size_sqm": 80, "size_label": "80 kvm", "rooms": "5 rum och kök", "bedrooms": "4 sovrum", "bed_count": "8 bäddar", "extras": "bastu", "brf": "BRF Sörgårdarna SAK2", "brf_avgift": 2200, "stad_0_6": 2583, "stad_7_11": 3072, "stad_12": 4132, "stad_jul_nyar": 4608, "lgh_nr": "BRF Sörgårdarna SAK2 (4 sovrum)", "sort": 40}};
 
-// GENERERAD — redigera inte för hand. Kör scripts/gen_prislista.py i
-// C:\dev\peakfast-verktyg när Excelen uppdaterats och klistra in resultatet.
-// Källa: Paket som ligger hos Peak Fast 260428.xlsx
-// Nyckel = aptKey|veckor (sorterade). Värde = insats i kr = TOTALPRIS för paketet.
-const PRISLISTA_KALLA = 'Paket som ligger hos Peak Fast 260428.xlsx';
-const PRISLISTA = {
-  'av1-50|10,43,44': 259000,
-  'av1-50|11,24,32': 259000,
-  'av1-50|32,49,51': 259000,
-  'av1-50|6,27,42': 189000,
-  'av1-50|7,35,49': 279000,
-  'av1-83|10,28,49': 375000,
-  'av1-83|13,33,43': 375000,
-  'av1-83|2,28,38': 245000,
-  'av1-83|26,38,52': 585000,
-  'av1-83|3,18,26': 245000,
-  'av1-83|4,18,28': 245000,
-  'av1-85|11,32,43': 419000,
-  'av1-85|12,31,43': 419000,
-  'av1-85|13,31,42': 419000,
-  'av1-85|4,27,38': 269000,
-  'av1-85|8,30,50': 517000,
-  'av1-85|8,32,49': 517000,
-  'av1-87|10,27,39': 419000,
-  'av1-87|29,43,51': 419000,
-  'av1-87|5,25,44': 319000,
-  'av1-87|6,29,50': 319000,
-  'av2-50|10,33,43': 259000,
-  'av2-50|11,36,43': 259000,
-  'av2-50|12,24,37': 259000,
-  'av2-50|2,33,42': 149000,
-  'av2-50|26,41,51': 259000,
-  'av2-50|28,43,51': 259000,
-  'av2-50|3,33,41': 149000,
-  'av2-50|31,42,52': 395000,
-  'av2-50|4,27,41': 149000,
-  'av2-50|5,28,42': 189000,
-  'av2-50|7,33,49': 279000,
-  'av2-83|11,25,44': 375000,
-  'av2-83|12,27,49': 375000,
-  'av2-83|2,25,34': 245000,
-  'av2-83|27,40,52': 585000,
-  'av2-83|28,50,51': 375000,
-  'av2-83|3,25,39': 245000,
-  'av2-83|4,32,50': 245000,
-  'av2-83|5,30,40': 289000,
-  'av2-85|10,24,44': 419000,
-  'av2-85|11,30,41': 419000,
-  'av2-85|12,30,40': 419000,
-  'av2-85|14,28,43': 419000,
-  'av2-85|2,24,34': 269000,
-  'av2-85|3,32,41': 269000,
-  'av2-85|33,40,51': 419000,
-  'av2-85|5,33,49': 319000,
-  'av2-87|10,39,44': 419000,
-  'av2-87|13,24,44': 419000,
-  'av2-87|24,44,51': 419000,
-  'av2-87|6,26,40': 319000,
-  'av2-87|8,25,44': 517000,
-  'snotorget-45|10,31': 280000,
-  'snotorget-45|11,32': 255000,
-  'snotorget-45|12,29': 255000,
-  'snotorget-45|13,29': 255000,
-  'snotorget-45|14,30': 243000,
-  'snotorget-45|3,26': 170000,
-  'snotorget-45|4,27': 183000,
-  'snotorget-45|5,28': 210000,
-  'sorgardarna-80|10,25,38': 421000,
-  'sorgardarna-80|10,33,37': 421000,
-  'sorgardarna-80|5,16,37': 421000,
-  'sorgardarna-80|8,29,43': 441000,
-  'sorgardarna-80|8,31,38': 468000,
-  'timmerbyn-1-100|4,29': 333000,
-  'timmerbyn-1-100|4,30': 333000,
-  'timmerbyn-1-46|12': 269000,
-  'timmerbyn-1-46|14': 256000,
-  'timmerbyn-1-46|3': 183000,
-  'timmerbyn-1-46|4': 198000,
-  'timmerbyn-1-46|5': 224000,
-  'timmerbyn-2-46|14,30': 256000,
-  'timmerbyn-2-46|14,31': 256000,
-  'timmerbyn-2-46|15,30': 196000,
-  'timmerbyn-2-46|3,29': 183000,
-  'timmerbyn-3-100|13,30': 456000,
-  'timmerbyn-3-100|14,29': 398000,
-  'timmerbyn-3-100|15,28': 304000,
-  'timmerbyn-3-100|15,44': 304000,
-  'timmerbyn-3-46|12,44': 269000,
-  'timmerbyn-3-46|13,29': 269000,
-  'timmerbyn-3-46|14,29': 256000,
-  'timmerbyn-3-46|14,44': 256000,
-  'timmerbyn-3-46|15,30': 196000,
-  'timmerbyn-3-46|3,44': 183000,
-  'timmerbyn-3-46|4,32': 198000,
-  'timmerbyn-4-113|13,30': 483000,
-  'timmerbyn-4-113|15,28': 328000,
-  'timmerbyn-4-113|5,28': 416000,
-  'timmerbyn-4-54|14,44': 271000,
-  'timmerbyn-4-54|15,31': 209000,
-  'timmerbyn-4-54|3,29': 193000,
-  'timmerbyn-4-54|5,30': 236000,
-  'timmerbyn-5-113|13,33': 483000,
-  'timmerbyn-5-113|14,29': 419000,
-  'timmerbyn-5-54|14,31': 271000,
-  'timmerbyn-5-54|3,29': 193000,
+// GENERERAD — redigera inte för hand. Kör scripts/gen_veckopris.py i
+// C:\dev\peakfast-verktyg när prislistan uppdaterats.
+// Källa: SkiStar_Vacation_Club_prislista.xlsx
+// Prislista giltig from 21 dec 2022 | Period 1 = Helperiod, Period 2 = Halvperiod, Period 3 = Kvartsperiod, S = Servicevecka
+// VECKOPRIS[aptKey][vecka] = insats i kr för DEN enskilda veckan.
+// Veckor som saknas är servicveckor eller ej tillgängliga.
+const VECKOPRIS_KALLA = 'Prislista giltig from 21 dec 2022 | Period 1 = Helperiod, Period 2 = Halvperiod, Period 3 = Kvartsperiod, S = Servicevecka';
+const VECKOPRIS = {
+  'av1-50': {2:111000, 3:98000, 4:111000, 5:147000, 6:163000, 7:242000, 8:285000, 9:285000, 10:227000, 11:227000, 12:227000, 13:227000, 14:170000, 15:123000, 16:100000, 17:91000, 18:60000, 21:40000, 22:40000, 23:40000, 24:40000, 25:60000, 26:73000, 27:80000, 28:84000, 29:91000, 30:91000, 31:91000, 32:91000, 33:84000, 34:69000, 35:69000, 36:69000, 37:58000, 38:58000, 39:58000, 40:40000, 41:40000, 42:40000, 43:58000, 44:73000, 46:40000, 47:40000, 48:42000, 49:73000, 50:73000, 51:228000, 52:350000},
+  'av1-83': {2:158000, 3:140000, 4:158000, 5:210000, 6:234000, 7:345000, 8:407000, 9:407000, 10:325000, 11:325000, 12:325000, 13:325000, 14:244000, 15:175000, 16:144000, 17:129000, 18:95000, 21:57000, 22:57000, 23:57000, 24:57000, 25:95000, 26:103000, 27:112000, 28:119000, 29:129000, 30:129000, 31:129000, 32:129000, 33:119000, 34:99000, 35:99000, 36:99000, 37:82000, 38:82000, 39:82000, 40:57000, 41:57000, 42:57000, 43:91000, 44:103000, 46:57000, 47:57000, 48:59000, 49:103000, 50:103000, 51:326000, 52:502000},
+  'av1-85': {2:199000, 3:179000, 4:199000, 5:266000, 6:297000, 7:438000, 8:517000, 9:517000, 10:411000, 11:411000, 12:411000, 13:411000, 14:332000, 15:222000, 16:181000, 17:164000, 18:106000, 21:57000, 22:57000, 23:57000, 24:57000, 25:106000, 26:129000, 27:144000, 28:152000, 29:164000, 30:164000, 31:164000, 32:164000, 33:152000, 34:125000, 35:125000, 36:125000, 37:104000, 38:104000, 39:104000, 40:57000, 41:57000, 42:57000, 43:102000, 44:129000, 46:57000, 47:57000, 48:59000, 49:129000, 50:129000, 51:414000, 52:636000},
+  'av1-87': {2:199000, 3:179000, 4:199000, 5:266000, 6:297000, 7:438000, 8:517000, 9:517000, 10:411000, 11:411000, 12:411000, 13:411000, 14:332000, 15:222000, 16:181000, 17:164000, 18:106000, 21:57000, 22:57000, 23:57000, 24:57000, 25:106000, 26:129000, 27:144000, 28:152000, 29:164000, 30:164000, 31:164000, 32:164000, 33:152000, 34:125000, 35:125000, 36:125000, 37:104000, 38:104000, 39:104000, 40:57000, 41:57000, 42:57000, 43:102000, 44:129000, 46:57000, 47:57000, 48:59000, 49:129000, 50:129000, 51:414000, 52:636000},
+  'av2-50': {2:111000, 3:98000, 4:111000, 5:147000, 6:163000, 7:242000, 8:285000, 9:285000, 10:227000, 11:227000, 12:227000, 13:227000, 14:170000, 15:123000, 16:100000, 17:91000, 18:60000, 21:40000, 22:40000, 23:40000, 24:40000, 25:60000, 26:73000, 27:80000, 28:84000, 29:91000, 30:91000, 31:91000, 32:91000, 33:84000, 34:69000, 35:69000, 36:69000, 37:58000, 38:58000, 39:58000, 40:40000, 41:40000, 42:40000, 43:58000, 44:73000, 46:40000, 47:40000, 48:42000, 49:73000, 50:73000, 51:228000, 52:350000},
+  'av2-83': {2:158000, 3:140000, 4:158000, 5:210000, 6:234000, 7:345000, 8:407000, 9:407000, 10:325000, 11:325000, 12:325000, 13:325000, 14:244000, 15:175000, 16:144000, 17:129000, 18:95000, 21:57000, 22:57000, 23:57000, 24:57000, 25:95000, 26:103000, 27:112000, 28:119000, 29:129000, 30:129000, 31:129000, 32:129000, 33:119000, 34:99000, 35:99000, 36:99000, 37:82000, 38:82000, 39:82000, 40:57000, 41:57000, 42:57000, 43:91000, 44:103000, 46:57000, 47:57000, 48:59000, 49:103000, 50:103000, 51:326000, 52:502000},
+  'av2-85': {2:199000, 3:179000, 4:199000, 5:266000, 6:297000, 7:438000, 8:517000, 9:517000, 10:411000, 11:411000, 12:411000, 13:411000, 14:332000, 15:222000, 16:181000, 17:164000, 18:106000, 21:57000, 22:57000, 23:57000, 24:57000, 25:106000, 26:129000, 27:144000, 28:152000, 29:164000, 30:164000, 31:164000, 32:164000, 33:152000, 34:125000, 35:125000, 36:125000, 37:104000, 38:104000, 39:104000, 40:57000, 41:57000, 42:57000, 43:102000, 44:129000, 46:57000, 47:57000, 48:59000, 49:129000, 50:129000, 51:414000, 52:636000},
+  'av2-87': {2:199000, 3:179000, 4:199000, 5:266000, 6:297000, 7:438000, 8:517000, 9:517000, 10:411000, 11:411000, 12:411000, 13:411000, 14:332000, 15:222000, 16:181000, 17:164000, 18:106000, 21:57000, 22:57000, 23:57000, 24:57000, 25:106000, 26:129000, 27:144000, 28:152000, 29:164000, 30:164000, 31:164000, 32:164000, 33:152000, 34:125000, 35:125000, 36:125000, 37:104000, 38:104000, 39:104000, 40:57000, 41:57000, 42:57000, 43:102000, 44:129000, 46:57000, 47:57000, 48:59000, 49:129000, 50:129000, 51:414000, 52:636000},
+  'snotorget-45': {1:223000, 2:159000, 3:148000, 4:159000, 5:183000, 6:193000, 7:287000, 8:309000, 9:309000, 10:244000, 11:222000, 12:222000, 13:222000, 14:211000, 15:159000, 16:144000, 17:108000, 18:85000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:104000, 27:104000, 28:108000, 29:123000, 30:123000, 31:123000, 32:123000, 33:108000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:81000, 44:101000, 46:47000, 47:47000, 48:49000, 49:108000, 50:108000, 51:133000, 52:223000},
+  'snotorget-85': {1:339000, 2:223000, 3:211000, 4:223000, 5:269000, 6:281000, 7:380000, 8:427000, 9:427000, 10:365000, 11:327000, 12:327000, 13:327000, 14:311000, 15:223000, 16:205000, 17:119000, 18:85000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:119000, 27:119000, 28:131000, 29:152000, 30:152000, 31:152000, 32:152000, 33:131000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:81000, 44:101000, 46:47000, 47:47000, 48:49000, 49:119000, 50:119000, 51:184000, 52:339000},
+  'sorgardarna-80': {2:130000, 3:130000, 4:162000, 5:184000, 6:189000, 7:315000, 8:315000, 9:387000, 10:281000, 11:278000, 12:225000, 13:225000, 14:199000, 15:172000, 16:168000, 17:112000, 18:43000, 21:42000, 22:42000, 23:42000, 24:42000, 25:71000, 26:71000, 27:71000, 28:84000, 29:84000, 30:84000, 31:84000, 32:84000, 33:71000, 34:69000, 35:69000, 36:69000, 37:69000, 38:69000, 39:69000, 40:42000, 41:42000, 43:42000, 44:84000, 46:42000, 47:42000, 48:74000, 49:90000, 50:90000, 51:285000, 52:387000},
+  'timmerbyn-1-100': {1:418000, 2:290000, 3:264000, 4:290000, 5:341000, 6:354000, 7:470000, 8:508000, 9:508000, 10:440000, 11:397000, 12:397000, 13:397000, 14:346000, 15:264000, 16:234000, 17:131000, 18:85000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:124000, 27:124000, 28:140000, 29:158000, 30:158000, 31:158000, 32:158000, 33:140000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:81000, 44:101000, 46:47000, 47:47000, 48:49000, 49:140000, 50:140000, 51:219000, 52:418000},
+  'timmerbyn-1-46': {1:240000, 2:170000, 3:159000, 4:170000, 5:194000, 6:205000, 7:299000, 8:323000, 9:323000, 10:257000, 11:234000, 12:234000, 13:234000, 14:223000, 15:170000, 16:155000, 17:114000, 18:84000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:108000, 27:108000, 28:114000, 29:131000, 30:131000, 31:131000, 32:131000, 33:114000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:80000, 44:101000, 46:47000, 47:47000, 48:49000, 49:114000, 50:114000, 51:139000, 52:240000},
+  'timmerbyn-2-100': {1:418000, 2:290000, 3:264000, 4:290000, 5:341000, 6:354000, 7:470000, 8:508000, 9:508000, 10:440000, 11:397000, 12:397000, 13:397000, 14:346000, 15:264000, 16:234000, 17:131000, 18:85000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:124000, 27:124000, 28:140000, 29:158000, 30:158000, 31:158000, 32:158000, 33:140000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:81000, 44:101000, 46:47000, 47:47000, 48:49000, 49:140000, 50:140000, 51:219000, 52:418000},
+  'timmerbyn-2-46': {1:240000, 2:170000, 3:159000, 4:170000, 5:194000, 6:205000, 7:299000, 8:323000, 9:323000, 10:257000, 11:234000, 12:234000, 13:234000, 14:223000, 15:170000, 16:155000, 17:114000, 18:84000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:108000, 27:108000, 28:114000, 29:131000, 30:131000, 31:131000, 32:131000, 33:114000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:80000, 44:101000, 46:47000, 47:47000, 48:49000, 49:114000, 50:114000, 51:139000, 52:240000},
+  'timmerbyn-3-100': {1:418000, 2:290000, 3:264000, 4:290000, 5:341000, 6:354000, 7:470000, 8:508000, 9:508000, 10:440000, 11:397000, 12:397000, 13:397000, 14:346000, 15:264000, 16:234000, 17:131000, 18:85000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:124000, 27:124000, 28:140000, 29:158000, 30:158000, 31:158000, 32:158000, 33:140000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:81000, 44:101000, 46:47000, 47:47000, 48:49000, 49:140000, 50:140000, 51:219000, 52:418000},
+  'timmerbyn-3-46': {1:240000, 2:170000, 3:159000, 4:170000, 5:194000, 6:205000, 7:299000, 8:323000, 9:323000, 10:257000, 11:234000, 12:234000, 13:234000, 14:223000, 15:170000, 16:155000, 17:114000, 18:84000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:108000, 27:108000, 28:114000, 29:131000, 30:131000, 31:131000, 32:131000, 33:114000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:80000, 44:101000, 46:47000, 47:47000, 48:49000, 49:114000, 50:114000, 51:139000, 52:240000},
+  'timmerbyn-4-113': {1:443000, 2:307000, 3:280000, 4:307000, 5:362000, 6:375000, 7:498000, 8:538000, 9:538000, 10:467000, 11:421000, 12:421000, 13:421000, 14:366000, 15:279000, 16:247000, 17:141000, 18:85000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:131000, 27:131000, 28:148000, 29:172000, 30:172000, 31:172000, 32:172000, 33:148000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:81000, 44:101000, 46:47000, 47:47000, 48:49000, 49:148000, 50:148000, 51:232000, 52:443000},
+  'timmerbyn-4-54': {1:256000, 2:182000, 3:168000, 4:182000, 5:205000, 6:219000, 7:317000, 8:341000, 9:341000, 10:271000, 11:248000, 12:248000, 13:248000, 14:236000, 15:182000, 16:164000, 17:121000, 18:84000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:114000, 27:114000, 28:124000, 29:144000, 30:144000, 31:144000, 32:144000, 33:124000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:80000, 44:101000, 46:47000, 47:47000, 48:49000, 49:124000, 50:124000, 51:148000, 52:256000},
+  'timmerbyn-5-113': {1:443000, 2:307000, 3:280000, 4:307000, 5:362000, 6:375000, 7:498000, 8:538000, 9:538000, 10:467000, 11:421000, 12:421000, 13:421000, 14:366000, 15:279000, 16:247000, 17:141000, 18:85000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:131000, 27:131000, 28:148000, 29:172000, 30:172000, 31:172000, 32:172000, 33:148000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:81000, 44:101000, 46:47000, 47:47000, 48:49000, 49:148000, 50:148000, 51:232000, 52:443000},
+  'timmerbyn-5-54': {1:256000, 2:182000, 3:168000, 4:182000, 5:205000, 6:219000, 7:317000, 8:341000, 9:341000, 10:271000, 11:248000, 12:248000, 13:248000, 14:236000, 15:182000, 16:164000, 17:121000, 18:84000, 21:47000, 22:47000, 23:47000, 24:47000, 25:49000, 26:114000, 27:114000, 28:124000, 29:144000, 30:144000, 31:144000, 32:144000, 33:124000, 34:97000, 35:97000, 36:97000, 37:97000, 38:97000, 39:97000, 40:47000, 41:47000, 42:47000, 43:80000, 44:101000, 46:47000, 47:47000, 48:49000, 49:124000, 50:124000, 51:148000, 52:256000},
 };
 
 // ═══ MSPECS-projekt-mappning ════════════════════════════════════
@@ -1263,16 +1187,25 @@ function parsePriceInput(str) {
   return isNaN(n) ? 0 : n;
 }
 
-// Slår upp SkiStars listpris för en lägenhetstyp + veckouppsättning i PRISLISTA.
-// Matchar på HELA veckouppsättningen, inte bara vinterveckan: priset sitter på
-// paketet, och samma lägenhet kostar olika beroende på vilka veckor som ingår.
-// Ingen träff = inget pris att visa (paketet finns inte i listan, eller har sålts).
-function slaUppListpris(aptKey, weeksStr) {
-  if (!aptKey || typeof PRISLISTA === 'undefined') return 0;
+// Summerar SkiStars insatspris för valfri kombination av veckor.
+// Varje vecka har ett eget pris i VECKOPRIS, så veckorna kan blandas fritt —
+// ägare byter veckor och köper loss ströveckor, och då stämmer inte SkiStars
+// färdiga paket. Veckor utan prisuppgift (service, ej tillgängliga) rapporteras
+// separat i stället för att tyst räknas som noll.
+function summeraVeckopris(aptKey, weeksStr) {
+  const tomt = { total: 0, antal: 0, saknade: [] };
+  if (!aptKey || typeof VECKOPRIS === 'undefined' || !VECKOPRIS[aptKey]) return tomt;
   const norm = normalizeWeeksStr(weeksStr || '');
-  if (!norm.weeks || !norm.weeks.length) return 0;
+  if (!norm.weeks || !norm.weeks.length) return tomt;
   const unika = norm.weeks.filter(function(w, i, a){ return a.indexOf(w) === i; });
-  return PRISLISTA[aptKey + '|' + unika.sort(function(a,b){return a-b;}).join(',')] || 0;
+  const tabell = VECKOPRIS[aptKey];
+  let total = 0, antal = 0;
+  const saknade = [];
+  unika.forEach(function(v){
+    if (tabell[v]) { total += tabell[v]; antal++; }
+    else { saknade.push(v); }
+  });
+  return { total: total, antal: antal, saknade: saknade };
 }
 
 // Bygger visningstexten för SkiStars listpris.
@@ -1320,23 +1253,31 @@ function updateAutoInfo() {
     brfTxt = d.brf_avgift.toLocaleString('sv-SE') + ' kr/vecka/år (ange veckor för summering)';
   }
   document.getElementById('ai-brf').textContent = brfTxt;
-  // SkiStar listpris — hämtas ur PRISLISTA, men ett eget ifyllt pris vinner alltid.
-  // Raden döljs när varken uppslagning eller egen inmatning gav något.
+  // SkiStar listpris — summan av de valda veckornas insatspriser.
+  // Ett eget ifyllt pris vinner alltid över uppslagningen.
   const prisInp = document.getElementById('listPrice');
   const egetPris = parsePriceInput(prisInp ? prisInp.value : '');
-  const pris = egetPris || slaUppListpris(v, weeksStr);
+  const vp = summeraVeckopris(v, weeksStr);
   const prisRow = document.getElementById('ai-pris-row');
-  if (pris > 0) {
-    document.getElementById('ai-pris').textContent = formatListPrice(pris, calc.weeks);
-    document.getElementById('ai-pris-label').textContent =
-      egetPris ? 'Listpris (eget)' : 'SkiStar listpris';
+  const prisVal = document.getElementById('ai-pris');
+  const prisLbl = document.getElementById('ai-pris-label');
+  if (egetPris > 0) {
+    prisVal.textContent = formatListPrice(egetPris, calc.weeks);
+    prisLbl.textContent = 'Listpris (eget)';
+    prisRow.style.display = '';
+  } else if (vp.antal > 0) {
+    let txt = formatListPrice(vp.total, vp.antal);
+    // Saknas pris för någon vecka måste det synas — annars ser summan
+    // komplett ut fast den bara täcker en del av veckorna.
+    if (vp.saknade.length) {
+      txt += ' · v.' + vp.saknade.join(', ') + ' saknar prisuppgift';
+    }
+    prisVal.textContent = txt;
+    prisLbl.textContent = 'SkiStar listpris';
     prisRow.style.display = '';
   } else if (calc.weeks > 0) {
-    // Veckor ifyllda men ingen träff. Säg det rakt ut — en rad som bara
-    // försvinner ser ut som ett fel, och man vet inte om priset saknas
-    // eller om verktyget är trasigt.
-    document.getElementById('ai-pris').textContent = 'ingen träff i paketlistan — fyll i eget pris';
-    document.getElementById('ai-pris-label').textContent = 'SkiStar listpris';
+    prisVal.textContent = 'ingen prisuppgift för valda veckor — fyll i eget pris';
+    prisLbl.textContent = 'SkiStar listpris';
     prisRow.style.display = '';
   } else {
     prisRow.style.display = 'none';
