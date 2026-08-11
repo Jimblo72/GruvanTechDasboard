@@ -1583,9 +1583,10 @@ const APPS = {
     status: 'active',
     about: 'Internt verktyg för att designa egna broschyr- och skyltmallar (dra block, byt färger/font, lägg till rutor och bilder) och kundanpassa planritningstema. Ritar med samma motor som den riktiga broschyren → WYSIWYG. Mallar levereras som JSON. Bor i PeakFast edition; Prowebb (collaborators) kan också bygga mallar. Öppnas i ny flik (cross-origin på peakfast).',
     planned: [
-      { t: 'Swap-cutover', d: 'Byt broschyrens default-motor till den data-drivna (verifiera malldiff 0px + PDF-jämförelse först)' },
-      { t: 'Skylt-brygga', d: 'Koppla verkstadens block-skyltmallar in i den skarpa skyltfliken (sign-module)' },
-      { t: 'Dynamiska mall-kort', d: 'Bygg broschyrens mallväljare ur manifestet så nya kundmallar dyker upp automatiskt' },
+      { t: 'Tomma fält ska inte synas', d: 'Saknas en uppgift skriver mallen ut "undefined rum" i stället för att hoppa över raden' },
+      { t: 'Bildhantering', d: 'Välj fokuspunkt på bilder och skala ner stora filer, så att utrymmet inte tar slut' },
+      { t: 'A3 och liggande skyltar', d: 'Egna skyltmallar kan bara bli A4 stående i dag' },
+      { t: 'Fler fält på skyltmallarna', d: 'Faktaruta och brödtext går inte att binda till hero- och minimal-skyltarna än' },
     ],
     links: [
       { label: '↗ Öppna verktyg', href: 'https://maklargruvan-peakfast.netlify.app/mallverkstad.html', cls: 'primary' },
