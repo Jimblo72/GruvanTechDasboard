@@ -549,6 +549,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" data-sec="verktyg" onclick="showSection('verktyg',this)"><div class="nav-dot" style="background:var(--accent)"></div>PeakFast-verktyg</button>
       <button class="nav-item" data-sec="tomt" onclick="showSection('tomt',this)"><div class="nav-dot" style="background:var(--accent)"></div>Tomtgränsritare</button>
       <button class="nav-item" data-sec="andels" onclick="showSection('andels',this)"><div class="nav-dot" style="background:var(--accent)"></div>Andelsförsäljning</button>
+      <button class="nav-item" onclick="openApp('https://maklargruvan-peakfast.netlify.app/mallverkstad.html')"><div class="nav-dot" style="background:var(--accent)"></div>Mallverkstaden ↗</button>
     </div>
   </nav>
   <div class="sidebar-footer">
@@ -912,7 +913,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <div><div class="page-title">PeakFast-verktyg</div><div class="page-sub">Verktygen vi byggt · webbverktyg körs i dashboarden, lokala verktyg körs på din dator</div></div>
     </div>
 
-    <div class="sec-head"><div class="sec-title">Webbverktyg</div><div class="sec-line"></div><div class="sec-count">3 verktyg</div></div>
+    <div class="sec-head"><div class="sec-title">Webbverktyg</div><div class="sec-line"></div><div class="sec-count">4 verktyg</div></div>
     <div class="app-grid">
       <div class="app-card c-accent" style="cursor:default">
         <div class="card-top"><div class="app-icon" style="background:var(--accent-glow);color:var(--accent)">Tg</div><span class="badge b-active">Webbverktyg</span></div>
@@ -945,6 +946,17 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
           <button class="btn" style="font-size:10.5px;padding:5px 11px" onclick="generateIdeas('t_offert', document.getElementById('ideas-out-t_offert'), this)">💡 Generera idéer</button>
         </div>
         <div id="ideas-out-t_offert" style="margin-top:10px"></div>
+      </div>
+
+      <div class="app-card c-accent" style="cursor:default">
+        <div class="card-top"><div class="app-icon" style="background:var(--accent-glow);color:var(--accent)">Mv</div><span class="badge b-active">Webbverktyg</span></div>
+        <div class="app-name">Mallverkstaden</div>
+        <div class="app-desc">Designa egna broschyr- &amp; skyltmallar + planritningstema (internt). Öppnas i ny flik.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:11px;border-top:1px solid var(--border)">
+          <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="openApp('https://maklargruvan-peakfast.netlify.app/mallverkstad.html')">▶ Öppna ↗</button>
+          <button class="btn" style="font-size:10.5px;padding:5px 11px" onclick="generateIdeas('t_mallverkstad', document.getElementById('ideas-out-t_mallverkstad'), this)">💡 Generera idéer</button>
+        </div>
+        <div id="ideas-out-t_mallverkstad" style="margin-top:10px"></div>
       </div>
     </div>
 
@@ -1564,6 +1576,20 @@ const APPS = {
       { t: 'Delningslänk', d: 'Skicka offerten som länk i stället för PDF-bilaga' },
     ],
     links: []
+  },
+  t_mallverkstad: {
+    icon: 'Mv', iconStyle: 'background:var(--accent-glow);color:#c8854a',
+    title: 'Mallverkstaden', subtitle: 'PeakFast-verktyg · webbverktyg (internt)',
+    status: 'active',
+    about: 'Internt verktyg för att designa egna broschyr- och skyltmallar (dra block, byt färger/font, lägg till rutor och bilder) och kundanpassa planritningstema. Ritar med samma motor som den riktiga broschyren → WYSIWYG. Mallar levereras som JSON. Bor i PeakFast edition; Prowebb (collaborators) kan också bygga mallar. Öppnas i ny flik (cross-origin på peakfast).',
+    planned: [
+      { t: 'Swap-cutover', d: 'Byt broschyrens default-motor till den data-drivna (verifiera malldiff 0px + PDF-jämförelse först)' },
+      { t: 'Skylt-brygga', d: 'Koppla verkstadens block-skyltmallar in i den skarpa skyltfliken (sign-module)' },
+      { t: 'Dynamiska mall-kort', d: 'Bygg broschyrens mallväljare ur manifestet så nya kundmallar dyker upp automatiskt' },
+    ],
+    links: [
+      { label: '↗ Öppna verktyg', href: 'https://maklargruvan-peakfast.netlify.app/mallverkstad.html', cls: 'primary' },
+    ]
   },
   t_pdftext: {
     icon: 'Pd', iconStyle: 'background:rgba(58,74,96,0.3);color:#b7ad9f',
