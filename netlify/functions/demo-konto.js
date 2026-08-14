@@ -18,7 +18,7 @@
 // netlify/functions/demo-konto.js i det repot.
 
 const MG_URL = process.env.MG_APP_URL || 'https://maklargruvan.netlify.app';
-const TILLATNA = ['lista', 'skapa', 'forlang', 'slack'];
+const TILLATNA = ['lista', 'skapa', 'andra', 'forlang', 'slack'];
 
 exports.handler = async (event) => {
   const headers = {
