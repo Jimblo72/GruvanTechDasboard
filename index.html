@@ -450,6 +450,70 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
   </div>
 </div>
 
+<!-- DEMOKONTO-MODAL (Mäklargruvan) -->
+<!-- Fälten har readonly + intetsägande name: webbläsaren autofyller annars nya
+     textfält här med sajtens lösenord. Se minnet om autofyll-fällan — enbart
+     autocomplete="off" biter INTE i Chrome/Edge. -->
+<div class="modal-overlay" id="demo-modal" onclick="closeDemoModal(event)">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-icon" style="background:var(--accent-glow);color:var(--accent)">Mk</div>
+      <div class="modal-title-wrap">
+        <div class="modal-title">Demokonton · Mäklargruvan</div>
+        <div class="modal-subtitle">Nya demokunder och samarbetspartners</div>
+      </div>
+      <button class="modal-close" onclick="closeDemoModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label">E-post *</label>
+        <input class="input" id="demo-epost" name="dk-a1-x" readonly placeholder="namn@byran.se">
+      </div>
+      <div class="field">
+        <label class="field-label">Kontorsnamn *</label>
+        <input class="input" id="demo-kontor" name="dk-b2-x" readonly placeholder="t.ex. Demo — Stegman Juristbyrå">
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1">
+          <label class="field-label">Giltigt (dagar)</label>
+          <input class="input" id="demo-dagar" name="dk-c3-x" readonly placeholder="30">
+        </div>
+        <div class="field" style="flex:1">
+          <label class="field-label">Platser</label>
+          <input class="input" id="demo-platser" name="dk-d4-x" readonly placeholder="3">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Moduler</label>
+        <div style="display:flex;gap:16px;padding:4px 0">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="demo-broschyr" checked> Broschyr &amp; skylt
+          </label>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="demo-juridik" checked> Juridik
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-solid" style="flex:1;justify-content:center" id="demo-save-btn" onclick="skapaDemokonto()">Skapa demokonto</button>
+        <button class="btn" onclick="laddaDemokonton()">↻ Uppdatera lista</button>
+      </div>
+      <div class="hint" id="demo-status"></div>
+
+      <div id="demo-resultat" style="display:none;margin-top:14px;padding:14px;border-radius:10px;background:var(--surface);border:1px solid var(--accent)">
+        <div style="font-weight:600;color:var(--accent);margin-bottom:8px">Klart — uppgifter att skicka</div>
+        <pre id="demo-resultat-text" style="margin:0;white-space:pre-wrap;font-size:13px;line-height:1.6;font-family:ui-monospace,Menlo,Consolas,monospace"></pre>
+        <button class="btn" style="margin-top:10px" onclick="kopieraDemouppgifter()">Kopiera</button>
+      </div>
+
+      <div style="margin-top:18px">
+        <div class="field-label" style="margin-bottom:8px">Befintliga demokonton</div>
+        <div id="demo-lista"><div class="hint">Klicka "Uppdatera lista".</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- IMPORT-MODAL (vCard / CSV) -->
 <div class="modal-overlay" id="import-modal" onclick="closeImportModal(event)">
   <div class="modal" style="max-width:620px">
@@ -605,6 +669,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
         <div class="card-footer">
           <div class="card-tags"><span class="tag">Netlify</span><span class="tag">Claude API</span><span class="tag">Prowebb</span></div>
           <div class="card-actions">
+            <button class="icon-btn" onclick="event.stopPropagation();openDemoModal()" title="Demokonton">◷</button>
             <a class="icon-btn" href="https://maklargruvan.netlify.app" target="_blank" onclick="event.stopPropagation()" title="Öppna app">↗</a>
             <a class="icon-btn" href="https://github.com/Jimblo72/maklargruvan-pilot" target="_blank" onclick="event.stopPropagation()" title="GitHub">⌥</a>
           </div>
@@ -1184,7 +1249,8 @@ const FN = {
   mailTriage:'/.netlify/functions/mail-triage',    // klassificerar + skapar svarsutkast i Outlook
   mailQueue: '/.netlify/functions/mail-queue',     // godkännandekö som pollern skrivit (data/mail-queue.json)
   mailLearnStyle:'/.netlify/functions/mail-learn-style', // lär in mejlstil från Sent Items → per-brevlåde-stilprofil
-  contextHub:'/.netlify/functions/context-hub'   // delad projektkontext + handoffs (data/context-hub.json)
+  contextHub:'/.netlify/functions/context-hub',  // delad projektkontext + handoffs (data/context-hub.json)
+  demoKonto: '/.netlify/functions/demo-konto'    // demokonton i Mäklargruvan (proxy → pilot-repots API)
 };
 const GH_USER = 'Jimblo72';
 
@@ -2844,6 +2910,157 @@ function editContact(id){
 
 function closeContactModal(e){ if (e.target === document.getElementById('contact-modal')) closeContactModalBtn(); }
 function closeContactModalBtn(){ document.getElementById('contact-modal').classList.remove('open'); }
+
+/* ── DEMOKONTON I MÄKLARGRUVAN ──────────────────────────────────────────────
+   Skapar demokonton för nya demokunder och samarbetspartners. Går via
+   /.netlify/functions/demo-konto, som i sin tur anropar Mäklargruvans API med
+   en admin-token som aldrig lämnar funktionsmiljön. Supabases service_role-
+   nyckel finns inte i det här repot alls.
+
+   🔴 Backend vägrar röra prenumerationer som är kopplade till Stripe. En
+   betalande kund kan alltså inte släckas härifrån ens av misstag. */
+
+const DEMO_FALT = ['demo-epost', 'demo-kontor', 'demo-dagar', 'demo-platser'];
+
+function openDemoModal(){
+  DEMO_FALT.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = '';
+    el.setAttribute('readonly', '');           // släpps först vid fokus, se nedan
+  });
+  document.getElementById('demo-broschyr').checked = true;
+  document.getElementById('demo-juridik').checked = true;
+  document.getElementById('demo-status').textContent = '';
+  document.getElementById('demo-resultat').style.display = 'none';
+  document.getElementById('demo-modal').classList.add('open');
+  laddaDemokonton();
+}
+function closeDemoModal(e){ if (e.target === document.getElementById('demo-modal')) closeDemoModalBtn(); }
+function closeDemoModalBtn(){ document.getElementById('demo-modal').classList.remove('open'); }
+
+/* Autofyllningen hoppar över readonly-fält. Vi tar bort attributet först när
+   användaren faktiskt rör fältet — då har webbläsarens autofyll redan kört. */
+DEMO_FALT.forEach(id => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const slapp = () => el.removeAttribute('readonly');
+    el.addEventListener('focus', slapp);
+    el.addEventListener('pointerdown', slapp);
+  });
+});
+
+function demoStatus(text, fel){
+  const el = document.getElementById('demo-status');
+  el.textContent = text || '';
+  el.style.color = fel ? 'var(--red, #e5484d)' : '';
+}
+
+async function demoAnrop(payload){
+  const r = await fetch(FN.demoKonto, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || `Fel ${r.status}`);
+  return d;
+}
+
+async function skapaDemokonto(){
+  const epost = (document.getElementById('demo-epost').value || '').trim();
+  const kontor = (document.getElementById('demo-kontor').value || '').trim();
+  const dagarRaw = (document.getElementById('demo-dagar').value || '').trim();
+  const platserRaw = (document.getElementById('demo-platser').value || '').trim();
+
+  /* Validera formatet — sålla ALDRIG fram siffror ur fritext. Ett autofyllt
+     "GruvanTechDashboard30" ska bli ett fel, inte tyst bli "30 dagar". */
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(epost)) { demoStatus('Fyll i en giltig e-postadress.', true); return; }
+  if (!kontor) { demoStatus('Kontorsnamn krävs.', true); return; }
+  if (dagarRaw && !/^\d{1,3}$/.test(dagarRaw)) { demoStatus('Dagar måste vara ett tal (1–365).', true); return; }
+  if (platserRaw && !/^\d{1,2}$/.test(platserRaw)) { demoStatus('Platser måste vara ett tal (1–50).', true); return; }
+
+  const btn = document.getElementById('demo-save-btn');
+  btn.disabled = true; demoStatus('Skapar…');
+  try {
+    const d = await demoAnrop({
+      handling: 'skapa',
+      epost, kontor,
+      dagar: dagarRaw ? +dagarRaw : 30,
+      platser: platserRaw ? +platserRaw : 3,
+      broschyr: document.getElementById('demo-broschyr').checked,
+      juridik: document.getElementById('demo-juridik').checked
+    });
+
+    const rader = [
+      'Adress: https://maklargruvan.netlify.app',
+      `E-post: ${d.epost}`,
+      d.losenord ? `Lösenord: ${d.losenord}` : 'Lösenord: (användaren fanns redan — befintligt lösenord gäller)',
+      `Demokontot är aktivt till ${new Date(d.giltigt_till).toLocaleDateString('sv-SE')}.`
+    ];
+    document.getElementById('demo-resultat-text').textContent = rader.join('\n');
+    document.getElementById('demo-resultat').style.display = '';
+    demoStatus(d.losenord ? 'Klart. Lösenordet visas bara nu — kopiera det.' : 'Klart.');
+    laddaDemokonton();
+  } catch (e) {
+    demoStatus(e.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function kopieraDemouppgifter(){
+  const t = document.getElementById('demo-resultat-text').textContent || '';
+  navigator.clipboard.writeText(t).then(
+    () => demoStatus('Kopierat.'),
+    () => demoStatus('Kunde inte kopiera — markera texten manuellt.', true)
+  );
+}
+
+async function laddaDemokonton(){
+  const box = document.getElementById('demo-lista');
+  box.innerHTML = '<div class="hint">Hämtar…</div>';
+  try {
+    const d = await demoAnrop({ handling: 'lista' });
+    const rader = d.demokonton || [];
+    if (!rader.length) { box.innerHTML = '<div class="hint">Inga demokonton ännu.</div>'; return; }
+    box.innerHTML = rader.map(r => {
+      const datum = r.giltigt_till ? new Date(r.giltigt_till).toLocaleDateString('sv-SE') : 'tills vidare';
+      const farg = r.aktivt ? 'var(--green,#4ecb8d)' : 'var(--text3)';
+      const etikett = r.aktivt ? 'aktivt' : 'släckt';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.kontor || '(namnlös)')}</div>
+          <div style="font-size:12px;color:var(--text3)">${escHtml(r.epost || '')} · t.o.m. ${datum} · <span style="color:${farg}">${etikett}</span></div>
+        </div>
+        <button class="btn" style="font-size:12px;padding:5px 10px" onclick="forlangDemo('${r.org_id}')">+30 d</button>
+        <button class="btn" style="font-size:12px;padding:5px 10px" onclick="slackDemo('${r.org_id}')">Släck</button>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    box.innerHTML = `<div class="hint" style="color:var(--red,#e5484d)">${escHtml(e.message)}</div>`;
+  }
+}
+
+function escHtml(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+async function forlangDemo(orgId){
+  demoStatus('Förlänger…');
+  try { await demoAnrop({ handling: 'forlang', org_id: orgId, dagar: 30 }); demoStatus('Förlängt 30 dagar.'); laddaDemokonton(); }
+  catch (e) { demoStatus(e.message, true); }
+}
+
+async function slackDemo(orgId){
+  if (!confirm('Släcka demokontot? Kunden tappar åtkomst direkt.')) return;
+  demoStatus('Släcker…');
+  try { await demoAnrop({ handling: 'slack', org_id: orgId }); demoStatus('Släckt.'); laddaDemokonton(); }
+  catch (e) { demoStatus(e.message, true); }
+}
 
 function readContactForm(){
   const tags = (document.getElementById('contact-tags').value || '')
