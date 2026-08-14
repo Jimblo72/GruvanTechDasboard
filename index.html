@@ -484,6 +484,10 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
         </div>
       </div>
       <div class="field">
+        <label class="field-label">Lösenord <span style="color:var(--text3);font-weight:400">— lämna tomt för ett genererat</span></label>
+        <input class="input" id="demo-losen" name="dk-e5-x" readonly placeholder="minst 8 tecken">
+      </div>
+      <div class="field">
         <label class="field-label">Moduler</label>
         <div style="display:flex;gap:16px;padding:4px 0">
           <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
@@ -493,6 +497,12 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
             <input type="checkbox" id="demo-juridik" checked> Juridik
           </label>
         </div>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="demo-mail" checked> Skicka välkomstmail med inloggningsuppgifterna
+        </label>
+        <div class="hint" style="margin-top:4px">Går bara ut om det finns ett lösenord att skicka — alltså vid nytt konto, eller när du sätter ett nytt här.</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:4px">
         <button class="btn btn-solid" style="flex:1;justify-content:center" id="demo-save-btn" onclick="skapaDemokonto()">Skapa demokonto</button>
@@ -2920,7 +2930,7 @@ function closeContactModalBtn(){ document.getElementById('contact-modal').classL
    🔴 Backend vägrar röra prenumerationer som är kopplade till Stripe. En
    betalande kund kan alltså inte släckas härifrån ens av misstag. */
 
-const DEMO_FALT = ['demo-epost', 'demo-kontor', 'demo-dagar', 'demo-platser'];
+const DEMO_FALT = ['demo-epost', 'demo-kontor', 'demo-dagar', 'demo-platser', 'demo-losen'];
 
 function openDemoModal(){
   DEMO_FALT.forEach(id => {
@@ -2931,6 +2941,7 @@ function openDemoModal(){
   });
   document.getElementById('demo-broschyr').checked = true;
   document.getElementById('demo-juridik').checked = true;
+  document.getElementById('demo-mail').checked = true;
   document.getElementById('demo-status').textContent = '';
   document.getElementById('demo-resultat').style.display = 'none';
   document.getElementById('demo-modal').classList.add('open');
@@ -2973,6 +2984,7 @@ async function skapaDemokonto(){
   const kontor = (document.getElementById('demo-kontor').value || '').trim();
   const dagarRaw = (document.getElementById('demo-dagar').value || '').trim();
   const platserRaw = (document.getElementById('demo-platser').value || '').trim();
+  const losenRaw = (document.getElementById('demo-losen').value || '').trim();
 
   /* Validera formatet — sålla ALDRIG fram siffror ur fritext. Ett autofyllt
      "GruvanTechDashboard30" ska bli ett fel, inte tyst bli "30 dagar". */
@@ -2980,6 +2992,7 @@ async function skapaDemokonto(){
   if (!kontor) { demoStatus('Kontorsnamn krävs.', true); return; }
   if (dagarRaw && !/^\d{1,3}$/.test(dagarRaw)) { demoStatus('Dagar måste vara ett tal (1–365).', true); return; }
   if (platserRaw && !/^\d{1,2}$/.test(platserRaw)) { demoStatus('Platser måste vara ett tal (1–50).', true); return; }
+  if (losenRaw && losenRaw.length < 8) { demoStatus('Lösenordet behöver minst 8 tecken.', true); return; }
 
   const btn = document.getElementById('demo-save-btn');
   btn.disabled = true; demoStatus('Skapar…');
@@ -2990,7 +3003,9 @@ async function skapaDemokonto(){
       dagar: dagarRaw ? +dagarRaw : 30,
       platser: platserRaw ? +platserRaw : 3,
       broschyr: document.getElementById('demo-broschyr').checked,
-      juridik: document.getElementById('demo-juridik').checked
+      juridik: document.getElementById('demo-juridik').checked,
+      losenord: losenRaw || undefined,
+      skicka_mail: document.getElementById('demo-mail').checked
     });
 
     const rader = [
@@ -3001,7 +3016,14 @@ async function skapaDemokonto(){
     ];
     document.getElementById('demo-resultat-text').textContent = rader.join('\n');
     document.getElementById('demo-resultat').style.display = '';
-    demoStatus(d.losenord ? 'Klart. Lösenordet visas bara nu — kopiera det.' : 'Klart.');
+
+    // Mailutfallet är avsiktligt skilt från om kontot skapades — kontot kan vara
+    // korrekt även när utskicket failar, och då ska man INTE skapa om det.
+    let status = 'Klart.';
+    if (d.mail && d.mail.skickat) status = `Klart — välkomstmail skickat till ${d.epost}.`;
+    else if (d.mail && !d.mail.skickat) status = `Kontot är skapat, men mailet gick INTE ut: ${d.mail.orsak}`;
+    else if (d.losenord) status = 'Klart. Lösenordet visas bara nu — kopiera det.';
+    demoStatus(status, !!(d.mail && !d.mail.skickat));
     laddaDemokonton();
   } catch (e) {
     demoStatus(e.message, true);
