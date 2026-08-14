@@ -514,6 +514,14 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       </div>
       <div class="hint" id="demo-status"></div>
 
+      <!-- Visas bara när API:t svarat 409: kontot har flera användare och det
+           går inte att avgöra vem det nya lösenordet ska gälla. -->
+      <div id="demo-valj-anvandare" style="display:none;margin-top:12px;padding:12px;border-radius:10px;background:var(--surface);border:1px solid var(--accent)">
+        <div style="font-weight:600;margin-bottom:4px">Vem ska få det nya lösenordet?</div>
+        <div class="hint" id="demo-valj-text" style="margin-bottom:8px"></div>
+        <div id="demo-valj-knappar" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
+
       <div id="demo-resultat" style="display:none;margin-top:14px;padding:14px;border-radius:10px;background:var(--surface);border:1px solid var(--accent)">
         <div style="font-weight:600;color:var(--accent);margin-bottom:8px">Klart — uppgifter att skicka</div>
         <pre id="demo-resultat-text" style="margin:0;white-space:pre-wrap;font-size:13px;line-height:1.6;font-family:ui-monospace,Menlo,Consolas,monospace"></pre>
@@ -2987,6 +2995,7 @@ function redigeraDemo(orgId){
 
 function avbrytRedigering(){
   demoRedigerar = null;
+  doljAnvandarval();          // annars star valet kvar nar man byter post
   document.getElementById('demo-redigerar').style.display = 'none';
   document.getElementById('demo-save-btn').textContent = 'Skapa demokonto';
   DEMO_FALT.forEach(id => {
@@ -3023,23 +3032,71 @@ async function andraDemokonto(){
   // fran idag — annars lamnas datumet orort.
   if (dagarRaw) payload.giltigt_till = new Date(Date.now() + (+dagarRaw) * 86400000).toISOString();
 
+  await skickaAndring(payload);
+}
+
+/* Utbrutet ur andraDemokonto for att kunna koras om med profil_id nar API:t
+   svarat 409 — se visaAnvandarval nedan. */
+async function skickaAndring(payload){
   const btn = document.getElementById('demo-save-btn');
   btn.disabled = true; demoStatus('Sparar…');
+  doljAnvandarval();
   try {
     const d = await demoAnrop(payload);
     demoStatus(d.losenord ? 'Sparat. Nytt lösenord satt — kopiera det nedan.' : 'Sparat.');
     if (d.losenord) {
+      /* Mottagaren kommer fran API:t, inte fran formularet: har kontot flera
+         anvandare ar det inte sakert att e-postfaltet ovan ar den som fick
+         losenordet. */
+      const mottagare = (d.anvandare && d.anvandare.epost) || document.getElementById('demo-epost').value;
       document.getElementById('demo-resultat-text').textContent =
-        `Adress: https://maklargruvan.netlify.app\nE-post: ${document.getElementById('demo-epost').value}\nLösenord: ${d.losenord}`;
+        `Adress: https://maklargruvan.netlify.app\nE-post: ${mottagare}\nLösenord: ${d.losenord}`;
       document.getElementById('demo-resultat').style.display = '';
     }
     avbrytRedigering();
     laddaDemokonton();
   } catch (e) {
+    /* 409 = kontot har flera anvandare och API:t vagrar gissa vem losenordet
+       galler. Det ar en fraga, inte ett fel: visa kandidaterna och skicka om
+       med den man valjer. Ovriga fel visas som vanligt. */
+    if (e.status === 409 && e.data && Array.isArray(e.data.anvandare) && e.data.anvandare.length) {
+      demoStatus('');
+      visaAnvandarval(e.data.anvandare, payload);
+      return;
+    }
     demoStatus(e.message, true);
   } finally {
     btn.disabled = false;
   }
+}
+
+function visaAnvandarval(anvandare, payload){
+  document.getElementById('demo-valj-text').textContent =
+    `Kontot har ${anvandare.length} användare. Lösenordet sätts bara på den du väljer.`;
+
+  const knappar = document.getElementById('demo-valj-knappar');
+  knappar.innerHTML = '';
+  anvandare.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.type = 'button';
+    b.textContent = a.roll === 'owner' ? `${a.epost} (ägare)` : a.epost;
+    b.onclick = () => skickaAndring(Object.assign({}, payload, { profil_id: a.id }));
+    knappar.appendChild(b);
+  });
+
+  const avbryt = document.createElement('button');
+  avbryt.className = 'btn';
+  avbryt.type = 'button';
+  avbryt.textContent = 'Avbryt';
+  avbryt.onclick = () => { doljAnvandarval(); demoStatus('Lösenordet ändrades inte.'); };
+  knappar.appendChild(avbryt);
+
+  document.getElementById('demo-valj-anvandare').style.display = '';
+}
+
+function doljAnvandarval(){
+  document.getElementById('demo-valj-anvandare').style.display = 'none';
 }
 function closeDemoModal(e){ if (e.target === document.getElementById('demo-modal')) closeDemoModalBtn(); }
 function closeDemoModalBtn(){ document.getElementById('demo-modal').classList.remove('open'); }
@@ -3069,7 +3126,15 @@ async function demoAnrop(payload){
     body: JSON.stringify(payload)
   });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || `Fel ${r.status}`);
+  if (!r.ok) {
+    /* Statuskoden och svarskroppen foljer med felet. Utan dem gar ett
+       atgardbart 409 ("vem ska fa losenordet?") inte att skilja fran ett
+       vanligt fel, och da blir enda utvagen att lasa felmeddelandets text. */
+    const fel = new Error(d.error || `Fel ${r.status}`);
+    fel.status = r.status;
+    fel.data = d;
+    throw fel;
+  }
   return d;
 }
 
