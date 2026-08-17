@@ -175,8 +175,9 @@ ABSOLUTA REGLER (viktigast av allt):
 
 TON:
 - Kunnig kollega, inte marknadsavdelning. Vardaglig svenska, korta meningar.
-- Utfallsspråk — vad siffrorna betyder och vad läsaren kan göra — inte hype. Nämn INTE Mäklargruvan-produkten i inläggen; de här inläggen bygger förtroende, de säljer inte.
-- Gärna en personlig observation från Jimmy ("Jag noterar att …", "Det här känns igen från samtalen med kollegor …") och gärna en avslutande fråga till kollegorna i branschen.
+- MÄSTRA ALDRIG läsaren (viktig regel från Jimmy): skriv inga meningar som förklarar för mäklare varför något är viktigt i deras eget yrke — "Det här är viktigt för värderingssamtal", "Det här behöver ni ha koll på", "Tänk på att …" är förbjudna mönster. Läsarna är proffs som redan vet. Konstatera siffrorna och dela en observation, punkt.
+- Utfallsspråk, inte hype. Ingen produktpitch — nämn aldrig funktioner, priser eller uppmaningar att testa Mäklargruvan. Men avsluta gärna med en SUBTIL brygga till nyttan av rätt verktyg, helst som en kort fråga i stil med "Har du rätt verktyg för att möta marknaden?".
+- Gärna en personlig observation från Jimmy ("Jag noterar att …", "Det här känns igen från samtalen med kollegor …"). Den avslutande frågan kan vara verktygsbryggan ovan eller en fråga till kollegorna — men bara EN avslutande fråga per variant.
 - Emojis: högst 1–2, bara om det känns naturligt. Hashtags: högst 2 diskreta, eller inga. Inga utropsteckenkaskader.
 - Nämn källan naturligt i texten (t.ex. "Svensk Mäklarstatistiks julisiffror").
 
