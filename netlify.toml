@@ -15,6 +15,16 @@
 # [functions."mail-poll"]
 #   schedule = "*/10 * * * *"
 
+# Sociala förslag: watchern hämtar nya pressmeddelanden (Svensk Mäklarstatistik
+# m.fl.), Claude skriver utkastvarianter och allt köas i data/social-queue.json
+# för manuellt godkännande i dashboarden. PUBLICERAR INGENTING — därför är
+# schemat aktivt (till skillnad från mail-poll ovan, som pausades för att
+# utkasten behövde tonjusteras; här är kön hela designen).
+# Källorna släpper månadsvis ~08:00 svensk tid → daglig koll 07:00 UTC
+# (09:00 CEST) fångar samma förmiddag.
+[functions."social-watch"]
+  schedule = "0 7 * * *"
+
 # mail-triage timeout:
 # Netlify har INGEN per-funktion timeout-nyckel i netlify.toml för synkrona
 # funktioner. Standardtaket är 10 s och kan endast höjas (till max 26 s) på

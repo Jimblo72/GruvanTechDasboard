@@ -621,6 +621,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" onclick="showSection('flode',this)"><div class="nav-dot" style="background:var(--accent)"></div>Systemflöde</button>
       <button class="nav-item" data-sec="offert" onclick="showSection('offert',this)"><div class="nav-dot" style="background:var(--amber)"></div>Offertgenerator</button>
       <button class="nav-item" onclick="showSection('mail',this)"><div class="nav-dot" style="background:var(--green)"></div>Mail-hub</button>
+      <button class="nav-item" onclick="showSection('social',this)"><div class="nav-dot" style="background:var(--accent)"></div>Sociala förslag</button>
       <button class="nav-item" onclick="showSection('kontext',this)"><div class="nav-dot" style="background:var(--blue)"></div>Kontext-hub</button>
     </div>
     <div class="nav-group">
@@ -1147,6 +1148,28 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     </div>
   </div>
 
+  <!-- SOCIALA FÖRSLAG (godkännandekö för Mäklargruvans FB/IG) -->
+  <div class="section" id="sec-social">
+    <div class="topbar">
+      <div><div class="page-title">Sociala förslag</div><div class="page-sub">Watcher bevakar branschkällor · Claude skriver utkast i jag-form (signerade Jimmy) · du godkänner — inget publiceras automatiskt</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="loadSocial(true)">↺ Uppdatera</button>
+        <button class="btn btn-accent" onclick="socialWatchNow(this)">▶ Hämta nu</button>
+      </div>
+    </div>
+
+    <div class="config-note" style="background:var(--green-bg);border-color:rgba(78,203,141,0.3);color:var(--text2)">
+      <strong>🔒 Godkännandeprincip:</strong> Ingenting publiceras av det här flödet. Watchern (varje morgon) hämtar nya pressmeddelanden från Svensk Mäklarstatistik, Claude relevansfiltrerar och skriver 2–3 utkastvarianter i jag-form signerade "— Jimmy" — allt landar här och väntar på ditt beslut. Publiceringssteget byggs separat och rör bara godkända poster. Kräver <code>ANTHROPIC_API_KEY</code> + <code>GH_TOKEN</code> i Netlify.
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin:6px 0 12px;flex-wrap:wrap">
+      <span id="social-meta" style="font-size:11px;color:var(--text4)"></span>
+      <span id="social-watch-note" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+
+    <div id="social-list"><div class="loading">Öppna vyn för att ladda kön…</div></div>
+  </div>
+
   <!-- KONTEXT-HUB (Claude-brygga) -->
   <div class="section" id="sec-kontext">
     <div class="topbar">
@@ -1279,7 +1302,8 @@ const FN = {
   mailQueue: '/.netlify/functions/mail-queue',     // godkännandekö som pollern skrivit (data/mail-queue.json)
   mailLearnStyle:'/.netlify/functions/mail-learn-style', // lär in mejlstil från Sent Items → per-brevlåde-stilprofil
   contextHub:'/.netlify/functions/context-hub',  // delad projektkontext + handoffs (data/context-hub.json)
-  demoKonto: '/.netlify/functions/demo-konto'    // demokonton i Mäklargruvan (proxy → pilot-repots API)
+  demoKonto: '/.netlify/functions/demo-konto',   // demokonton i Mäklargruvan (proxy → pilot-repots API)
+  socialQueue:'/.netlify/functions/social-queue' // sociala förslag: kö + åtgärder (data/social-queue.json)
 };
 const GH_USER = 'Jimblo72';
 
@@ -2131,6 +2155,7 @@ function showSection(id, btn) {
   if (id === 'review' && !reviewsOverviewLoaded) loadReviewOverview();
   if (id === 'ideer') initIdeerPicker();
   if (id === 'mail') initMailHub();
+  if (id === 'social' && !socialLoaded) loadSocial();
   if (id === 'kontext' && !contextLoaded) loadContext();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
@@ -2553,6 +2578,143 @@ function renderQueueItem(it) {
     ${guard}
     ${link ? `<div style="margin-top:9px">${link}</div>` : ''}
   </div>`;
+}
+
+// ── SOCIALA FÖRSLAG (godkännandekö för Mäklargruvans FB/IG) ──
+// Läser data/social-queue.json via social-queue-funktionen. Godkänn skickar
+// den (ev. redigerade) textarea-texten; poster raderas aldrig, bara statusbyte.
+let socialLoaded = false;
+async function loadSocial(force) {
+  const el = document.getElementById('social-list');
+  if (!el) return;
+  if (socialLoaded && !force) return;
+  el.innerHTML = '<div class="loading">Hämtar förslagen…</div>';
+  try {
+    const r = await fetch(FN.socialQueue);
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { msg = (await r.json()).error || msg; } catch (e) {}
+      throw new Error(msg);
+    }
+    renderSocial(await r.json());
+    socialLoaded = true;
+  } catch (e) {
+    el.innerHTML = `<div class="loading">Kunde inte läsa kön (${esc(e.message)}). Kräver GH_TOKEN + ANTHROPIC_API_KEY i Netlify och att funktionerna är deployade.</div>`;
+  }
+}
+function renderSocial(data) {
+  const el = document.getElementById('social-list');
+  if (!el) return;
+  const items = data.items || [];
+  const meta = document.getElementById('social-meta');
+  if (meta) meta.textContent = data.lastRun
+    ? `Senaste watcher-körning: ${timeAgo(data.lastRun)} sedan`
+    : 'Watchern har inte kört än.';
+  if (!items.length) {
+    el.innerHTML = '<div class="loading">Kön är tom. Tryck "▶ Hämta nu" — första körningen sår historiken (gamla pressmeddelanden räknas som sedda) och skapar ett exempel-förslag av det senaste.</div>';
+    return;
+  }
+  const vantar = items.filter(i => i.status === 'väntar');
+  const ovriga = items.filter(i => i.status !== 'väntar');
+  let html = vantar.map(renderSocialItem).join('');
+  if (!vantar.length) html += '<div class="loading">Inga förslag väntar på beslut just nu.</div>';
+  if (ovriga.length) {
+    html += `<div style="font-size:11px;color:var(--text4);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Hanterade (${ovriga.length})</div>`;
+    html += ovriga.map(renderSocialItem).join('');
+  }
+  el.innerHTML = html;
+}
+function socialBadge(status) {
+  const map = {
+    'väntar': ['Väntar på beslut', 'var(--amber)', 'var(--amber-bg)'],
+    'godkänd': ['Godkänd — redo för publicering', 'var(--green)', 'var(--green-bg)'],
+    'kastad': ['Kastad', 'var(--text4)', 'var(--surface)'],
+    'irrelevant': ['Auto-filtrerad som irrelevant', 'var(--text4)', 'var(--surface)'],
+  };
+  const [label, color, bg] = map[status] || [status, 'var(--text4)', 'var(--surface)'];
+  return `<span style="font-size:10px;font-weight:600;color:${color};background:${bg};border:1px solid var(--border);border-radius:6px;padding:2px 7px">${esc(label)}</span>`;
+}
+function renderSocialItem(it) {
+  const dimmed = it.status === 'kastad' || it.status === 'irrelevant';
+  const head =
+    `<div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+      <a href="${esc(it.url)}" target="_blank" style="font-size:13px;font-weight:600;color:var(--text);text-decoration:none;min-width:0">${esc(it.title)} ↗</a>
+      <div style="font-size:10px;color:var(--text4);white-space:nowrap">${esc(it.dateText || (it.created ? timeAgo(it.created) : ''))}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:5px 0 7px">
+      ${socialBadge(it.status)}<span style="font-size:10.5px;color:var(--text4)">${esc(it.sourceLabel || it.source || '')}</span>
+    </div>` +
+    (it.reason ? `<div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:4px">${esc(it.reason)}</div>` : '');
+
+  let body = '';
+  if (it.status === 'väntar') {
+    body = (it.variants || []).map(v =>
+      `<div class="social-variant" style="margin-top:9px">
+        <div style="font-size:10.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">${esc(v.label)}</div>
+        <textarea style="width:100%;min-height:110px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:12px;font-family:inherit;line-height:1.55;resize:vertical">${esc(v.text)}</textarea>
+        <div style="margin-top:5px"><button class="btn btn-accent" style="font-size:10.5px" onclick="socialApprove(this)">✓ Godkänn denna</button></div>
+      </div>`).join('');
+    if (it.imageHint) body += `<div style="font-size:11px;color:var(--text4);margin-top:9px">🖼 ${esc(it.imageHint)}</div>`;
+    body += `<div style="margin-top:10px"><button class="btn" style="font-size:10.5px" onclick="socialDiscard(this)">🗑 Kasta förslaget</button></div>`;
+  } else if (it.status === 'godkänd') {
+    body =
+      `<div style="white-space:pre-wrap;font-size:12px;color:var(--text2);line-height:1.55;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:7px">${esc(it.chosenText || '')}</div>` +
+      (it.imageHint ? `<div style="font-size:11px;color:var(--text4);margin-top:7px">🖼 ${esc(it.imageHint)}</div>` : '') +
+      `<div style="margin-top:9px"><button class="btn" style="font-size:10.5px" onclick="socialRestore(this)">↩ Ångra godkännandet</button></div>`;
+  } else {
+    body = `<div style="margin-top:7px"><button class="btn" style="font-size:10.5px" onclick="socialRestore(this)">↩ Återöppna</button></div>`;
+  }
+
+  return `<div data-social-id="${esc(it.id)}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:9px${dimmed ? ';opacity:0.6' : ''}">${head}${body}</div>`;
+}
+async function socialAction(payload) {
+  const r = await fetch(FN.socialQueue, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  return data;
+}
+async function socialApprove(btn) {
+  const id = btn.closest('[data-social-id]').dataset.socialId;
+  const ta = btn.closest('.social-variant').querySelector('textarea');
+  btn.disabled = true; btn.textContent = 'Godkänner…';
+  try { renderSocial(await socialAction({ action: 'approve', id, text: ta.value })); }
+  catch (e) { btn.disabled = false; btn.textContent = '✓ Godkänn denna'; alert('Kunde inte godkänna: ' + e.message); }
+}
+async function socialDiscard(btn) {
+  const id = btn.closest('[data-social-id]').dataset.socialId;
+  btn.disabled = true;
+  try { renderSocial(await socialAction({ action: 'discard', id })); }
+  catch (e) { btn.disabled = false; alert('Kunde inte kasta: ' + e.message); }
+}
+async function socialRestore(btn) {
+  const id = btn.closest('[data-social-id]').dataset.socialId;
+  btn.disabled = true;
+  try { renderSocial(await socialAction({ action: 'restore', id })); }
+  catch (e) { btn.disabled = false; alert('Kunde inte återöppna: ' + e.message); }
+}
+async function socialWatchNow(btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Hämtar…';
+  const note = document.getElementById('social-watch-note');
+  try {
+    const data = await socialAction({ action: 'watch' });
+    renderSocial(data);
+    socialLoaded = true;
+    const l = data.log || {};
+    if (note) note.textContent =
+      `Klart: ${l.tillagda || 0} nya förslag` +
+      (l.seedade ? ` · ${l.seedade} gamla sådda (första körningen)` : '') +
+      (l.irrelevanta ? ` · ${l.irrelevanta} auto-filtrerade` : '') +
+      ((l.errors || []).length ? ` · ⚠ ${(l.errors || []).length} fel` : '');
+  } catch (e) {
+    if (note) note.textContent = '';
+    alert('Watcher-fel: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = orig;
 }
 
 // ── GITHUB (commits via säker funktion, fallback till publik API) ──
