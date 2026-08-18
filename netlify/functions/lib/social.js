@@ -30,20 +30,74 @@ const UA = 'GruvanTech-Dashboard/1.0 (social-watch; +https://gruvantech.se)';
 
 const DEFAULT_DRAFT_MODEL = 'claude-haiku-4-5-20251001';
 
-// ── Källor (flöde 1: marknadsdata) ────────────────────────────
-// Varje källa: { id, label, listUrl, parse(html) → [{id,title,url,dateText}] }.
-// Nya källor (Valueguard HOX, SCB — och senare flöde 2: Riksdagen/FMI/FRN)
-// läggs till här utan att röra watcher- eller kölogiken.
+// ── Stadier: vad källan FAKTISKT säger ────────────────────────
+// 🔑 Kärnprincipen i flöde 2: stadiet bestäms av METADATA (vilken källa och
+// vilken dokumenttyp kandidaten kom från), ALDRIG av språkmodellen. En
+// proposition är ett förslag även om den låter tvärsäker, och att posta "nya
+// regler för mäklare från 1 januari" baserat på ett förslag är det dyraste
+// felet vi kan göra — dubbelt dyrt när vi säljer juridiskt beslutsstöd.
+// Samma princip som isCalendarMessage i lib/triage.js: det som får styra
+// säkerheten avgörs deterministiskt, inte av en modell som kan missförstå.
+const STADIER = {
+  marknadsdata: {
+    etikett: 'Marknadsdata',
+    regel: 'Detta är marknadsstatistik. Använd bara siffror som står i underlaget.',
+  },
+  beslutad: {
+    etikett: 'Beslutad författning (SFS)',
+    regel:
+      'Detta är en BESLUTAD OCH UTFÄRDAD författning (SFS). Du får skriva att reglerna gäller eller träder i kraft — men BARA med det ikraftträdandedatum som uttryckligen står i underlaget. Står inget datum: nämn inget datum alls.',
+  },
+  forslag: {
+    etikett: 'Förslag — inte beslutat',
+    regel:
+      'Detta är ett FÖRSLAG (proposition/betänkande) som riksdagen ÄNNU INTE har beslutat om. Du får ALDRIG skriva att något "gäller", "införs", "träder i kraft" eller ange ett datum då det börjar gälla. Skriv alltid tydligt att det är ett förslag och att beslut inte är fattat. Rätt formuleringar: "regeringen föreslår", "förslaget skulle innebära", "riksdagen har ännu inte tagit ställning". Om du inte kan skriva inlägget utan att antyda att reglerna redan gäller: sätt relevant=false.',
+  },
+  myndighet: {
+    etikett: 'Myndighetsinformation (FMI)',
+    regel:
+      'Detta är information från Fastighetsmäklarinspektionen, tillsynsmyndigheten. Referera till att FMI informerar, påminner, granskar eller förtydligar. Du får ALDRIG presentera FMI:s information som ny lagstiftning eller som en regeländring — om FMI förtydligar vad som redan gäller, skriv just det.',
+  },
+};
+
+// ── Källor ────────────────────────────────────────────────────
+// Varje källa: { id, label, stadium, hamta() → [{id,title,url,dateText}] }.
+// Stadiet är fast per källa eftersom det följer av dokumenttypen.
 //
-// Svensk Mäklarstatistik: /feed/ (RSS) finns men är TOMT (verifierat
-// 2026-08-17) → vi parsar pressrummet, som listar alla pressmeddelanden som
-// länkar till /pressmeddelanden/<slug>/ med datum intill (t.ex. "07 aug 2026").
+// Flöde 1 — marknadsdata. Svensk Mäklarstatistiks /feed/ (RSS) finns men är
+// TOMT (verifierat 2026-08-17) → vi parsar pressrummet, som listar alla
+// pressmeddelanden som /pressmeddelanden/<slug>/ med datum intill.
+//
+// Flöde 2 — regel- och lagändringar (2026-08-18). Riksdagens öppna data
+// skiljer dokumenttyperna åt, vilket är precis vad stadie-logiken behöver:
+// doktyp=sfs är beslutad författning, doktyp=prop är ett förslag. FMI:s
+// nyheter är myndighetsinformation och ligger per år under /nyheter/<år>/.
 const SOURCES = [
   {
     id: 'maklarstatistik',
     label: 'Svensk Mäklarstatistik',
+    stadium: 'marknadsdata',
     listUrl: 'https://www.maklarstatistik.se/pressrum/',
     parse: parseMaklarstatistik,
+    hamta: async function () { return this.parse(await fetchText(this.listUrl)); },
+  },
+  {
+    id: 'riksdag-sfs',
+    label: 'Svensk författningssamling (riksdagen)',
+    stadium: 'beslutad',
+    hamta: () => riksdagSok('sfs'),
+  },
+  {
+    id: 'riksdag-prop',
+    label: 'Proposition (riksdagen)',
+    stadium: 'forslag',
+    hamta: () => riksdagSok('prop'),
+  },
+  {
+    id: 'fmi',
+    label: 'Fastighetsmäklarinspektionen',
+    stadium: 'myndighet',
+    hamta: () => fmiNyheter(),
   },
 ];
 
@@ -62,6 +116,15 @@ function htmlToText(raw) {
     .replace(/&gt;/g, '>')
     .replace(/&#8211;|&ndash;/g, '–')
     .replace(/&#8221;|&#8220;|&rdquo;|&ldquo;/g, '"')
+    // Numeriska entiteter — FMI:s sidor kodar åäö som &#xE4; m.fl., och utan
+    // detta hamnar "Öppen" som "&#xD6;ppen" rakt in i utkasten.
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch (e) { return ' '; } })
+    .replace(/&#(\d+);/g, (_, d) => { try { return String.fromCodePoint(parseInt(d, 10)); } catch (e) { return ' '; } })
+    // Andra taggpasset: riksdagens .text-filer är HTML-ESCAPADE, så deras
+    // taggar dyker upp först när entiteterna avkodats ovan. Utan det här
+    // hamnar `<P class="p7 ft4">` som synlig text i underlaget.
+    .replace(/<\/(p|div|br|tr|li|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]+\n/g, '\n')
@@ -103,6 +166,91 @@ function parseMaklarstatistik(html) {
     .sort((a, b) => a.order - b.order);
 }
 
+// ── Riksdagens öppna data ─────────────────────────────────────
+// Söker per dokumenttyp och sökord, slår ihop och dedupar på dok_id. Smala
+// sökord med flit: en bred sökning (t.ex. "penningtvätt") drar in hundratals
+// dokument som bara nämner ordet i förbifarten. Claude-filtret sållar sedan
+// vidare på faktisk relevans för mäklare.
+const RIKSDAG_SOKORD = ['fastighetsmäklare', 'fastighetsmäklarlagen'];
+
+async function riksdagSok(doktyp) {
+  const perSok = await Promise.all(
+    RIKSDAG_SOKORD.map(async (ord) => {
+      const url =
+        'https://data.riksdagen.se/dokumentlista/?utformat=json&sz=15&sort=datum&sortorder=desc' +
+        `&doktyp=${encodeURIComponent(doktyp)}&sok=${encodeURIComponent(ord)}`;
+      try {
+        const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        return (d && d.dokumentlista && d.dokumentlista.dokument) || [];
+      } catch (e) {
+        return null; // ett sökords fel ska inte fälla hela källan
+      }
+    })
+  );
+  // ...men om ALLA sökord fallerade är API:et nere, och det ska synas i loggen
+  // i stället för att se ut som "inga nya dokument".
+  if (perSok.every(r => r === null)) throw new Error(`Riksdagens API svarade inte för doktyp=${doktyp}`);
+
+  const seen = new Set();
+  const ut = [];
+  for (const dok of perSok.filter(Boolean).flat()) {
+    const id = String(dok.dok_id || dok.id || '').trim();
+    const titel = String(dok.titel || '').trim();
+    if (!id || !titel || seen.has(id)) continue;
+    seen.add(id);
+    ut.push({
+      id,
+      title: dok.undertitel && !titel.includes(dok.undertitel) ? `${titel} — ${dok.undertitel}` : titel,
+      url: dok.dokument_url_html
+        ? `https:${dok.dokument_url_html}`
+        : `https://www.riksdagen.se/sv/dokument-och-lagar/dokument/_${id}/`,
+      dateText: String(dok.datum || dok.publicerad || '').slice(0, 10),
+      // Textversionen är renare än HTML-sidan för LLM-kontext.
+      textUrl: dok.dokument_url_text ? `https:${dok.dokument_url_text}` : null,
+    });
+  }
+  // Nyast först — API:et sorteras per sökning, inte över den sammanslagna listan.
+  return ut.sort((a, b) => String(b.dateText).localeCompare(String(a.dateText)));
+}
+
+// ── FMI:s nyheter ─────────────────────────────────────────────
+// Nyheterna ligger per år: /nyheter-press/nyheter/<år>/, som blocklänkar med
+// datumet (YYYY-MM-DD) i texten strax före länken.
+async function fmiNyheter(ar) {
+  const year = ar || new Date().getFullYear();
+  const html = await fetchText(`https://fmi.se/nyheter-press/nyheter/${year}/`);
+  return parseFmiNyheter(html, year);
+}
+
+function parseFmiNyheter(html, year) {
+  const s = String(html || '');
+  const re = new RegExp(`<a\\b[^>]*href="(/nyheter-press/nyheter/${year}/([^"/]+)/?)"[^>]*>([\\s\\S]*?)</a>`, 'gi');
+  const bySlug = new Map();
+  let m;
+  let order = 0;
+  while ((m = re.exec(s)) !== null) {
+    const slug = m[2];
+    const raw = htmlToText(m[3]).replace(/\s+/g, ' ').trim();
+    // Blocklänken innehåller både rubrik och datum — plocka ut datumet och
+    // låt det aldrig bli en del av titeln.
+    const iDatum = raw.match(/(\d{4}-\d{2}-\d{2})/);
+    const title = raw.replace(/\s*\d{4}-\d{2}-\d{2}.*$/, '').trim();
+    // Annars står datumet strax före länken i listan.
+    const fore = s.slice(Math.max(0, m.index - 300), m.index);
+    const datum = (iDatum && iDatum[1]) || (fore.match(/(\d{4}-\d{2}-\d{2})(?![\s\S]*\d{4}-\d{2}-\d{2})/) || [])[1] || '';
+    const fanns = bySlug.get(slug);
+    if (!fanns) {
+      bySlug.set(slug, { id: slug, title, url: `https://fmi.se${m[1].replace(/\/?$/, '/')}`, dateText: datum, order: order++ });
+    } else if (title.length > fanns.title.length) {
+      fanns.title = title;
+      if (!fanns.dateText && datum) fanns.dateText = datum;
+    }
+  }
+  return [...bySlug.values()].filter(it => it.title.length >= 8).sort((a, b) => a.order - b.order);
+}
+
 // ── Hämtning ──────────────────────────────────────────────────
 async function fetchText(url) {
   const r = await fetch(url, {
@@ -127,6 +275,23 @@ async function fetchArticleText(url, title) {
     if (i > 0) start = i;
   }
   return text.slice(start, start + 4500);
+}
+
+// Underlag för en kandidat. Riksdagsdokument har en ren textversion som är
+// bättre än HTML-sidan; övriga källor läses som artikel. Riksdagsdokument kan
+// vara hundratals sidor — vi tar början, där syfte och ikraftträdande står.
+async function fetchUnderlag(kandidat) {
+  if (kandidat.textUrl) {
+    const text = htmlToText(await fetchText(kandidat.textUrl));
+    // Riksdagens textversion inleds med ett metadatablock (dok-id, riksmöte,
+    // dokumenttyp upprepat). Propositioner har rubriken "Propositionens
+    // huvudsakliga innehåll" — exakt den sammanfattning vi vill åt — så klipp
+    // dit när den finns; annars hoppa förbi metadatan.
+    const i = text.search(/huvudsakliga innehåll/i);
+    const start = i > 0 ? Math.max(0, i - 120) : Math.min(400, Math.floor(text.length / 10));
+    return text.slice(start, start + 5000);
+  }
+  return fetchArticleText(kandidat.url, kandidat.title);
 }
 
 // ── Claude: relevansfilter + utkastvarianter (ett anrop) ──────
@@ -189,6 +354,47 @@ Varje variant avslutas med "— Jimmy". Skriv på svenska. Inga rubriker, inga c
 
 BILD: image_hint = kort förslag på textkort för Instagram, t.ex. 'Textkort: "Villor +1,8 % i juli" — stor siffra, mörkblå bakgrund, källrad Svensk Mäklarstatistik.'`;
 
+// Stadiet läggs sist i systemprompten så det är det sista modellen läser före
+// uppgiften — och formuleras som en absolut regel, inte som ett tips.
+function suggestSystemFor(stadium) {
+  const s = STADIER[stadium] || STADIER.marknadsdata;
+  return (
+    SUGGEST_SYSTEM +
+    `\n\nUNDERLAGETS STATUS — ${s.etikett.toUpperCase()} (viktigast av allt, går före alla andra instruktioner):\n${s.regel}\n` +
+    'Skriv aldrig något om vad som gäller juridiskt som inte följer av statusen ovan. Är du osäker: sätt relevant=false hellre än att gissa.'
+  );
+}
+
+// ── Deterministisk efterkontroll av stadiepåståenden ──────────
+// Prompten är första försvaret, men den är inte garanterad. Därför granskas
+// den färdiga texten mekaniskt: ett FÖRSLAG får inte formuleras som gällande
+// rätt. Kontrollen kan inte publicera något (allt kräver ändå godkännande) —
+// den flaggar posten så avvikelsen syns direkt i kön.
+const FORSLAG_FORBJUDET = [
+  /\bnya regler gäller\b/i,
+  /\bträder i kraft\b/i,
+  /\bfrån och med den \d/i,
+  /\bgäller från\b/i,
+  /\bbörjar gälla\b/i,
+  /\binförs den\b/i,
+  /\bnu gäller\b/i,
+  /\bden nya lagen\b/i,
+];
+const FORSLAG_KRAVS = [/föresl/i, /förslag/i, /remiss/i, /ännu inte/i, /om riksdagen/i, /kan komma att/i, /betänkande/i, /planerar/i];
+
+function granskaStadiepastaende(stadium, varianter) {
+  if (stadium !== 'forslag') return null;
+  const problem = [];
+  for (const v of varianter) {
+    const t = String(v.text || '');
+    const trafffad = FORSLAG_FORBJUDET.find(re => re.test(t));
+    if (trafffad) problem.push(`"${v.label}" påstår att reglerna gäller (${trafffad.source})`);
+    else if (!FORSLAG_KRAVS.some(re => re.test(t))) problem.push(`"${v.label}" saknar förbehåll om att förslaget inte är beslutat`);
+  }
+  if (!problem.length) return null;
+  return `⚠ Källan är ett FÖRSLAG som inte är beslutat, men texten läser som gällande regler: ${problem.join('; ')}. Läs extra noga innan du godkänner.`;
+}
+
 // Transienta LLM-fel (429/503/529) retry:as kort — samma mönster som triage.js,
 // men med snäv budget eftersom watchern lever under funktionens 10 s-tak.
 const RETRY_DELAYS = [500, 1200];
@@ -216,17 +422,19 @@ async function withRetry(fn, delays = RETRY_DELAYS) {
   throw lastErr;
 }
 
-async function suggestPost(candidate, articleText, sourceLabel) {
+async function suggestPost(candidate, articleText, sourceLabel, stadium) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY saknas i Netlify environment variables');
   const model = process.env.SOCIAL_DRAFT_MODEL || DEFAULT_DRAFT_MODEL;
+  const st = STADIER[stadium] ? stadium : 'marknadsdata';
 
   const user =
     `KÄLLA: ${sourceLabel}\n` +
+    `STATUS: ${STADIER[st].etikett}\n` +
     `TITEL: ${candidate.title}\n` +
     (candidate.dateText ? `DATUM: ${candidate.dateText}\n` : '') +
     `URL: ${candidate.url}\n\n` +
-    `UNDERLAG (utdrag ur pressmeddelandet):\n${articleText || '(kunde inte hämtas — bedöm utifrån titeln, och sätt relevant=false om den inte räcker)'}`;
+    `UNDERLAG (utdrag ur källan):\n${articleText || '(kunde inte hämtas — bedöm utifrån titeln, och sätt relevant=false om den inte räcker)'}`;
 
   const data = await withRetry(async () => {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -239,7 +447,7 @@ async function suggestPost(candidate, articleText, sourceLabel) {
       body: JSON.stringify({
         model,
         max_tokens: 1400,
-        system: SUGGEST_SYSTEM,
+        system: suggestSystemFor(st),
         tools: [SUGGEST_TOOL],
         tool_choice: { type: 'tool', name: 'report_social_suggestion' },
         messages: [{ role: 'user', content: user }],
@@ -257,13 +465,16 @@ async function suggestPost(candidate, articleText, sourceLabel) {
   const toolUse = (data.content || []).find(b => b.type === 'tool_use' && b.name === 'report_social_suggestion');
   if (!toolUse || !toolUse.input) throw new Error('Anthropic gav inget tool_use-svar för förslaget.');
   const out = toolUse.input;
+  const variants = (Array.isArray(out.variants) ? out.variants : [])
+    .map(v => ({ label: String((v && v.label) || 'Variant'), text: String((v && v.text) || '').trim() }))
+    .filter(v => v.text);
   return {
     relevant: !!out.relevant,
     reason: String(out.reason || ''),
-    variants: (Array.isArray(out.variants) ? out.variants : [])
-      .map(v => ({ label: String((v && v.label) || 'Variant'), text: String((v && v.text) || '').trim() }))
-      .filter(v => v.text),
+    variants,
     imageHint: String(out.image_hint || ''),
+    stadium: st,
+    varning: granskaStadiepastaende(st, variants),
   };
 }
 
@@ -300,7 +511,7 @@ async function writeState(state, message) {
 // kandidater markeras INTE sedda och plockas upp nästa körning.
 async function runWatch() {
   const started = Date.now();
-  const log = { ran: new Date().toISOString(), sources: 0, candidates: 0, nya: 0, tillagda: 0, irrelevanta: 0, seedade: 0, errors: [] };
+  const log = { ran: new Date().toISOString(), sources: 0, candidates: 0, nya: 0, tillagda: 0, irrelevanta: 0, seedade: 0, varningar: 0, errors: [] };
 
   const state = await readState();
   let changed = false;
@@ -309,7 +520,7 @@ async function runWatch() {
     log.sources++;
     let candidates;
     try {
-      candidates = source.parse(await fetchText(source.listUrl));
+      candidates = await source.hamta();
     } catch (e) {
       log.errors.push(`${source.id}: ${e.message}`);
       continue; // en källas fel ska inte stoppa övriga
@@ -320,7 +531,10 @@ async function runWatch() {
     const isSeeding = !Object.keys(state.seen).some(k => k.startsWith(source.id + ':'));
 
     let fresh = candidates.filter(c => !state.seen[keyOf(c)]);
-    if (isSeeding) {
+    // Sådd bara när källan FAKTISKT gav kandidater. Utan längdkontrollen
+    // markerades en tom körning som en förändring, och en källa som ligger
+    // nere hade gett en onödig commit varje dygn.
+    if (isSeeding && candidates.length) {
       // Så: markera allt sett, bearbeta bara det senaste (första i listan) som
       // ett första exempel-förslag så kedjan syns direkt i kön.
       for (const c of candidates) state.seen[keyOf(c)] = new Date().toISOString();
@@ -341,15 +555,19 @@ async function runWatch() {
       try {
         let articleText = '';
         try {
-          articleText = await fetchArticleText(c.url, c.title);
+          articleText = await fetchUnderlag(c);
         } catch (e) {
-          log.errors.push(`${source.id}/${c.id}: artikelhämtning: ${e.message}`);
+          log.errors.push(`${source.id}/${c.id}: underlagshämtning: ${e.message}`);
         }
-        const suggestion = await suggestPost(c, articleText, source.label);
+        const suggestion = await suggestPost(c, articleText, source.label, source.stadium);
+        if (suggestion.varning) log.varningar++;
         state.items.unshift({
           id: `${source.id}:${c.id}`,
           source: source.id,
           sourceLabel: source.label,
+          stadium: suggestion.stadium,
+          stadiumEtikett: (STADIER[suggestion.stadium] || {}).etikett || '',
+          varning: suggestion.varning || null,
           title: c.title,
           url: c.url,
           dateText: c.dateText || '',
@@ -386,10 +604,15 @@ async function runWatch() {
 module.exports = {
   FILE_PATH,
   SOURCES,
+  STADIER,
   MAX_ITEMS,
   htmlToText,
   parseMaklarstatistik,
+  parseFmiNyheter,
+  riksdagSok,
+  granskaStadiepastaende,
   fetchArticleText,
+  fetchUnderlag,
   suggestPost,
   normalizeState,
   pushHistorik,
