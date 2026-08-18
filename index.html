@@ -2614,9 +2614,14 @@ function renderSocial(data) {
     el.innerHTML = '<div class="loading">Kön är tom. Tryck "▶ Hämta nu" — första körningen sår historiken (gamla pressmeddelanden räknas som sedda) och skapar ett exempel-förslag av det senaste.</div>';
     return;
   }
+  if (data.meta) socialMetaConfigured = !!data.meta.configured;
   const vantar = items.filter(i => i.status === 'väntar');
   const ovriga = items.filter(i => i.status !== 'väntar');
-  let html = vantar.map(renderSocialItem).join('');
+  let html = '';
+  if (socialMetaConfigured === false) {
+    html += `<div style="background:var(--amber-bg);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:11.5px;color:var(--text2)">⚠ <strong>Publicering ej konfigurerad.</strong> Sätt <code>META_MG_SYSTEM_TOKEN</code> (systemanvändartoken för mg-adsserver) i Netlify — tills dess kan poster godkännas men inte publiceras.</div>`;
+  }
+  html += vantar.map(renderSocialItem).join('');
   if (!vantar.length) html += '<div class="loading">Inga förslag väntar på beslut just nu.</div>';
   if (ovriga.length) {
     html += `<div style="font-size:11px;color:var(--text4);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Hanterade (${ovriga.length})</div>`;
@@ -2628,12 +2633,14 @@ function socialBadge(status) {
   const map = {
     'väntar': ['Väntar på beslut', 'var(--amber)', 'var(--amber-bg)'],
     'godkänd': ['Godkänd — redo för publicering', 'var(--green)', 'var(--green-bg)'],
+    'publicerad': ['✓ Publicerad', 'var(--blue)', 'var(--surface)'],
     'kastad': ['Kastad', 'var(--text4)', 'var(--surface)'],
     'irrelevant': ['Auto-filtrerad som irrelevant', 'var(--text4)', 'var(--surface)'],
   };
   const [label, color, bg] = map[status] || [status, 'var(--text4)', 'var(--surface)'];
   return `<span style="font-size:10px;font-weight:600;color:${color};background:${bg};border:1px solid var(--border);border-radius:6px;padding:2px 7px">${esc(label)}</span>`;
 }
+let socialMetaConfigured = null; // null = okänt (äldre svar), true/false från GET
 function renderSocialItem(it) {
   const dimmed = it.status === 'kastad' || it.status === 'irrelevant';
   const head =
@@ -2657,10 +2664,21 @@ function renderSocialItem(it) {
     if (it.imageHint) body += `<div style="font-size:11px;color:var(--text4);margin-top:9px">🖼 ${esc(it.imageHint)}</div>`;
     body += `<div style="margin-top:10px"><button class="btn" style="font-size:10.5px" onclick="socialDiscard(this)">🗑 Kasta förslaget</button></div>`;
   } else if (it.status === 'godkänd') {
+    const pubBtn = socialMetaConfigured === false
+      ? `<span style="font-size:10.5px;color:var(--text4)">Publicering kräver META_MG_SYSTEM_TOKEN i Netlify</span>`
+      : `<button class="btn btn-accent" style="font-size:10.5px" onclick="socialPublish(this)">📤 Publicera på Facebook</button>`;
     body =
       `<div style="white-space:pre-wrap;font-size:12px;color:var(--text2);line-height:1.55;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:7px">${esc(it.chosenText || '')}</div>` +
       (it.imageHint ? `<div style="font-size:11px;color:var(--text4);margin-top:7px">🖼 ${esc(it.imageHint)}</div>` : '') +
-      `<div style="margin-top:9px"><button class="btn" style="font-size:10.5px" onclick="socialRestore(this)">↩ Ångra godkännandet</button></div>`;
+      `<div style="font-size:10.5px;color:var(--text4);margin-top:7px">Instagram kräver bild och väntar på bildmotorn — publiceringen nedan går till Facebook-sidan.</div>` +
+      `<div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">${pubBtn}<button class="btn" style="font-size:10.5px" onclick="socialRestore(this)">↩ Ångra godkännandet</button></div>`;
+  } else if (it.status === 'publicerad') {
+    body =
+      `<div style="white-space:pre-wrap;font-size:12px;color:var(--text2);line-height:1.55;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:7px">${esc(it.chosenText || '')}</div>` +
+      `<div style="margin-top:9px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">` +
+      (it.fb && it.fb.url ? `<a href="${esc(it.fb.url)}" target="_blank" class="btn" style="font-size:10.5px">↗ Visa inlägget på Facebook</a>` : '') +
+      `<span style="font-size:10px;color:var(--text4)">Publicerad ${esc(it.publishedAt ? timeAgo(it.publishedAt) : '')} sedan</span></div>` +
+      (it.igError ? `<div style="font-size:11px;color:var(--text3);margin-top:7px">⚠ Instagram misslyckades: ${esc(it.igError)}</div>` : '');
   } else {
     body = `<div style="margin-top:7px"><button class="btn" style="font-size:10.5px" onclick="socialRestore(this)">↩ Återöppna</button></div>`;
   }
@@ -2695,6 +2713,20 @@ async function socialRestore(btn) {
   btn.disabled = true;
   try { renderSocial(await socialAction({ action: 'restore', id })); }
   catch (e) { btn.disabled = false; alert('Kunde inte återöppna: ' + e.message); }
+}
+async function socialPublish(btn) {
+  const id = btn.closest('[data-social-id]').dataset.socialId;
+  if (!confirm('Publicera inlägget på Mäklargruvans Facebook-sida NU?\n\nDetta går ut publikt och kan inte ångras härifrån.')) return;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Publicerar…';
+  try {
+    const data = await socialAction({ action: 'publish', id });
+    renderSocial(data);
+    if (data.igError) alert('Facebook publicerades, men Instagram misslyckades: ' + data.igError);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = orig;
+    alert('Publiceringen stoppades: ' + e.message);
+  }
 }
 async function socialWatchNow(btn) {
   const orig = btn.textContent;
