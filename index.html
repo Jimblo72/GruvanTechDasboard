@@ -2667,21 +2667,26 @@ function renderSocialItem(it) {
     body += `<div style="margin-top:10px"><button class="btn" style="font-size:10.5px" onclick="socialDiscard(this)">🗑 Kasta förslaget</button></div>`;
   } else if (it.status === 'godkänd') {
     const harBild = !!it.imageUrl;
+    // Publicera-knappen är primär först när textkortet finns — bilden är
+    // standard, inte ett tillval. Utan bild går den att trycka ändå, men som
+    // sekundär knapp och med en extra varning i dialogen.
     const pubBtn = socialMetaConfigured === false
       ? `<span style="font-size:10.5px;color:var(--text4)">Publicering kräver META_MG_SYSTEM_TOKEN i Netlify</span>`
-      : `<button class="btn btn-accent" style="font-size:10.5px" onclick="socialPublish(this)">📤 Publicera på ${harBild ? 'Facebook + Instagram' : 'Facebook'}</button>`;
+      : (harBild
+          ? `<button class="btn btn-accent" style="font-size:10.5px" onclick="socialPublish(this)">📤 Publicera på Facebook + Instagram</button>`
+          : `<button class="btn" style="font-size:10.5px" onclick="socialPublish(this)">📤 Publicera utan bild (bara Facebook)</button>`);
     const bildRad = harBild
       ? `<div style="display:flex;gap:10px;align-items:center;margin-top:9px;flex-wrap:wrap">
            <img src="${esc(it.imageUrl)}" alt="" style="width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
-           <div style="font-size:10.5px;color:var(--text3);line-height:1.5">Textkort klart — Instagram publiceras tillsammans med Facebook.<br>
+           <div style="font-size:10.5px;color:var(--text3);line-height:1.5">Textkort klart — följer med på både Facebook och Instagram.<br>
              <a href="${esc(it.imageUrl)}" target="_blank" style="color:var(--accent)">Visa bilden</a></div>
          </div>
          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
            <button class="btn" style="font-size:10.5px" onclick="socialOpenCard(this)">🖼 Gör om kortet</button>
            ${socialMetaConfigured === false ? '' : `<button class="btn" style="font-size:10.5px" onclick="socialTestIg(this)">🧪 Testa Instagram (publicerar inget)</button>`}
          </div>`
-      : `<div style="font-size:10.5px;color:var(--text4);margin-top:8px">Ingen bild ännu — utan textkort går inlägget bara till Facebook (Instagram kräver bild).</div>
-         <div style="margin-top:8px"><button class="btn" style="font-size:10.5px" onclick="socialOpenCard(this)">🖼 Skapa textkort</button></div>`;
+      : `<div style="font-size:10.5px;color:var(--text3);margin-top:8px">Inget textkort ännu. Bilden hör till inlägget på <strong>båda</strong> kanalerna — den syns bättre i Facebook-flödet, och Instagram kräver den.</div>
+         <div style="margin-top:8px"><button class="btn btn-accent" style="font-size:10.5px" onclick="socialOpenCard(this)">🖼 Skapa textkort</button></div>`;
     body =
       `<div style="white-space:pre-wrap;font-size:12px;color:var(--text2);line-height:1.55;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:7px">${esc(it.chosenText || '')}</div>` +
       (it.imageHint && !harBild ? `<div style="font-size:11px;color:var(--text4);margin-top:7px">💡 ${esc(it.imageHint)}</div>` : '') +
@@ -2714,8 +2719,17 @@ async function socialApprove(btn) {
   const id = btn.closest('[data-social-id]').dataset.socialId;
   const ta = btn.closest('.social-variant').querySelector('textarea');
   btn.disabled = true; btn.textContent = 'Godkänner…';
-  try { renderSocial(await socialAction({ action: 'approve', id, text: ta.value })); }
-  catch (e) { btn.disabled = false; btn.textContent = '✓ Godkänn denna'; alert('Kunde inte godkänna: ' + e.message); }
+  try {
+    renderSocial(await socialAction({ action: 'approve', id, text: ta.value }));
+    // Bilden hör till inlägget på båda kanalerna → öppna kortet direkt så det
+    // blir nästa naturliga steg i stället för något man måste komma ihåg.
+    const kort = [...document.querySelectorAll('[data-social-id]')].find(el => el.dataset.socialId === id);
+    const skapa = kort && [...kort.querySelectorAll('button')].find(b => b.textContent.includes('Skapa textkort'));
+    if (skapa) socialOpenCard(skapa);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '✓ Godkänn denna';
+    alert('Kunde inte godkänna: ' + e.message);
+  }
 }
 async function socialDiscard(btn) {
   const id = btn.closest('[data-social-id]').dataset.socialId;
@@ -2903,8 +2917,10 @@ async function socialTestIg(btn) {
 async function socialPublish(btn) {
   const id = btn.closest('[data-social-id]').dataset.socialId;
   const medBild = !!(socialItems.find(i => i.id === id) || {}).imageUrl;
-  const kanaler = medBild ? 'Facebook-sida OCH Instagram' : 'Facebook-sida';
-  if (!confirm(`Publicera inlägget på Mäklargruvans ${kanaler} NU?\n\nDetta går ut publikt och kan inte ångras härifrån.`)) return;
+  const fraga = medBild
+    ? 'Publicera inlägget med textkortet på Mäklargruvans Facebook-sida OCH Instagram NU?'
+    : 'Publicera UTAN BILD?\n\nInlägget blir ren text på Facebook-sidan, och Instagram hoppas över helt. Vill du hellre skapa ett textkort först — avbryt och tryck "Skapa textkort".';
+  if (!confirm(`${fraga}\n\nDetta går ut publikt och kan inte ångras härifrån.`)) return;
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = '⏳ Publicerar…';
   try {
