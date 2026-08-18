@@ -172,6 +172,9 @@ function parseMaklarstatistik(html) {
 // dokument som bara nämner ordet i förbifarten. Claude-filtret sållar sedan
 // vidare på faktisk relevans för mäklare.
 const RIKSDAG_SOKORD = ['fastighetsmäklare', 'fastighetsmäklarlagen'];
+// Riksdagens sökmotor svarar på ~0,2 s lokalt men är märkbart trögare från
+// Netlifys datacenter — egen, generösare timeout än övriga källor.
+const RIKSDAG_TIMEOUT_MS = 12000;
 
 async function riksdagSok(doktyp) {
   const perSok = await Promise.all(
@@ -180,22 +183,26 @@ async function riksdagSok(doktyp) {
         'https://data.riksdagen.se/dokumentlista/?utformat=json&sz=15&sort=datum&sortorder=desc' +
         `&doktyp=${encodeURIComponent(doktyp)}&sok=${encodeURIComponent(ord)}`;
       try {
-        const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+        const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: AbortSignal.timeout(RIKSDAG_TIMEOUT_MS) });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const d = await r.json();
         return (d && d.dokumentlista && d.dokumentlista.dokument) || [];
       } catch (e) {
-        return null; // ett sökords fel ska inte fälla hela källan
+        // Behåll det faktiska felet — ett generiskt "svarade inte" gör det
+        // omöjligt att skilja timeout från blockering eller parsefel.
+        return { fel: e.name === 'TimeoutError' ? `timeout efter ${RIKSDAG_TIMEOUT_MS} ms` : (e.message || String(e)) };
       }
     })
   );
   // ...men om ALLA sökord fallerade är API:et nere, och det ska synas i loggen
   // i stället för att se ut som "inga nya dokument".
-  if (perSok.every(r => r === null)) throw new Error(`Riksdagens API svarade inte för doktyp=${doktyp}`);
+  if (perSok.every(r => r && r.fel)) {
+    throw new Error(`Riksdagen doktyp=${doktyp}: ${perSok.map(r => r.fel).join(' | ')}`);
+  }
 
   const seen = new Set();
   const ut = [];
-  for (const dok of perSok.filter(Boolean).flat()) {
+  for (const dok of perSok.filter(r => Array.isArray(r)).flat()) {
     const id = String(dok.dok_id || dok.id || '').trim();
     const titel = String(dok.titel || '').trim();
     if (!id || !titel || seen.has(id)) continue;
