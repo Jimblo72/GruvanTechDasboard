@@ -2775,8 +2775,128 @@ function cardFields(it) {
     rubrik: String(it.title || '').replace(/\s+/g, ' ').trim(),
     nyckeltal: hits.join('   ·   '),
     kalla: [it.sourceLabel, it.dateText].filter(Boolean).join(' · '),
+    motiv: 'auto',
   };
 }
+// ── Motiv: återkommande grafiskt formspråk för igenkänning ──
+// Motivet ritas i nedre högra hörnet, i koppar med låg opacitet så det läses
+// som en del av formgivningen och inte konkurrerar med texten. Det väljs efter
+// innehållet men kan alltid styras om i editorn.
+const MOTIF_BOX = { x: 650, y: 625, w: 360, h: 280 };
+
+function motifHus(ctx, b) {
+  // Tre villasiluetter i rad — olika bredd och höjd så raden får rytm.
+  const hus = [[0, 0.42, 0.30, 0.58], [0.34, 0.22, 0.34, 0.78], [0.72, 0.50, 0.28, 0.50]];
+  for (const [hx, hy, hw, hh] of hus) {
+    const x = b.x + hx * b.w, w = hw * b.w;
+    const kroppY = b.y + (hy + 0.22) * b.h, kroppH = (hh - 0.22) * b.h;
+    ctx.beginPath();                       // tak
+    ctx.moveTo(x - w * 0.08, kroppY);
+    ctx.lineTo(x + w / 2, b.y + hy * b.h);
+    ctx.lineTo(x + w + w * 0.08, kroppY);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();                       // kropp
+    ctx.rect(x, kroppY, w, kroppH);
+    ctx.fill(); ctx.stroke();
+  }
+}
+function motifLagenhet(ctx, b) {
+  // Flerbostadshus: två fasader med fönsterrutnät.
+  const fasader = [[0.02, 0.16, 0.44, 0.84], [0.54, 0.34, 0.44, 0.66]];
+  for (const [fx, fy, fw, fh] of fasader) {
+    const x = b.x + fx * b.w, y = b.y + fy * b.h, w = fw * b.w, h = fh * b.h;
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.fill(); ctx.stroke();
+    const kols = 3, rader = Math.max(3, Math.round(h / (b.h * 0.16)));
+    const fw2 = w / (kols * 2 + 1), fh2 = h / (rader * 2 + 1);
+    for (let r = 0; r < rader; r++) {
+      for (let k = 0; k < kols; k++) {
+        ctx.beginPath();
+        ctx.rect(x + fw2 * (k * 2 + 1), y + fh2 * (r * 2 + 1), fw2, fh2);
+        ctx.stroke();
+      }
+    }
+  }
+}
+function motifTrend(ctx, b) {
+  // Staplar + trendlinje — prisutveckling utan att påstå en riktning i sig.
+  const varden = [0.34, 0.52, 0.42, 0.68, 0.86];
+  const bw = b.w / (varden.length * 1.6);
+  const punkter = [];
+  varden.forEach((v, i) => {
+    const x = b.x + i * (b.w / varden.length) + bw * 0.3;
+    const h = v * b.h * 0.78, y = b.y + b.h - h;
+    ctx.beginPath(); ctx.rect(x, y, bw, h); ctx.fill(); ctx.stroke();
+    punkter.push([x + bw / 2, y]);
+  });
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, ctx.globalAlpha * 2.1);
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  punkter.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1] - 26) : ctx.moveTo(p[0], p[1] - 26)));
+  ctx.stroke();
+  for (const p of punkter) { ctx.beginPath(); ctx.arc(p[0], p[1] - 26, 7, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+function motifParagraf(ctx, b) {
+  // Regel- och lagändringar (flöde 2): dokument med paragraftecken.
+  const x = b.x + b.w * 0.12, y = b.y + b.h * 0.04, w = b.w * 0.74, h = b.h * 0.92;
+  const v = w * 0.26; // hörnveck
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x + w - v, y); ctx.lineTo(x + w, y + v);
+  ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + w - v, y); ctx.lineTo(x + w - v, y + v); ctx.lineTo(x + w, y + v); ctx.stroke();
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, ctx.globalAlpha * 2.2);
+  ctx.font = `700 ${Math.round(h * 0.42)}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('§', x + w / 2, y + h * 0.56);
+  ctx.textAlign = 'left';
+  ctx.restore();
+}
+function motifHexagon(ctx, b) {
+  // Neutralt fallback: husets egen form, koncentriskt.
+  const cx = b.x + b.w * 0.55, cy = b.y + b.h * 0.5, s = Math.min(b.w, b.h) * 0.94;
+  cardHex(ctx, cx, cy, s, 4, ctx.strokeStyle, ctx.fillStyle);
+  cardHex(ctx, cx, cy, s * 0.62, 3, ctx.strokeStyle, 'transparent');
+  cardHex(ctx, cx, cy, s * 0.3, 3, ctx.strokeStyle, 'transparent');
+}
+const CARD_MOTIFS = {
+  auto: { label: 'Automatiskt (efter innehållet)', draw: null },
+  hus: { label: 'Villor', draw: motifHus },
+  lagenhet: { label: 'Bostadsrätter', draw: motifLagenhet },
+  trend: { label: 'Prisutveckling', draw: motifTrend },
+  paragraf: { label: 'Regler & lagar', draw: motifParagraf },
+  hexagon: { label: 'Neutralt', draw: motifHexagon },
+  inget: { label: 'Inget motiv', draw: null },
+};
+// Väljer motiv efter innehållet. Mest specifikt först: regeländringar är
+// entydiga, sedan bostadstyp när BARA en typ nämns, annars prisutveckling
+// (marknadsdata rör oftast båda typerna samtidigt).
+function pickMotif(it) {
+  const t = `${it.title || ''} ${it.chosenText || ''}`.toLowerCase();
+  if (/(lag|regel|regler|proposition|föreskrift|fmi|fastighetsmäklarinspektion|tillsyn|förarbete|sfs|betänkande)/.test(t)) return 'paragraf';
+  const villa = /(villa|villor|småhus|fritidshus)/.test(t);
+  const br = /(bostadsrätt|lägenhet|brf)/.test(t);
+  if (villa && !br) return 'hus';
+  if (br && !villa) return 'lagenhet';
+  if (/(pris|procent|ökade|sjönk|steg|utveckling|statistik|marknad|kvartal|månad)/.test(t)) return 'trend';
+  return 'hexagon';
+}
+function drawMotif(ctx, key) {
+  const m = CARD_MOTIFS[key];
+  if (!m || !m.draw) return;
+  ctx.save();
+  ctx.strokeStyle = CARD.copper;
+  ctx.fillStyle = 'rgba(200,133,74,0.10)';
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = 0.5;
+  m.draw(ctx, MOTIF_BOX);
+  ctx.restore();
+}
+
 function cardWrap(ctx, text, maxW) {
   const words = String(text || '').split(/\s+/).filter(Boolean);
   const lines = []; let line = '';
@@ -2812,24 +2932,31 @@ function drawCard(canvas, f) {
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = 'middle';
 
+  // Motivet ritas tidigt så all text hamnar ovanpå det.
+  const motiv = f.motiv === 'auto' || !f.motiv ? pickMotif(f) : f.motiv;
+  const harMotiv = !!(CARD_MOTIFS[motiv] && CARD_MOTIFS[motiv].draw);
+  drawMotif(ctx, motiv);
+
   cardHex(ctx, 104, 112, 92, 3.6, copper);
   cardHex(ctx, 104, 112, 50, 2, 'rgba(200,133,74,0.5)', 'rgba(200,133,74,0.12)');
   ctx.fillStyle = copper;
   ctx.font = '600 31px "Segoe UI", system-ui, sans-serif';
   cardSpaced(ctx, 'MÄKLARGRUVAN', 178, 112, 4.5);
 
-  // Rubrik: krymper tills den ryms på max 5 rader.
+  // Rubrik: krymper tills den ryms. Med motiv tillåts färre rader så texten
+  // aldrig växer ner i motivets hörn.
   const maxW = W - 200;
+  const maxRader = harMotiv ? 4 : 5;
   let size = 82, lines = [];
   for (; size >= 40; size -= 3) {
     ctx.font = `600 ${size}px "Segoe UI", system-ui, sans-serif`;
     lines = cardWrap(ctx, f.rubrik, maxW);
-    if (lines.length <= 5) break;
+    if (lines.length <= maxRader) break;
   }
   ctx.fillStyle = white;
   const lh = size * 1.24;
   const hasStats = !!String(f.nyckeltal || '').trim();
-  let y = (hasStats ? 400 : 470) - ((lines.length - 1) * lh) / 2;
+  let y = (hasStats ? (harMotiv ? 380 : 400) : 470) - ((lines.length - 1) * lh) / 2;
   for (const ln of lines) { ctx.fillText(ln, 100, y); y += lh; }
 
   if (hasStats) {
@@ -2837,15 +2964,18 @@ function drawCard(canvas, f) {
     // en rad får varje nyckeltal en egen rad (annars hamnar "Villor" och
     // "+0,9 %" på olika rader, vilket ser trasigt ut).
     const parts = String(f.nyckeltal).split('·').map(s => s.trim()).filter(Boolean);
+    // Med motiv får nyckeltalen bara den vänstra spalten, annars skulle de
+    // löpa in i motivets hörn.
+    const statsW = harMotiv ? MOTIF_BOX.x - 100 - 40 : maxW;
     let ss = 62, sl;
     ctx.font = `700 ${ss}px "Segoe UI", system-ui, sans-serif`;
     const enRad = parts.join('   ·   ');
-    if (ctx.measureText(enRad).width <= maxW) {
+    if (ctx.measureText(enRad).width <= statsW) {
       sl = [enRad];
     } else {
       for (ss = 58; ss >= 34; ss -= 3) {
         ctx.font = `700 ${ss}px "Segoe UI", system-ui, sans-serif`;
-        if (parts.every(p => ctx.measureText(p).width <= maxW)) break;
+        if (parts.every(p => ctx.measureText(p).width <= statsW)) break;
       }
       sl = parts;
     }
@@ -2863,7 +2993,16 @@ function drawCard(canvas, f) {
 }
 function socialCardRedraw(wrap) {
   const val = k => wrap.querySelector(`[data-card="${k}"]`).value;
-  drawCard(wrap.querySelector('canvas'), { rubrik: val('rubrik'), nyckeltal: val('nyckeltal'), kalla: val('kalla') });
+  drawCard(wrap.querySelector('canvas'), {
+    rubrik: val('rubrik'), nyckeltal: val('nyckeltal'), kalla: val('kalla'), motiv: val('motiv'),
+  });
+  // Visa vilket motiv "Automatiskt" landade på, så valet inte är en svart låda.
+  const not = wrap.querySelector('[data-card-note]');
+  if (not) {
+    const v = val('motiv');
+    const auto = pickMotif({ title: val('rubrik'), chosenText: val('nyckeltal') });
+    not.textContent = v === 'auto' ? `Valde "${CARD_MOTIFS[auto].label}" utifrån innehållet` : '';
+  }
 }
 function socialOpenCard(btn) {
   const kort = btn.closest('[data-social-id]');
@@ -2877,9 +3016,16 @@ function socialOpenCard(btn) {
   const ed = document.createElement('div');
   ed.className = 'social-card-editor';
   ed.style.cssText = 'margin-top:11px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:9px';
+  const motivVal =
+    `<div style="margin-bottom:7px"><div style="font-size:10.5px;color:var(--text4);margin-bottom:3px">Motiv</div>
+      <select data-card="motiv" onchange="socialCardRedraw(this.closest('.social-card-editor'))"
+        style="width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:12px;font-family:inherit;cursor:pointer">
+        ${Object.entries(CARD_MOTIFS).map(([k, m]) => `<option value="${k}"${k === f.motiv ? ' selected' : ''}>${esc(m.label)}</option>`).join('')}
+      </select>
+      <div data-card-note style="font-size:10px;color:var(--text4);margin-top:3px"></div></div>`;
   ed.innerHTML =
     `<div style="display:flex;gap:14px;flex-wrap:wrap">
-      <div style="flex:1;min-width:210px">${inp('rubrik', 'Rubrik', f.rubrik)}${inp('nyckeltal', 'Nyckeltal (valfritt)', f.nyckeltal)}${inp('kalla', 'Källrad', f.kalla)}</div>
+      <div style="flex:1;min-width:210px">${inp('rubrik', 'Rubrik', f.rubrik)}${inp('nyckeltal', 'Nyckeltal (valfritt)', f.nyckeltal)}${inp('kalla', 'Källrad', f.kalla)}${motivVal}</div>
       <div style="flex:0 0 auto"><canvas style="width:230px;height:230px;border-radius:8px;border:1px solid var(--border);display:block"></canvas></div>
     </div>
     <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
