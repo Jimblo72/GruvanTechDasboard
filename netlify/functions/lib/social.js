@@ -176,6 +176,18 @@ const RIKSDAG_SOKORD = ['fastighetsmäklare', 'fastighetsmäklarlagen'];
 // Riksdagens sökmotor svarar på ~0,2 s lokalt men är märkbart trögare från
 // Netlifys datacenter — egen, generösare timeout än övriga källor.
 const RIKSDAG_TIMEOUT_MS = 12000;
+// Sökningen returnerar HELA historiken — Fastighetsmäklarförordningen (2021)
+// och penningtvättslagen (2017) kom med i första körningen. Ett generöst
+// relevansfilter får aldrig göra en tio år gammal författning till en "nyhet",
+// så åldern gallras deterministiskt före modellen ens ser kandidaten.
+const RIKSDAG_MAX_ALDER_MAN = 18;
+
+function forFerskt(datum, maxManader) {
+  const d = Date.parse(String(datum || ''));
+  if (!Number.isFinite(d)) return false; // utan datum: hellre utelämna än gissa
+  const manader = (Date.now() - d) / (1000 * 60 * 60 * 24 * 30.44);
+  return manader <= maxManader;
+}
 
 async function riksdagSok(doktyp) {
   const perSok = await Promise.all(
@@ -219,8 +231,11 @@ async function riksdagSok(doktyp) {
       textUrl: dok.dokument_url_text ? `https:${dok.dokument_url_text}` : null,
     });
   }
-  // Nyast först — API:et sorteras per sökning, inte över den sammanslagna listan.
-  return ut.sort((a, b) => String(b.dateText).localeCompare(String(a.dateText)));
+  // Nyast först — API:et sorteras per sökning, inte över den sammanslagna
+  // listan — och bara det som faktiskt är färskt nog att vara en nyhet.
+  return ut
+    .filter(x => forFerskt(x.dateText, RIKSDAG_MAX_ALDER_MAN))
+    .sort((a, b) => String(b.dateText).localeCompare(String(a.dateText)));
 }
 
 // ── FMI:s nyheter ─────────────────────────────────────────────
@@ -228,8 +243,16 @@ async function riksdagSok(doktyp) {
 // datumet (YYYY-MM-DD) i texten strax före länken.
 async function fmiNyheter(ar) {
   const year = ar || new Date().getFullYear();
-  const html = await fetchText(`https://fmi.se/nyheter-press/nyheter/${year}/`);
-  return parseFmiNyheter(html, year);
+  const lista = parseFmiNyheter(await fetchText(`https://fmi.se/nyheter-press/nyheter/${year}/`), year);
+  // Tidigt på året är innevarande års lista nästan tom — ta då med fjolåret
+  // så bevakningen inte tystnar varje januari.
+  if (lista.length >= 5 || ar) return lista;
+  try {
+    const ifjol = parseFmiNyheter(await fetchText(`https://fmi.se/nyheter-press/nyheter/${year - 1}/`), year - 1);
+    return [...lista, ...ifjol];
+  } catch (e) {
+    return lista; // fjolåret är en bonus, inte ett krav
+  }
 }
 
 function parseFmiNyheter(html, year) {
@@ -362,14 +385,29 @@ Varje variant avslutas med "— Jimmy". Skriv på svenska. Inga rubriker, inga c
 
 BILD: image_hint = kort förslag på textkort för Instagram, t.ex. 'Textkort: "Villor +1,8 % i juli" — stor siffra, mörkblå bakgrund, källrad Svensk Mäklarstatistik.'`;
 
+// Relevanströskeln för juridiska källor är medvetet GENERÖSARE än för
+// marknadsdata. Bakgrund: första skarpa körningen sållade bort propositionen
+// "Stärkt trygghet i bostadsrätter" (förverkande, nekat medlemskap vid brott)
+// med motiveringen att den saknade "konkret koppling till mäklarens vardag" —
+// trots att den rör bostadsrättsaffärer direkt. Rättsutveckling riktar sig
+// nästan alltid till någon annan part än mäklaren; det gör den inte irrelevant.
+const RELEVANS_JURIDIK =
+  'RELEVANSTRÖSKEL FÖR JURIDIK — VAR GENERÖS:\n' +
+  '- Mäklare behöver följa rättsutvecklingen kring bostadsrätter, fastigheter, bostadsaffärer, föreningsfrågor, penningtvätt, konsumentskydd, kreditgivning och mäklarens eget ansvar.\n' +
+  '- Att ändringen riktar sig till NÅGON ANNAN part (bostadsrättsförening, köpare, bank, myndighet) gör den INTE irrelevant. Mäklaren får frågorna ändå.\n' +
+  '- Tumregel: skulle en kunnig mäklare vilja känna till det här, eller kunna få frågan av en kund? Då är det relevant.\n' +
+  '- Sätt relevant=false BARA när underlaget är rent administrativt eller tekniskt (myndighetsinterna rutiner, ansökningsformalia, avgiftsnivåer utan betydelse för uppdragen) eller uppenbart handlar om ett helt annat område.';
+
 // Stadiet läggs sist i systemprompten så det är det sista modellen läser före
 // uppgiften — och formuleras som en absolut regel, inte som ett tips.
 function suggestSystemFor(stadium) {
   const s = STADIER[stadium] || STADIER.marknadsdata;
+  const juridik = stadium && stadium !== 'marknadsdata' ? `\n\n${RELEVANS_JURIDIK}` : '';
   return (
     SUGGEST_SYSTEM +
+    juridik +
     `\n\nUNDERLAGETS STATUS — ${s.etikett.toUpperCase()} (viktigast av allt, går före alla andra instruktioner):\n${s.regel}\n` +
-    'Skriv aldrig något om vad som gäller juridiskt som inte följer av statusen ovan. Är du osäker: sätt relevant=false hellre än att gissa.'
+    'Skriv aldrig något om vad som gäller juridiskt som inte följer av statusen ovan. Är du osäker på SAKINNEHÅLLET: sätt relevant=false hellre än att gissa. (Osäkerhet om relevans avgörs däremot av tröskeln ovan — var generös där.)'
   );
 }
 
