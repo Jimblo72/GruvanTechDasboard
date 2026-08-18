@@ -416,6 +416,12 @@ function suggestSystemFor(stadium) {
 // den färdiga texten mekaniskt: ett FÖRSLAG får inte formuleras som gällande
 // rätt. Kontrollen kan inte publicera något (allt kräver ändå godkännande) —
 // den flaggar posten så avvikelsen syns direkt i kön.
+// Fraser som påstår gällande rätt. De är inte förbjudna i sig — "förslaget är
+// att lagen träder i kraft 20 november" är en korrekt mening — utan bara när
+// de står UTAN förbehåll strax före. Utan närhetskollen flaggades välskrivna
+// förslagstexter (verkligt fall: propositionen om ny konsumentkreditlag
+// 2026-08-18), och ett skydd som ropar varg vid korrekt text slutar man läsa.
+// "den nya lagen" är medvetet borttagen: för vanlig och för svag som signal.
 const FORSLAG_FORBJUDET = [
   /\bnya regler gäller\b/i,
   /\bträder i kraft\b/i,
@@ -424,13 +430,20 @@ const FORSLAG_FORBJUDET = [
   /\bbörjar gälla\b/i,
   /\binförs den\b/i,
   /\bnu gäller\b/i,
-  /\bden nya lagen\b/i,
 ];
+const FORBEHALL_FONSTER = 90; // tecken före påståendet som räknas som närhet
 const FORSLAG_KRAVS = [/föresl/i, /förslag/i, /remiss/i, /ännu inte/i, /om riksdagen/i, /kan komma att/i, /betänkande/i, /planerar/i];
 
 // Ikraftträdande-/tillämpningspåståenden med datum. Används för att upptäcka
 // när ett förslag i underlaget återges som något som faktiskt ska börja gälla.
 const TILLAMPNING_MED_DATUM = /(träder i kraft|börjar (?:gälla|tillämpas)|gäller från|tillämpas från)[^.]{0,40}\d{4}/i;
+
+// Står ett förbehåll ("föreslår", "ännu inte", "förslaget är att" …) tillräckligt
+// nära före påståendet för att bära det?
+function harForbehallNara(text, index) {
+  const fore = String(text).slice(Math.max(0, index - FORBEHALL_FONSTER), index);
+  return FORSLAG_KRAVS.some(re => re.test(fore));
+}
 
 function granskaStadiepastaende(stadium, varianter, underlag) {
   const problem = [];
@@ -438,9 +451,17 @@ function granskaStadiepastaende(stadium, varianter, underlag) {
   if (stadium === 'forslag') {
     for (const v of varianter) {
       const t = String(v.text || '');
-      const trafffad = FORSLAG_FORBJUDET.find(re => re.test(t));
-      if (trafffad) problem.push(`"${v.label}" påstår att reglerna gäller (${trafffad.source})`);
-      else if (!FORSLAG_KRAVS.some(re => re.test(t))) problem.push(`"${v.label}" saknar förbehåll om att förslaget inte är beslutat`);
+      if (!FORSLAG_KRAVS.some(re => re.test(t))) {
+        problem.push(`"${v.label}" saknar förbehåll om att förslaget inte är beslutat`);
+        continue;
+      }
+      // Texten HAR förbehåll någonstans — kontrollera att varje påstående om
+      // ikraftträdande också bärs av ett förbehåll i sin närhet.
+      const oforbehallet = FORSLAG_FORBJUDET.find(re => {
+        const m = re.exec(t);
+        return m && !harForbehallNara(t, m.index);
+      });
+      if (oforbehallet) problem.push(`"${v.label}" påstår oförbehållet att reglerna gäller (${oforbehallet.source})`);
     }
     if (problem.length) {
       return `⚠ Källan är ett FÖRSLAG som inte är beslutat, men texten läser som gällande regler: ${problem.join('; ')}. Läs extra noga innan du godkänner.`;
