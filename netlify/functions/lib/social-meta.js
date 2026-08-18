@@ -89,10 +89,12 @@ async function publishToFacebook(text, imageUrl) {
   return { postId, url: `https://www.facebook.com/${postId}` };
 }
 
-// Instagram-publicering (tvåstegs: media-container → media_publish). KRÄVER
-// bild. Ligger vilande tills bildmotorn finns; anropas bara när köposten bär
-// en imageUrl. Kör med sid-token (IG-kontot är länkat till sidan).
-async function publishToInstagram(imageUrl, caption) {
+// Steg 1 av IG-publiceringen: skapa media-container. Det är HÄR allt som kan
+// vara fel visar sig — token, att IG-kontot är tilldelat systemanvändaren, och
+// att Meta faktiskt kan HÄMTA bild-URL:en (den måste vara publik).
+// En container som aldrig publiceras syns inte utåt och förfaller av sig själv,
+// vilket gör detta till en ofarlig torrkörning av hela kedjan.
+async function createIgContainer(imageUrl, caption) {
   if (!imageUrl) throw new Error('Instagram kräver bild — ingen bild-URL på posten.');
   const pageToken = await getPageToken();
   const c = await graphJson(`${GRAPH}/${igId()}/media`, {
@@ -101,13 +103,27 @@ async function publishToInstagram(imageUrl, caption) {
     body: JSON.stringify({ image_url: imageUrl, caption, access_token: pageToken }),
   });
   if (!c.id) throw new Error('Instagram gav ingen media-container.');
+  return { containerId: c.id, pageToken };
+}
+
+// Torrkörning: skapar container och publicerar den ALDRIG. Bevisar att
+// IG-vägen fungerar utan att något hamnar på kontot.
+async function testInstagram(imageUrl, caption) {
+  const { containerId } = await createIgContainer(imageUrl, caption);
+  return { containerId, published: false };
+}
+
+// Instagram-publicering (tvåstegs: media-container → media_publish). KRÄVER
+// bild; anropas bara när köposten bär en imageUrl.
+async function publishToInstagram(imageUrl, caption) {
+  const { containerId, pageToken } = await createIgContainer(imageUrl, caption);
   const p = await graphJson(`${GRAPH}/${igId()}/media_publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creation_id: c.id, access_token: pageToken }),
+    body: JSON.stringify({ creation_id: containerId, access_token: pageToken }),
   });
   if (!p.id) throw new Error('Instagram publicerade inte containern — kontrollera kontot manuellt innan du försöker igen.');
-  return { mediaId: p.id, url: `https://www.instagram.com/maklargruvan/` };
+  return { mediaId: p.id, url: 'https://www.instagram.com/maklargruvan/' };
 }
 
 module.exports = {
@@ -115,4 +131,6 @@ module.exports = {
   getPageToken,
   publishToFacebook,
   publishToInstagram,
+  createIgContainer,
+  testInstagram,
 };

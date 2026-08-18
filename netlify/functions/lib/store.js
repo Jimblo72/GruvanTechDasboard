@@ -8,10 +8,10 @@
 //   GH_USER  = Jimblo72              (fallback)
 //   GH_REPO  = GruvanTechDasboard    (fallback)
 
-function ghConf() {
+function ghConf(override) {
   const token = process.env.GH_TOKEN;
-  const user = process.env.GH_USER || 'Jimblo72';
-  const repo = process.env.GH_REPO || 'GruvanTechDasboard';
+  const user = (override && override.user) || process.env.GH_USER || 'Jimblo72';
+  const repo = (override && override.repo) || process.env.GH_REPO || 'GruvanTechDasboard';
   if (!token) throw new Error('GH_TOKEN saknas i Netlify environment variables');
   return { token, user, repo };
 }
@@ -67,4 +67,32 @@ async function writeJsonFile(filePath, obj, message, sha) {
   return { sha: result.content?.sha };
 }
 
-module.exports = { readJsonFile, writeJsonFile };
+// Skriver en BINÄR fil (base64-kodad) — t.ex. ett genererat textkort som ska
+// vara publikt nåbart via raw.githubusercontent.com. `override` kan peka på ett
+// annat repo än kö-repot ({user, repo}), vilket behövs eftersom bilder MÅSTE
+// ligga i ett publikt repo för att Meta ska kunna hämta dem vid IG-publicering.
+async function writeBase64File(filePath, base64, message, override) {
+  const { token, user, repo } = ghConf(override);
+  const apiBase = `https://api.github.com/repos/${user}/${repo}/contents/${filePath}`;
+
+  // Hämta ev. befintlig sha (överskrivning kräver den).
+  let sha;
+  const getR = await fetch(`${apiBase}?ref=main`, { headers: ghHeaders(token) });
+  if (getR.ok) { const d = await getR.json(); sha = d.sha; }
+
+  const body = { message: message || `Lägg till ${filePath}`, content: base64, branch: 'main' };
+  if (sha) body.sha = sha;
+
+  const putR = await fetch(apiBase, {
+    method: 'PUT',
+    headers: { ...ghHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!putR.ok) {
+    const errText = await putR.text();
+    throw new Error(`GitHub HTTP ${putR.status} vid skrivning av ${filePath}: ${errText.slice(0, 200)}`);
+  }
+  return { user, repo, path: filePath };
+}
+
+module.exports = { readJsonFile, writeJsonFile, writeBase64File };

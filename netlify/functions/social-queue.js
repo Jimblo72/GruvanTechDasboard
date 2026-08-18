@@ -7,8 +7,16 @@
 //   { action:'discard', id }        kasta förslaget → 'kastad'
 //   { action:'restore', id }        återöppna (ångra godkänn/kasta/irrelevant) → 'väntar'
 //   { action:'watch' }              kör watchern nu (manuell "Hämta nu")
+//   { action:'attach-image', id, imageBase64 }
+//                                   spara textkortet (renderat i dashboardens
+//                                   canvas) publikt → item.imageUrl, vilket
+//                                   aktiverar Instagram vid publicering
+//   { action:'test-ig', id }        torrkör Instagram: skapar media-container
+//                                   men publicerar den ALDRIG (bevisar token,
+//                                   kontotilldelning och att Meta når bilden)
 //   { action:'publish', id }        publicera en GODKÄND post på Mäklargruvans
-//                                   Facebook-sida (systemanvändartoken, se
+//                                   Facebook-sida — och på Instagram om posten
+//                                   har en bild (systemanvändartoken, se
 //                                   lib/social-meta.js) → 'publicerad'
 //
 // Publiceringsspärrar (det enda utåtriktade steget i hela kedjan):
@@ -26,7 +34,8 @@
 // META_MG_SYSTEM_TOKEN för 'publish'.
 
 const { readState, writeState, pushHistorik, runWatch } = require('./lib/social');
-const { metaConfigured, publishToFacebook, publishToInstagram } = require('./lib/social-meta');
+const { metaConfigured, publishToFacebook, publishToInstagram, testInstagram } = require('./lib/social-meta');
+const { uploadCard } = require('./lib/social-image');
 
 exports.handler = async (event) => {
   const headers = {
@@ -75,7 +84,7 @@ exports.handler = async (event) => {
       };
     }
 
-    if (!['approve', 'discard', 'restore', 'publish'].includes(action)) {
+    if (!['approve', 'discard', 'restore', 'publish', 'attach-image', 'test-ig'].includes(action)) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd action: ${action || '(saknas)'}` }) };
     }
 
@@ -86,6 +95,38 @@ exports.handler = async (event) => {
     const item = state.items.find(it => it && it.id === id);
     if (!item) {
       return { statusCode: 404, headers, body: JSON.stringify({ error: `Hittar ingen köpost med id ${id}` }) };
+    }
+
+    // Textkort: spara bilden publikt och koppla den till posten. Publicerar
+    // ingenting — bilden blir bara tillgänglig för nästa publicering.
+    if (action === 'attach-image') {
+      if (item.status === 'publicerad') {
+        return { statusCode: 409, headers, body: JSON.stringify({ error: 'Posten är redan publicerad — bilden kan inte bytas i efterhand.' }) };
+      }
+      const up = await uploadCard(id, body.imageBase64, item.title);
+      item.imageUrl = up.url;
+      item.imagePath = up.path;
+      item.imageAt = new Date().toISOString();
+      pushHistorik(state, { action: 'bild', id, note: up.path });
+      await writeState(state, `Sociala förslag: textkort — ${item.title.slice(0, 60)}`);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ ok: true, imageUrl: up.url, items: state.items, historik: state.historik.slice(0, 20), lastRun: state.lastRun, meta: { configured: metaConfigured() } }),
+      };
+    }
+
+    // Torrkörning av Instagram-vägen. Skapar en media-container som aldrig
+    // publiceras → inget syns utåt, men allt som kan vara fel avslöjas.
+    if (action === 'test-ig') {
+      if (!item.imageUrl) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Posten saknar bild — skapa textkortet först.' }) };
+      }
+      if (!metaConfigured()) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'META_MG_SYSTEM_TOKEN saknas i Netlify.' }) };
+      }
+      const t = await testInstagram(item.imageUrl, String(item.chosenText || item.title || ''));
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, ...t }) };
     }
 
     // Publicering — det enda steget som lämnar huset.
