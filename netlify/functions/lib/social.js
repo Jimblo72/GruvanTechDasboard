@@ -56,7 +56,8 @@ const STADIER = {
   myndighet: {
     etikett: 'Myndighetsinformation (FMI)',
     regel:
-      'Detta är information från Fastighetsmäklarinspektionen, tillsynsmyndigheten. Referera till att FMI informerar, påminner, granskar eller förtydligar. Du får ALDRIG presentera FMI:s information som ny lagstiftning eller som en regeländring — om FMI förtydligar vad som redan gäller, skriv just det.',
+      'Detta är information från Fastighetsmäklarinspektionen, tillsynsmyndigheten. Referera till att FMI informerar, påminner, granskar eller förtydligar. Du får ALDRIG presentera FMI:s information som ny lagstiftning eller som en regeländring — om FMI förtydligar vad som redan gäller, skriv just det. ' +
+      'VIKTIGT: myndighetsinformation handlar ofta i sin tur om FÖRSLAG (t.ex. EU-regler som ännu bara är föreslagna). Står det "föreslås" i underlaget MÅSTE förbehållet följa med i din text — skriv "föreslås börja tillämpas", aldrig "börjar tillämpas". Datum får bara anges med samma säkerhet som underlaget använder.',
   },
 };
 
@@ -389,17 +390,45 @@ const FORSLAG_FORBJUDET = [
 ];
 const FORSLAG_KRAVS = [/föresl/i, /förslag/i, /remiss/i, /ännu inte/i, /om riksdagen/i, /kan komma att/i, /betänkande/i, /planerar/i];
 
-function granskaStadiepastaende(stadium, varianter) {
-  if (stadium !== 'forslag') return null;
+// Ikraftträdande-/tillämpningspåståenden med datum. Används för att upptäcka
+// när ett förslag i underlaget återges som något som faktiskt ska börja gälla.
+const TILLAMPNING_MED_DATUM = /(träder i kraft|börjar (?:gälla|tillämpas)|gäller från|tillämpas från)[^.]{0,40}\d{4}/i;
+
+function granskaStadiepastaende(stadium, varianter, underlag) {
   const problem = [];
-  for (const v of varianter) {
-    const t = String(v.text || '');
-    const trafffad = FORSLAG_FORBJUDET.find(re => re.test(t));
-    if (trafffad) problem.push(`"${v.label}" påstår att reglerna gäller (${trafffad.source})`);
-    else if (!FORSLAG_KRAVS.some(re => re.test(t))) problem.push(`"${v.label}" saknar förbehåll om att förslaget inte är beslutat`);
+
+  if (stadium === 'forslag') {
+    for (const v of varianter) {
+      const t = String(v.text || '');
+      const trafffad = FORSLAG_FORBJUDET.find(re => re.test(t));
+      if (trafffad) problem.push(`"${v.label}" påstår att reglerna gäller (${trafffad.source})`);
+      else if (!FORSLAG_KRAVS.some(re => re.test(t))) problem.push(`"${v.label}" saknar förbehåll om att förslaget inte är beslutat`);
+    }
+    if (problem.length) {
+      return `⚠ Källan är ett FÖRSLAG som inte är beslutat, men texten läser som gällande regler: ${problem.join('; ')}. Läs extra noga innan du godkänner.`;
+    }
+    return null;
   }
-  if (!problem.length) return null;
-  return `⚠ Källan är ett FÖRSLAG som inte är beslutat, men texten läser som gällande regler: ${problem.join('; ')}. Läs extra noga innan du godkänner.`;
+
+  // 🔑 Myndighetsinformation kan i sin tur handla om ett FÖRSLAG — t.ex. när
+  // FMI berättar om EU-regler som "föreslås börja tillämpas 2028". Stadiet
+  // säger bara varifrån uppgiften kommer, inte hur säker den är. Därför
+  // jämförs texten mot underlaget: nämner underlaget ett förslag medan
+  // utkastet skriver ut ett tillämpningsdatum utan förbehåll, flaggas det.
+  // (Verkligt fall 2026-08-18: FMI skrev "föreslås börja tillämpas från den
+  // 31 december 2028" → utkastet blev "innan det börjar tillämpas 2028".)
+  if (stadium === 'myndighet' && /föresl/i.test(String(underlag || ''))) {
+    for (const v of varianter) {
+      const t = String(v.text || '');
+      if (TILLAMPNING_MED_DATUM.test(t) && !FORSLAG_KRAVS.some(re => re.test(t))) {
+        problem.push(`"${v.label}" anger ett datum för när reglerna börjar gälla, men underlaget säger att de bara föreslås`);
+      }
+    }
+    if (problem.length) {
+      return `⚠ Underlaget beskriver ett FÖRSLAG, men texten anger det som bestämt: ${problem.join('; ')}. Kontrollera mot källan innan du godkänner.`;
+    }
+  }
+  return null;
 }
 
 // Transienta LLM-fel (429/503/529) retry:as kort — samma mönster som triage.js,
@@ -481,7 +510,7 @@ async function suggestPost(candidate, articleText, sourceLabel, stadium) {
     variants,
     imageHint: String(out.image_hint || ''),
     stadium: st,
-    varning: granskaStadiepastaende(st, variants),
+    varning: granskaStadiepastaende(st, variants, articleText),
   };
 }
 
