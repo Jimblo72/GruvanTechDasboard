@@ -2615,6 +2615,7 @@ function renderSocial(data) {
     return;
   }
   if (data.meta) socialMetaConfigured = !!data.meta.configured;
+  socialItems = items;
   const vantar = items.filter(i => i.status === 'väntar');
   const ovriga = items.filter(i => i.status !== 'väntar');
   let html = '';
@@ -2641,6 +2642,7 @@ function socialBadge(status) {
   return `<span style="font-size:10px;font-weight:600;color:${color};background:${bg};border:1px solid var(--border);border-radius:6px;padding:2px 7px">${esc(label)}</span>`;
 }
 let socialMetaConfigured = null; // null = okänt (äldre svar), true/false från GET
+let socialItems = [];            // senast renderade kön (textkortseditorn läser den)
 function renderSocialItem(it) {
   const dimmed = it.status === 'kastad' || it.status === 'irrelevant';
   const head =
@@ -2664,14 +2666,27 @@ function renderSocialItem(it) {
     if (it.imageHint) body += `<div style="font-size:11px;color:var(--text4);margin-top:9px">🖼 ${esc(it.imageHint)}</div>`;
     body += `<div style="margin-top:10px"><button class="btn" style="font-size:10.5px" onclick="socialDiscard(this)">🗑 Kasta förslaget</button></div>`;
   } else if (it.status === 'godkänd') {
+    const harBild = !!it.imageUrl;
     const pubBtn = socialMetaConfigured === false
       ? `<span style="font-size:10.5px;color:var(--text4)">Publicering kräver META_MG_SYSTEM_TOKEN i Netlify</span>`
-      : `<button class="btn btn-accent" style="font-size:10.5px" onclick="socialPublish(this)">📤 Publicera på Facebook</button>`;
+      : `<button class="btn btn-accent" style="font-size:10.5px" onclick="socialPublish(this)">📤 Publicera på ${harBild ? 'Facebook + Instagram' : 'Facebook'}</button>`;
+    const bildRad = harBild
+      ? `<div style="display:flex;gap:10px;align-items:center;margin-top:9px;flex-wrap:wrap">
+           <img src="${esc(it.imageUrl)}" alt="" style="width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
+           <div style="font-size:10.5px;color:var(--text3);line-height:1.5">Textkort klart — Instagram publiceras tillsammans med Facebook.<br>
+             <a href="${esc(it.imageUrl)}" target="_blank" style="color:var(--accent)">Visa bilden</a></div>
+         </div>
+         <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+           <button class="btn" style="font-size:10.5px" onclick="socialOpenCard(this)">🖼 Gör om kortet</button>
+           ${socialMetaConfigured === false ? '' : `<button class="btn" style="font-size:10.5px" onclick="socialTestIg(this)">🧪 Testa Instagram (publicerar inget)</button>`}
+         </div>`
+      : `<div style="font-size:10.5px;color:var(--text4);margin-top:8px">Ingen bild ännu — utan textkort går inlägget bara till Facebook (Instagram kräver bild).</div>
+         <div style="margin-top:8px"><button class="btn" style="font-size:10.5px" onclick="socialOpenCard(this)">🖼 Skapa textkort</button></div>`;
     body =
       `<div style="white-space:pre-wrap;font-size:12px;color:var(--text2);line-height:1.55;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:7px">${esc(it.chosenText || '')}</div>` +
-      (it.imageHint ? `<div style="font-size:11px;color:var(--text4);margin-top:7px">🖼 ${esc(it.imageHint)}</div>` : '') +
-      `<div style="font-size:10.5px;color:var(--text4);margin-top:7px">Instagram kräver bild och väntar på bildmotorn — publiceringen nedan går till Facebook-sidan.</div>` +
-      `<div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">${pubBtn}<button class="btn" style="font-size:10.5px" onclick="socialRestore(this)">↩ Ångra godkännandet</button></div>`;
+      (it.imageHint && !harBild ? `<div style="font-size:11px;color:var(--text4);margin-top:7px">💡 ${esc(it.imageHint)}</div>` : '') +
+      bildRad +
+      `<div style="margin-top:11px;display:flex;gap:8px;flex-wrap:wrap">${pubBtn}<button class="btn" style="font-size:10.5px" onclick="socialRestore(this)">↩ Ångra godkännandet</button></div>`;
   } else if (it.status === 'publicerad') {
     body =
       `<div style="white-space:pre-wrap;font-size:12px;color:var(--text2);line-height:1.55;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:7px">${esc(it.chosenText || '')}</div>` +
@@ -2714,9 +2729,182 @@ async function socialRestore(btn) {
   try { renderSocial(await socialAction({ action: 'restore', id })); }
   catch (e) { btn.disabled = false; alert('Kunde inte återöppna: ' + e.message); }
 }
+// ── TEXTKORT (bildmotorn) ──
+// Instagram kräver bild. Kortet ritas i webbläsarens canvas — då slipper vi
+// fontrendering i serverless (Lambda saknar fonter) och Jimmy ser exakt vad
+// som publiceras innan han sparar. JPEG:en laddas upp till ett publikt repo
+// (raw.githubusercontent) eftersom Meta måste kunna hämta bilden själv.
+const CARD = { W: 1080, H: 1080, navy: '#0d263f', copper: '#c8854a', white: '#f2f6fa', muted: '#8ea3bb' };
+
+// Nyckeltal förifylls domänmedvetet: leta efter bostadsmarknadens begrepp och
+// ta procenttalet närmast efter. Ett generellt "ord + procent"-mönster fångar
+// fyllnadsord ("en", "men") och ger nonsens som "En +4,6%".
+const CARD_TERMS = [
+  ['Bostadsrätter', /bostadsr[äa]tt\w*/i],
+  ['Villor', /villa\w*|villor\w*/i],
+  ['Fritidshus', /fritidshus\w*/i],
+];
+function cardFields(it) {
+  const t = String(it.chosenText || '');
+  const hits = [];
+  for (const [label, re] of CARD_TERMS) {
+    const m = re.exec(t);
+    if (!m) continue;
+    const efter = t.slice(m.index, m.index + 90);
+    const p = /([+−-]?\d+[,.]\d+)\s*%/.exec(efter);
+    if (!p) continue;
+    const tal = p[1].replace(/^-/, '−');
+    hits.push(`${label} ${tal.startsWith('−') || tal.startsWith('+') ? tal : '+' + tal} %`);
+    if (hits.length === 2) break;
+  }
+  return {
+    rubrik: String(it.title || '').replace(/\s+/g, ' ').trim(),
+    nyckeltal: hits.join('   ·   '),
+    kalla: [it.sourceLabel, it.dateText].filter(Boolean).join(' · '),
+  };
+}
+function cardWrap(ctx, text, maxW) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = []; let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else { line = test; }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function cardSpaced(ctx, text, x, y, sp) {
+  let cx = x;
+  for (const ch of String(text)) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + sp; }
+}
+function cardHex(ctx, cx, cy, size, lw, stroke, fill) {
+  const pts = [[18,2],[34,10],[34,26],[18,34],[2,26],[2,10]];
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    const x = cx + ((p[0] - 18) / 36) * size, y = cy + ((p[1] - 18) / 36) * size;
+    if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+  });
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  ctx.lineWidth = lw; ctx.strokeStyle = stroke; ctx.stroke();
+}
+function drawCard(canvas, f) {
+  const { W, H, navy, copper, white, muted } = CARD;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = navy; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(280, 220, 40, 280, 220, 940);
+  g.addColorStop(0, 'rgba(200,133,74,0.15)'); g.addColorStop(1, 'rgba(200,133,74,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.textBaseline = 'middle';
+
+  cardHex(ctx, 104, 112, 92, 3.6, copper);
+  cardHex(ctx, 104, 112, 50, 2, 'rgba(200,133,74,0.5)', 'rgba(200,133,74,0.12)');
+  ctx.fillStyle = copper;
+  ctx.font = '600 31px "Segoe UI", system-ui, sans-serif';
+  cardSpaced(ctx, 'MÄKLARGRUVAN', 178, 112, 4.5);
+
+  // Rubrik: krymper tills den ryms på max 5 rader.
+  const maxW = W - 200;
+  let size = 82, lines = [];
+  for (; size >= 40; size -= 3) {
+    ctx.font = `600 ${size}px "Segoe UI", system-ui, sans-serif`;
+    lines = cardWrap(ctx, f.rubrik, maxW);
+    if (lines.length <= 5) break;
+  }
+  ctx.fillStyle = white;
+  const lh = size * 1.24;
+  const hasStats = !!String(f.nyckeltal || '').trim();
+  let y = (hasStats ? 400 : 470) - ((lines.length - 1) * lh) / 2;
+  for (const ln of lines) { ctx.fillText(ln, 100, y); y += lh; }
+
+  if (hasStats) {
+    // Nyckeltalen bryts vid separatorn, aldrig mitt i ett tal: ryms de inte på
+    // en rad får varje nyckeltal en egen rad (annars hamnar "Villor" och
+    // "+0,9 %" på olika rader, vilket ser trasigt ut).
+    const parts = String(f.nyckeltal).split('·').map(s => s.trim()).filter(Boolean);
+    let ss = 62, sl;
+    ctx.font = `700 ${ss}px "Segoe UI", system-ui, sans-serif`;
+    const enRad = parts.join('   ·   ');
+    if (ctx.measureText(enRad).width <= maxW) {
+      sl = [enRad];
+    } else {
+      for (ss = 58; ss >= 34; ss -= 3) {
+        ctx.font = `700 ${ss}px "Segoe UI", system-ui, sans-serif`;
+        if (parts.every(p => ctx.measureText(p).width <= maxW)) break;
+      }
+      sl = parts;
+    }
+    ctx.fillStyle = copper;
+    let sy = 762 - ((sl.length - 1) * ss * 1.32) / 2;
+    for (const ln of sl) { ctx.fillText(ln, 100, sy); sy += ss * 1.32; }
+  }
+
+  ctx.strokeStyle = 'rgba(200,133,74,0.55)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(100, 936); ctx.lineTo(232, 936); ctx.stroke();
+  ctx.fillStyle = muted;
+  ctx.font = '400 27px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(String(f.kalla || ''), 100, 984);
+  return canvas;
+}
+function socialCardRedraw(wrap) {
+  const val = k => wrap.querySelector(`[data-card="${k}"]`).value;
+  drawCard(wrap.querySelector('canvas'), { rubrik: val('rubrik'), nyckeltal: val('nyckeltal'), kalla: val('kalla') });
+}
+function socialOpenCard(btn) {
+  const kort = btn.closest('[data-social-id]');
+  if (kort.querySelector('.social-card-editor')) return;
+  const it = (socialItems || []).find(i => i.id === kort.dataset.socialId) || {};
+  const f = cardFields(it);
+  const inp = (k, label, v) =>
+    `<div style="margin-bottom:7px"><div style="font-size:10.5px;color:var(--text4);margin-bottom:3px">${label}</div>
+      <input data-card="${k}" value="${esc(v)}" oninput="socialCardRedraw(this.closest('.social-card-editor'))"
+        style="width:100%;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:12px;font-family:inherit"></div>`;
+  const ed = document.createElement('div');
+  ed.className = 'social-card-editor';
+  ed.style.cssText = 'margin-top:11px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:9px';
+  ed.innerHTML =
+    `<div style="display:flex;gap:14px;flex-wrap:wrap">
+      <div style="flex:1;min-width:210px">${inp('rubrik', 'Rubrik', f.rubrik)}${inp('nyckeltal', 'Nyckeltal (valfritt)', f.nyckeltal)}${inp('kalla', 'Källrad', f.kalla)}</div>
+      <div style="flex:0 0 auto"><canvas style="width:230px;height:230px;border-radius:8px;border:1px solid var(--border);display:block"></canvas></div>
+    </div>
+    <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-accent" style="font-size:10.5px" onclick="socialSaveCard(this)">💾 Spara bilden till posten</button>
+      <button class="btn" style="font-size:10.5px" onclick="this.closest('.social-card-editor').remove()">Avbryt</button>
+    </div>`;
+  btn.closest('[data-social-id]').appendChild(ed);
+  socialCardRedraw(ed);
+}
+async function socialSaveCard(btn) {
+  const ed = btn.closest('.social-card-editor');
+  const id = btn.closest('[data-social-id]').dataset.socialId;
+  const dataUrl = ed.querySelector('canvas').toDataURL('image/jpeg', 0.92);
+  btn.disabled = true; btn.textContent = '⏳ Sparar…';
+  try {
+    renderSocial(await socialAction({ action: 'attach-image', id, imageBase64: dataUrl }));
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '💾 Spara bilden till posten';
+    alert('Kunde inte spara bilden: ' + e.message);
+  }
+}
+async function socialTestIg(btn) {
+  const id = btn.closest('[data-social-id]').dataset.socialId;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Testar…';
+  try {
+    const d = await socialAction({ action: 'test-ig', id });
+    alert('Instagram-vägen fungerar ✓\n\nMeta hämtade bilden och skapade en media-container (' + d.containerId + ') som INTE publicerades — inget syns på kontot.');
+  } catch (e) {
+    alert('Instagram-testet misslyckades:\n\n' + e.message);
+  }
+  btn.disabled = false; btn.textContent = orig;
+}
+
 async function socialPublish(btn) {
   const id = btn.closest('[data-social-id]').dataset.socialId;
-  if (!confirm('Publicera inlägget på Mäklargruvans Facebook-sida NU?\n\nDetta går ut publikt och kan inte ångras härifrån.')) return;
+  const medBild = !!(socialItems.find(i => i.id === id) || {}).imageUrl;
+  const kanaler = medBild ? 'Facebook-sida OCH Instagram' : 'Facebook-sida';
+  if (!confirm(`Publicera inlägget på Mäklargruvans ${kanaler} NU?\n\nDetta går ut publikt och kan inte ångras härifrån.`)) return;
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = '⏳ Publicerar…';
   try {
