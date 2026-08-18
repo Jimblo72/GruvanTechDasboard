@@ -33,7 +33,7 @@
 // Miljövariabler: GH_TOKEN (+ GH_USER/GH_REPO); ANTHROPIC_API_KEY för 'watch';
 // META_MG_SYSTEM_TOKEN för 'publish'.
 
-const { readState, writeState, pushHistorik, runWatch } = require('./lib/social');
+const { readState, writeState, pushHistorik, runWatch, glomKalla, SOURCES } = require('./lib/social');
 const { metaConfigured, publishToFacebook, publishToInstagram, testInstagram } = require('./lib/social-meta');
 const { uploadCard } = require('./lib/social-image');
 
@@ -73,9 +73,20 @@ exports.handler = async (event) => {
     }
     const action = String(body.action || '');
 
-    // Manuell watcher-körning från dashboarden ("Hämta nu").
+    // Driftverktyg: sår om en källa (nollställer dess sådd-markeringar).
+    if (action === 'forget') {
+      const sid = String(body.source || '');
+      if (!SOURCES.some(s => s.id === sid)) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd källa: ${sid || '(saknas)'}` }) };
+      }
+      const res = await glomKalla(sid);
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, ...res }) };
+    }
+
+    // Manuell watcher-körning från dashboarden ("Hämta nu"). Snävare budget än
+    // den schemalagda körningen — det här anropet är synkront.
     if (action === 'watch') {
-      const log = await runWatch();
+      const log = await runWatch({ budgetMs: 7000 });
       const state = await readState();
       return {
         statusCode: 200,
@@ -84,7 +95,7 @@ exports.handler = async (event) => {
       };
     }
 
-    if (!['approve', 'discard', 'restore', 'publish', 'attach-image', 'test-ig'].includes(action)) {
+    if (!['approve', 'discard', 'restore', 'publish', 'attach-image', 'test-ig', 'forget'].includes(action)) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd action: ${action || '(saknas)'}` }) };
     }
 

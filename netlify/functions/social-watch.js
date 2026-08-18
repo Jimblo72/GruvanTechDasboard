@@ -17,7 +17,9 @@ const { runWatch } = require('./lib/social');
 
 exports.handler = async () => {
   try {
-    const log = await runWatch();
+    // Schemalagda funktioner har lång timeout → generös budget, så alla fyra
+    // källor hinner bearbetas i samma körning.
+    const log = await runWatch({ budgetMs: 60000 });
     return { statusCode: 200, body: JSON.stringify(log) };
   } catch (e) {
     // Icke-blockerande: logga och svara 200 så schemat inte spammar fel.

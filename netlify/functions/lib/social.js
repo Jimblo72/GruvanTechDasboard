@@ -516,7 +516,13 @@ async function writeState(state, message) {
 // den senaste bearbetas (annars hade 97 gamla pressmeddelanden blivit förslag).
 // Tidsbudget: startar inget nytt objekt efter TIME_BUDGET_MS; obearbetade
 // kandidater markeras INTE sedda och plockas upp nästa körning.
-async function runWatch() {
+// `opts.budgetMs` styr hur länge nya objekt får startas. Den SCHEMALAGDA
+// körningen (social-watch) har lång funktionstimeout och kan ta det lugnt;
+// den manuella "Hämta nu" går genom ett synkront API-anrop och måste hålla
+// sig innanför funktionstaket. Med fyra källor — varav riksdagens är trög
+// från Netlify — räckte inte den gamla gemensamma budgeten på 6 s.
+async function runWatch(opts = {}) {
+  const budget = Number(opts.budgetMs) > 0 ? Number(opts.budgetMs) : TIME_BUDGET_MS;
   const started = Date.now();
   const log = { ran: new Date().toISOString(), sources: 0, candidates: 0, nya: 0, tillagda: 0, irrelevanta: 0, seedade: 0, varningar: 0, errors: [] };
 
@@ -537,15 +543,28 @@ async function runWatch() {
     const keyOf = c => `${source.id}:${c.id}`;
     const isSeeding = !Object.keys(state.seen).some(k => k.startsWith(source.id + ':'));
 
-    let fresh = candidates.filter(c => !state.seen[keyOf(c)]);
+    // Dubblettskydd oberoende av seen-listan: en kandidat som redan ligger i
+    // kön ska aldrig bli ett andra förslag, inte ens om källan sås om.
+    const iKon = new Set(state.items.map(it => it && it.id));
+    let fresh = candidates.filter(c => !state.seen[keyOf(c)] && !iKon.has(keyOf(c)));
     // Sådd bara när källan FAKTISKT gav kandidater. Utan längdkontrollen
     // markerades en tom körning som en förändring, och en källa som ligger
     // nere hade gett en onödig commit varje dygn.
     if (isSeeding && candidates.length) {
-      // Så: markera allt sett, bearbeta bara det senaste (första i listan) som
-      // ett första exempel-förslag så kedjan syns direkt i kön.
-      for (const c of candidates) state.seen[keyOf(c)] = new Date().toISOString();
-      fresh = candidates.slice(0, 1);
+      // Så: markera historiken sedd, bearbeta bara det senaste (första i
+      // listan) som ett första exempel-förslag så kedjan syns direkt i kön.
+      //
+      // Exempelposten markeras INTE sedd här — det sker först när den faktiskt
+      // bearbetats. Annars tappas den tyst om tidsbudgeten eller ett fel slår
+      // till emellan, och då kommer den aldrig tillbaka (hände skarpt med
+      // propositionen 2026-08-18).
+      // Exempelposten måste också respektera dubblettskyddet — annars ger en
+      // omsådd (glomKalla) ett andra förslag för samma dokument.
+      fresh = candidates.filter(c => !iKon.has(keyOf(c))).slice(0, 1);
+      const sparas = new Set(fresh.map(keyOf));
+      for (const c of candidates) {
+        if (!sparas.has(keyOf(c))) state.seen[keyOf(c)] = new Date().toISOString();
+      }
       log.seedade += Math.max(0, candidates.length - fresh.length);
       changed = true;
     }
@@ -554,7 +573,7 @@ async function runWatch() {
     let processed = 0;
     for (const c of fresh) {
       if (processed >= MAX_NEW_PER_RUN) break;
-      if (Date.now() - started > TIME_BUDGET_MS) {
+      if (Date.now() - started > budget) {
         log.errors.push(`${source.id}: tidsbudgeten nådd — ${fresh.length - processed} kandidat(er) väntar till nästa körning`);
         break;
       }
@@ -608,10 +627,30 @@ async function runWatch() {
   return log;
 }
 
+// Driftverktyg: nollställ sådd-markeringen för EN källa så nästa körning sår
+// om den och tar fram ett nytt exempel-förslag. Poster i kön rörs inte (de
+// skyddas dessutom av dubblettkontrollen ovan). Används när en källa behöver
+// köras om — t.ex. efter att en kandidat tappats.
+async function glomKalla(sourceId) {
+  const state = await readState();
+  const prefix = `${sourceId}:`;
+  const fore = Object.keys(state.seen).length;
+  for (const k of Object.keys(state.seen)) {
+    if (k.startsWith(prefix)) delete state.seen[k];
+  }
+  const bortglomda = fore - Object.keys(state.seen).length;
+  if (bortglomda) {
+    pushHistorik(state, { action: 'glömd-källa', id: sourceId, note: `${bortglomda} markeringar nollställda` });
+    await writeState(state, `Sociala förslag: sår om ${sourceId}`);
+  }
+  return { sourceId, bortglomda };
+}
+
 module.exports = {
   FILE_PATH,
   SOURCES,
   STADIER,
+  glomKalla,
   MAX_ITEMS,
   htmlToText,
   parseMaklarstatistik,
