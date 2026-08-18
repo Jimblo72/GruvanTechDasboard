@@ -2641,6 +2641,19 @@ function socialBadge(status) {
   const [label, color, bg] = map[status] || [status, 'var(--text4)', 'var(--surface)'];
   return `<span style="font-size:10px;font-weight:600;color:${color};background:${bg};border:1px solid var(--border);border-radius:6px;padding:2px 7px">${esc(label)}</span>`;
 }
+// Stadiet visas alltid för juridiska källor — en läsare ska aldrig behöva
+// gissa om ett förslag redan gäller. Färgen bär betydelsen: grönt = beslutat,
+// gult = bara föreslaget.
+function socialStadiumBadge(it) {
+  if (!it.stadium || it.stadium === 'marknadsdata') return '';
+  const map = {
+    beslutad: ['✓ Beslutad författning', 'var(--green)', 'var(--green-bg)'],
+    forslag: ['⚠ Förslag — inte beslutat', 'var(--amber)', 'var(--amber-bg)'],
+    myndighet: ['FMI — myndighetsinformation', 'var(--blue)', 'var(--surface)'],
+  };
+  const [label, color, bg] = map[it.stadium] || [it.stadiumEtikett || it.stadium, 'var(--text4)', 'var(--surface)'];
+  return `<span style="font-size:10px;font-weight:600;color:${color};background:${bg};border:1px solid var(--border);border-radius:6px;padding:2px 7px">${esc(label)}</span>`;
+}
 let socialMetaConfigured = null; // null = okänt (äldre svar), true/false från GET
 let socialItems = [];            // senast renderade kön (textkortseditorn läser den)
 function renderSocialItem(it) {
@@ -2651,8 +2664,13 @@ function renderSocialItem(it) {
       <div style="font-size:10px;color:var(--text4);white-space:nowrap">${esc(it.dateText || (it.created ? timeAgo(it.created) : ''))}</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:5px 0 7px">
-      ${socialBadge(it.status)}<span style="font-size:10.5px;color:var(--text4)">${esc(it.sourceLabel || it.source || '')}</span>
+      ${socialBadge(it.status)}${socialStadiumBadge(it)}<span style="font-size:10.5px;color:var(--text4)">${esc(it.sourceLabel || it.source || '')}</span>
     </div>` +
+    // Varningen ligger FÖRE texten: den ska läsas innan man börjar bedöma
+    // formuleringarna, inte upptäckas efteråt.
+    (it.varning
+      ? `<div style="background:rgba(194,85,85,0.13);border:1px solid rgba(194,85,85,0.38);border-radius:8px;padding:8px 11px;margin-bottom:7px;font-size:11px;color:var(--text2);line-height:1.5">${esc(it.varning)}</div>`
+      : '') +
     (it.reason ? `<div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:4px">${esc(it.reason)}</div>` : '');
 
   let body = '';
