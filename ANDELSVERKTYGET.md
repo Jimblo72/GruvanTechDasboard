@@ -40,6 +40,29 @@ vinterveckan hela paketpriset — en sommarvecka på köpet kostar ofta ingentin
 Gör inte om snittet till ett "riktigt" veckopris utan en pristabell per vecka; någon
 sådan finns inte i verktyget.
 
+### Jul och nyår — två format i SkiStars listor
+SkiStars prislistor (`…\Peak Fast\SkistarPrislistor\*.pdf`) beskriver julperioden på
+**två olika sätt**, och skillnaden är inte kosmetisk:
+
+- **Jul/Nyår-format** (TB5, Åre Village, SAK2): två sålda enheter, `JUL` och `NYÅR`,
+  utan vecka 1. Fotnoten anger Jul = v.51 och Nyår = v.1, men i verktygets modell är
+  Jul = v.51 och Nyår = **v.52** (se `SPECIAL_WEEK_MAP`).
+- **Numrerat format** (TB1-3, TB4, Snötorget/ET): samma period säljs som tre numrerade
+  veckor, v.51 + v.52 + v.1, till helt andra belopp.
+
+Timmerbyn 4 och 5 har därför nästan identiska listor — 43 av veckorna för 113 kvm och
+46 för 54 kvm är lika på kronan — men TB4:s v.51 är 232 000 kr medan TB5:s Jul är
+539 000 kr. Fram till 2026-08-20 lånade TB5 hela TB4:s kolumn (`gen_veckopris.py`
+mappade dem ihop), vilket gav TB5-objekt **mindre än halva** jul-priset. TB5 har nu egna kolumner i Excel-källan.
+
+**Lärdomen:** anta aldrig att två hus delar prislista bara för att lågsäsongen matchar
+— julveckorna är där husen skiljer sig, och där pengarna finns. Kontrollera mot husets
+egen PDF.
+
+Öppen fråga: om SkiStar har gått över till Jul/Nyår-indelningen för alla hus är
+TB1-3-, TB4- och ET-listorna en äldre revision, och deras jul-priser är i så fall
+för låga på samma sätt. Alla PDF:er är daterade 21 dec 2022. Kräver besked från SkiStar.
+
 ## Sökvägar utanför repot (OneDrive)
 - Bildbanksrot, hårdkodad i `BILDBANK_ROT`:
   `…\Gruvan Tech AB\PeakFast verktyg\AndelstextBilder\<typnyckel>\`
