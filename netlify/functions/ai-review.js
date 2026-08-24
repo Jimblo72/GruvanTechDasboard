@@ -14,6 +14,8 @@
 //
 // Lägg INTE nycklar i denna fil. De läses från process.env vid körning.
 
+const { callOpenRouter: callOpenRouterLib } = require('./lib/openrouter');
+
 exports.handler = async (event) => {
   // Netlifys 10 s börjar ticka HÄR — vid kallstarten, inte när vi ringer ut.
   // Budgeten måste räknas från denna punkt, annars kan en långsam kallstart
@@ -129,57 +131,18 @@ async function callGemini(system, userPrompt) {
   return text.trim() || '(tomt svar)';
 }
 
-// ── OpenRouter (OpenAI-kompatibelt) ───────────────────────────
-// Modellen sätts i ENV, aldrig i koden. Stealth-modeller som ox-alpha är
-// förhandsvisningar från anonyma leverantörer och plockas bort utan förvarning
-// — när den dagen kommer byter du OPENROUTER_MODEL i Netlify i stället för att
-// deploya om. Samma anrop når varje annan modell på OpenRouter.
+// ── OpenRouter ────────────────────────────────────────────────
+// Själva anropet, modellkedjan och felmeddelandena bor i lib/openrouter.js —
+// delat med ai-review-background.js så de inte kan glida isär. Här återstår
+// bara det som är unikt för den SYNKRONA vägen: att hinna svara innan
+// Netlifys 10 s.
 //
-// ⚠ DATAPOLICY: OpenRouter anger att prompt och svar BEHÅLLS av leverantören
-// (används ej för träning). Skicka därför bara kod hit — aldrig kundmail,
-// persondata eller annat som hör hemma i mail-/triage-flödena.
-//
-// ⚠ TIDSTAK: Netlifys synkrona funktioner dör vid 10 s och taket går inte att
-// höja i netlify.toml (se kommentaren där). Resonemangsmodeller tänker innan de
-// svarar, så stora filer hinner inte klart. Vi avbryter själva strax innan och
-// ger ett läsbart fel i stället för Netlifys tysta 502.
+// OPENROUTER_TIMEOUT_MS är taket för HELA anropet räknat från funktionens
+// ingång, inte för fetch:en. En fast fetch-budget gav 504: kallstarten hade
+// redan ätit flera sekunder innan timern ens startade.
 async function callOpenRouter(system, userPrompt, startedAt) {
-  const key = process.env.OPENROUTER_API_KEY;
-  if (!key) throw new Error('OPENROUTER_API_KEY saknas i Netlify environment variables');
-
-  // Förstahandsvalet är INTE ox-alpha längre. Den har 429:at varje gång och
-  // aldrig levererat en granskning; kvar i kedjan sist ifall den blir tillgänglig.
-  const model = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free';
-
-  // Reservmodeller. ox-alpha är gratis och därmed hårt belastad — den svarar
-  // med 429 "rate-limited upstream" när leverantörens kapacitet är slut, vilket
-  // inte är vår kvot och inte går att vänta bort på ett vettigt sätt inom 7 s.
-  // OpenRouter faller själv igenom listan vid 429, driftstopp eller för långt
-  // sammanhang, och svarar med vilken modell som faktiskt körde.
-  // Urvalskriteriet är TILLGÄNGLIGHET, inte topprestanda: ett andra öga som
-  // svarar slår ett bättre som är upptaget. Byt ordning via env.
-  // Ordnade efter DJUP, inte fart. Första urvalet gick på tillgänglighet inom
-  // tidstaket och landade i nemotron-3.5-lightning — 3B aktiva parametrar av 30B,
-  // nvidias genomströmningsmodell. Den levererade en granskning som lät kunnig
-  // men vars tre "kritiska" fynd alla var falska. En 3B-modell klarar inte att
-  // spåra ett antagande genom en fil på hundratusentals tecken, och det är
-  // värre än ingen granskning: falska fynd kostar mer tid än de sparar.
-  // Aktiva parametrar: ultra 55B, inkling 41B, laguna 8B (men kodspecialist,
-  // 70,2 % Terminal-Bench). glm-5.2 är sannolikt samma familj som ox-alpha,
-  // fast namngiven. Djupet kostar svarstid — går det över tidstaket är det
-  // taket som måste bort, inte modellen som ska krympas igen.
-  const fallbacks = (process.env.OPENROUTER_FALLBACK_MODELS ||
-    'z-ai/glm-5.2:free,thinkingmachines/inkling:free,poolside/laguna-s-2.1:free,stealth/ox-alpha')
-    .split(',').map(m => m.trim()).filter(Boolean);
-  const kedja = [model, ...fallbacks.filter(m => m !== model)];
-
-  // OPENROUTER_TIMEOUT_MS är taket för HELA anropet räknat från funktionens
-  // ingång — inte för själva fetch:en. En fast fetch-budget gav 504 igen:
-  // kallstarten hade redan ätit flera sekunder innan timern ens startade.
-  // Höj via env om sajten får 26 s-taket påslaget av Netlifys support.
   const takMs = Number(process.env.OPENROUTER_TIMEOUT_MS) || 8500;
-  const t0 = Date.now();
-  const forbrukat = t0 - (startedAt || t0);
+  const forbrukat = Date.now() - (startedAt || Date.now());
   const budgetMs = takMs - forbrukat;
   // Ett golv här skulle kunna spränga taket igen vid extrem kallstart. Är det
   // för lite kvar är det ärligare att svara direkt — och nyttigt, för nu är
@@ -187,60 +150,5 @@ async function callOpenRouter(system, userPrompt, startedAt) {
   if (budgetMs < 1200) {
     throw new Error(`Kallstarten åt upp budgeten (${(forbrukat / 1000).toFixed(1)} s av ${(takMs / 1000).toFixed(1)} s) innan anropet hann gå ut. Kör igen — funktionen är varm nu.`);
   }
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), budgetMs);
-
-  let r;
-  try {
-    r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      signal: ctrl.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-        'X-Title': 'Gruvan Tech Dashboard', // syns i OpenRouters aktivitetslogg
-      },
-      body: JSON.stringify({
-        model,
-        models: kedja,
-        // Tankekedjan räknas mot output-budgeten hos resonemangsmodeller. 1200
-        // som för de andra providrarna ger tomt eller avhugget svar.
-        max_tokens: 4000,
-        temperature: 0.3,
-        // Låg tankenivå är ett medvetet val, inte snålhet: det är enda sättet
-        // att hinna under Netlifys 10 s. Höj via env om taket någonsin försvinner
-        // (ox-alpha stödjer low/medium/high). Ignoreras av modeller utan stöd.
-        reasoning: { effort: process.env.OPENROUTER_REASONING_EFFORT || 'low' },
-        messages: [
-          { role: 'system', content: system || 'Du är en hjälpsam kodgranskare. Svara på svenska.' },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
-  } catch (e) {
-    if (e.name === 'AbortError') {
-      throw new Error(`Modellerna hann inte svara inom ${(budgetMs / 1000).toFixed(1)} s` +
-        `${forbrukat > 200 ? ` (kallstart och parsning tog ${(forbrukat / 1000).toFixed(1)} s av taket)` : ''}` +
-        ` — ${userPrompt.length} tecken skickades till ${kedja.join(' → ')}. Testa en kortare fil.`);
-    }
-    throw e;
-  } finally {
-    clearTimeout(timer);
-  }
-
-  if (!r.ok) {
-    const errText = await r.text();
-    // 404 här betyder oftast att stealth-modellen har avvecklats.
-    const hint = r.status === 404 ? ' — modellen finns inte längre? Byt OPENROUTER_MODEL.'
-      : r.status === 429 ? ` — alla ${kedja.length} modeller var upptagna (${kedja.join(', ')}). Lägg till fler i OPENROUTER_FALLBACK_MODELS.`
-      : '';
-    throw new Error(`OpenRouter HTTP ${r.status}: ${errText.slice(0, 200)}${hint}`);
-  }
-  const data = await r.json();
-  // OpenRouter kan svara 200 med ett fel i kroppen.
-  if (data.error) {
-    throw new Error(`OpenRouter: ${(data.error.message || JSON.stringify(data.error)).slice(0, 200)}`);
-  }
-  const text = (data.choices?.[0]?.message?.content || '').trim();
-  return { text: text || '(tomt svar)', model: data.model || model, ms: Date.now() - t0 };
+  return callOpenRouterLib(system, userPrompt, { budgetMs });
 }

@@ -1290,6 +1290,8 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 // läser nycklar från environment variables serverside.
 const FN = {
   review:    '/.netlify/functions/ai-review',     // Claude- + GPT-granskning
+  reviewBg:  '/.netlify/functions/ai-review-background', // asynkron granskning (202, svar via reviewResult)
+  reviewResult:'/.netlify/functions/ai-review-result',  // hämtar resultatet bakgrundsjobbet skrev
   githubFile:'/.netlify/functions/github-file',   // hämtar filinnehåll säkert
   githubCommits:'/.netlify/functions/github-commits', // commits utan exponerad token
   githubWrite:'/.netlify/functions/github-write',  // skriver tillbaka till handoff-filer
@@ -1342,9 +1344,9 @@ const AGENTS = [
     avatar:'Ex', color:'var(--amber)', bg:'rgba(218,176,128,0.12)',
     desc:'Andra-modell-perspektiv för att fånga blinda fläckar.',
     system:'You are an independent senior engineer giving a second opinion. Challenge assumptions and surface blind spots the primary reviewers may have missed. Respond in Swedish, concisely.' },
-  { id:'external2', name:'Externt öga 2', provider:'openrouter', model:'OpenRouter',
+  { id:'external2', name:'Externt öga 2', provider:'openrouter', async:true, model:'OpenRouter',
     avatar:'E2', color:'var(--amber)', bg:'rgba(218,176,128,0.12)',
-    desc:'Fri 1M-kontextmodell — läser hela filer, inte bara diffen. Obs: prompten sparas hos anonym leverantör, så klistra aldrig in kund- eller persondata.',
+    desc:'Kör i bakgrunden utan tidstak, så modellen får tänka färdigt. Tar en stund. Obs: prompten sparas hos leverantören — klistra aldrig in kund- eller persondata.',
     system:'You are an independent senior engineer with a very large context window, giving a second opinion. Read the entire submission before judging, and trace how the parts fit together rather than commenting line by line. BEFORE reporting any defect you must quote the exact lines and follow what the surrounding code actually does with them — including comments on adjacent lines, which frequently document a deliberate choice. If that tracing does not prove the defect, do not report it. A confident wrong finding is worse than no finding: it costs the reader more time than it saves, and it destroys trust in every other finding you make. Reporting nothing is a valid and respected answer. Do not describe or summarise what the code does — the reader wrote it and gains nothing from a paraphrase. Prioritise: contradictions between different parts of the code, assumptions that hold in one place but break in another, and problems only visible with the whole file in view rather than a diff. Respond in Swedish as a short prioritised list.' },
 ];
 
@@ -1402,6 +1404,64 @@ async function fetchGitHubFile() {
 }
 
 // ── KÖR GRANSKNING ────────────────────────────────────────────
+// ── GRANSKNING: SYNKRON VÄG ───────────────────────────────────
+// Claude och Gemini svarar snabbt nog att rymmas i Netlifys 10 s.
+async function korSynkrongranskning(a, code, context) {
+  const r = await fetch(FN.review, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ provider:a.provider, model:a.model, system:a.system, code, context })
+  });
+  if (!r.ok) {
+    // Funktionen skickar ett läsbart fel i kroppen (borttagen modell,
+    // överskridet tidstak, saknad nyckel) — visa det, inte bara koden.
+    const detail = await r.json().catch(() => null);
+    throw new Error(detail?.error || `HTTP ${r.status}`);
+  }
+  return r.json();
+}
+
+// ── GRANSKNING: BAKGRUNDSVÄG ──────────────────────────────────
+// Tidstaket på 10 s tvingade fram små, snabba modeller — och det var precis
+// det som gav en granskning vars "kritiska" fynd var påhittade. Taket var
+// alltså kvalitetstaket. Bakgrundsfunktionen svarar 202 direkt utan kropp,
+// skriver resultatet till datarepot, och vi pollar tills VÅRT jobId ligger
+// där som klart. Samma mönster som trigger-knapparna i granskningspanelen.
+const BG_POLL_MS = 2500;
+const BG_MAX_MS = 5 * 60 * 1000;
+async function korBakgrundsgranskning(a, code, context, bodyEl) {
+  const jobId = (self.crypto && crypto.randomUUID) ? crypto.randomUUID()
+              : String(Date.now()) + String(Math.random()).slice(2, 10);
+
+  const r = await fetch(FN.reviewBg, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ jobId, agentId: a.id, system: a.system, code, context })
+  });
+  // 202 = mottaget och igång. Bakgrundsfunktioner svarar aldrig med kropp.
+  if (r.status !== 202 && !r.ok) {
+    const detail = await r.json().catch(() => null);
+    throw new Error(detail?.error || (r.status === 404
+      ? 'Bakgrundsfunktionen ai-review-background svarar inte — är den deployad?'
+      : `HTTP ${r.status}`));
+  }
+
+  const start = Date.now();
+  while (Date.now() - start < BG_MAX_MS) {
+    const sek = Math.round((Date.now() - start) / 1000);
+    bodyEl.innerHTML = `<em style="color:var(--text4)">Granskar i bakgrunden… ${sek} s</em>`;
+    await new Promise(res => setTimeout(res, BG_POLL_MS));
+    let d;
+    try {
+      const q = await fetch(`${FN.reviewResult}?agent=${encodeURIComponent(a.id)}`);
+      if (!q.ok) continue;            // tillfälligt fel — fortsätt polla
+      d = await q.json();
+    } catch { continue; }
+    if (!d || d.jobId !== jobId) continue;  // rest från en tidigare körning
+    if (d.status === 'error') throw new Error(d.error || 'okänt fel i bakgrundsjobbet');
+    if (d.status === 'done') return d;
+  }
+  throw new Error(`Bakgrundsjobbet blev inte klart inom ${BG_MAX_MS / 60000} minuter.`);
+}
+
 async function runReview() {
   const code = document.getElementById('paste-code').value.trim();
   const context = document.getElementById('review-context').value.trim();
@@ -1431,17 +1491,9 @@ async function runReview() {
     const bodyEl = document.getElementById(`body-${a.id}`);
     const stateEl = document.getElementById(`state-${a.id}`);
     try {
-      const r = await fetch(FN.review, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ provider:a.provider, model:a.model, system:a.system, code, context })
-      });
-      if (!r.ok) {
-        // Funktionen skickar ett läsbart fel i kroppen (borttagen modell,
-        // överskridet tidstak, saknad nyckel) — visa det, inte bara koden.
-        const detail = await r.json().catch(() => null);
-        throw new Error(detail?.error || `HTTP ${r.status}`);
-      }
-      const data = await r.json();
+      const data = a.async
+        ? await korBakgrundsgranskning(a, code, context, bodyEl)
+        : await korSynkrongranskning(a, code, context);
       if (data.model) {
         const subEl = document.getElementById(`sub-${a.id}`);
         // Tiden med: taket är 10 s, så skillnaden mellan 3 s och 8 s avgör
@@ -1456,10 +1508,12 @@ async function runReview() {
       // och skickade felsökningen åt fel håll när orsaken var Netlifys tidstak.
       const m = e.message || 'okänt fel';
       let rad = '';
-      if (/saknas/i.test(m))           rad = 'Sätt nyckeln som environment variable i Netlify och deploya om — variabler slår igenom först vid ny deploy.';
-      else if (/504|inte inom/.test(m)) rad = 'Anropet hann inte klart inom Netlifys tidstak på 10 s. Prova en kortare fil.';
-      else if (/404/.test(m))          rad = 'Modellen svarar inte på det namnet längre — byt OPENROUTER_MODEL i Netlify.';
-      else if (/429/.test(m))          rad = 'Modellerna var upptagna hos leverantören — inte din kvot. Försök igen om en stund, eller lägg till fler reserver i OPENROUTER_FALLBACK_MODELS.';
+      if (/saknas/i.test(m))                  rad = 'Sätt nyckeln som environment variable i Netlify och deploya om — variabler slår igenom först vid ny deploy.';
+      else if (/504|hann inte svara/.test(m)) rad = 'Anropet hann inte klart inom Netlifys tidstak på 10 s. Prova en kortare fil, eller en roll som kör i bakgrunden.';
+      else if (/blev inte klart/.test(m))     rad = 'Bakgrundsjobbet kan mycket väl vara kvar och arbeta — resultatet skrivs ändå. Kör om om en stund.';
+      else if (/deployad/.test(m))            rad = 'Kontrollera att bygget gått igenom i Netlify.';
+      else if (/404/.test(m))                 rad = 'Modellen svarar inte på det namnet längre — byt OPENROUTER_MODEL i Netlify.';
+      else if (/429/.test(m))                 rad = 'Modellerna var upptagna hos leverantören — inte din kvot. Byt ut några i OPENROUTER_FALLBACK_MODELS.';
       bodyEl.innerHTML = formatVerdict([`${a.name} kunde inte svara: ${m}`, rad].filter(Boolean).join('\n\n'));
     }
   }));
