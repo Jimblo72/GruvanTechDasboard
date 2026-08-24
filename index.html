@@ -1444,14 +1444,23 @@ async function runReview() {
       const data = await r.json();
       if (data.model) {
         const subEl = document.getElementById(`sub-${a.id}`);
-        if (subEl) subEl.textContent = `${data.model} · ${PROVIDER_LABEL[a.provider] || a.provider}`;
+        // Tiden med: taket är 10 s, så skillnaden mellan 3 s och 8 s avgör
+        // om nästa, större fil kommer att gå igenom.
+        const tid = data.ms ? ` · ${(data.ms / 1000).toFixed(1)} s` : '';
+        if (subEl) subEl.textContent = `${data.model} · ${PROVIDER_LABEL[a.provider] || a.provider}${tid}`;
       }
       bodyEl.innerHTML = formatVerdict(data.text || '(tomt svar)');
       stateEl.textContent = '✓';
     } catch(e) {
-      // Demoläge: visar tydligt att funktionen inte är driftsatt än
-      bodyEl.innerHTML = `<em style="color:var(--text4)">Funktionen <code>ai-review</code> svarade inte (${e.message}).</em>\n\nNär du driftsatt Netlify-funktionen med rätt API-nyckel ger ${a.name} sitt utlåtande här. Tills dess är detta ett demoläge.`;
-      stateEl.textContent = '⚠';
+      // Felet leder. Den gamla texten påstod "fel API-nyckel" vid VARJE fel
+      // och skickade felsökningen åt fel håll när orsaken var Netlifys tidstak.
+      const m = e.message || 'okänt fel';
+      let rad = '';
+      if (/saknas/i.test(m))           rad = 'Sätt nyckeln som environment variable i Netlify och deploya om — variabler slår igenom först vid ny deploy.';
+      else if (/504|inte inom/.test(m)) rad = 'Anropet hann inte klart inom Netlifys tidstak på 10 s. Prova en kortare fil.';
+      else if (/404/.test(m))          rad = 'Modellen svarar inte på det namnet längre — byt OPENROUTER_MODEL i Netlify.';
+      else if (/429/.test(m))          rad = 'Kvoten är slut för stunden.';
+      bodyEl.innerHTML = formatVerdict([`${a.name} kunde inte svara: ${m}`, rad].filter(Boolean).join('\n\n'));
     }
   }));
 

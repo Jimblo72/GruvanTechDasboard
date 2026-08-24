@@ -9,6 +9,7 @@
 //   OPENROUTER_API_KEY = sk-or-v1-...
 //   OPENROUTER_MODEL   = stealth/ox-alpha   (valfri — se callOpenRouter nedan)
 //   OPENROUTER_REASONING_EFFORT = low        (valfri — low/medium/high)
+//   OPENROUTER_TIMEOUT_MS       = 7000       (valfri — höj om Netlify ger 26 s)
 //
 // Lägg INTE nycklar i denna fil. De läses från process.env vid körning.
 
@@ -51,15 +52,15 @@ exports.handler = async (event) => {
     '```\n' + codeClipped + '\n```';
 
   try {
-    let text, usedModel;
+    let text, usedModel, elapsedMs;
     if (provider === 'gemini') {
       text = await callGemini(system, userPrompt);
     } else if (provider === 'openrouter') {
-      ({ text, model: usedModel } = await callOpenRouter(system, userPrompt));
+      ({ text, model: usedModel, ms: elapsedMs } = await callOpenRouter(system, userPrompt));
     } else {
       text = await callAnthropic(system, userPrompt);
     }
-    return { statusCode: 200, headers, body: JSON.stringify({ text, provider, model: usedModel }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ text, provider, model: usedModel, ms: elapsedMs }) };
   } catch (e) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: e.message, provider }) };
   }
@@ -143,8 +144,14 @@ async function callOpenRouter(system, userPrompt) {
 
   const model = process.env.OPENROUTER_MODEL || 'stealth/ox-alpha';
 
+  // 9 s låg för nära Netlifys 10 s: kallstart, parsning av upp till 500k tecken
+  // och serialisering av svaret åt upp marginalen, så plattformen hann döda
+  // funktionen (504) före vårt eget avbrott. 7 s lämnar den marginalen.
+  // Höj via env om sajten får 26 s-taket påslaget av Netlifys support.
+  const budgetMs = Number(process.env.OPENROUTER_TIMEOUT_MS) || 7000;
+  const t0 = Date.now();
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 9000);
+  const timer = setTimeout(() => ctrl.abort(), budgetMs);
 
   let r;
   try {
@@ -174,7 +181,7 @@ async function callOpenRouter(system, userPrompt) {
     });
   } catch (e) {
     if (e.name === 'AbortError') {
-      throw new Error(`${model} svarade inte inom 9 s (Netlifys funktionstak är 10 s). Testa en kortare fil, eller en snabbare modell i OPENROUTER_MODEL.`);
+      throw new Error(`${model} svarade inte inom ${budgetMs / 1000} s (Netlifys funktionstak är 10 s) — ${userPrompt.length} tecken skickades. Testa en kortare fil eller en snabbare modell i OPENROUTER_MODEL.`);
     }
     throw e;
   } finally {
@@ -193,5 +200,5 @@ async function callOpenRouter(system, userPrompt) {
     throw new Error(`OpenRouter: ${(data.error.message || JSON.stringify(data.error)).slice(0, 200)}`);
   }
   const text = (data.choices?.[0]?.message?.content || '').trim();
-  return { text: text || '(tomt svar)', model: data.model || model };
+  return { text: text || '(tomt svar)', model: data.model || model, ms: Date.now() - t0 };
 }
