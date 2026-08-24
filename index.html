@@ -1459,7 +1459,7 @@ async function runReview() {
       if (/saknas/i.test(m))           rad = 'Sätt nyckeln som environment variable i Netlify och deploya om — variabler slår igenom först vid ny deploy.';
       else if (/504|inte inom/.test(m)) rad = 'Anropet hann inte klart inom Netlifys tidstak på 10 s. Prova en kortare fil.';
       else if (/404/.test(m))          rad = 'Modellen svarar inte på det namnet längre — byt OPENROUTER_MODEL i Netlify.';
-      else if (/429/.test(m))          rad = 'Kvoten är slut för stunden.';
+      else if (/429/.test(m))          rad = 'Modellerna var upptagna hos leverantören — inte din kvot. Försök igen om en stund, eller lägg till fler reserver i OPENROUTER_FALLBACK_MODELS.';
       bodyEl.innerHTML = formatVerdict([`${a.name} kunde inte svara: ${m}`, rad].filter(Boolean).join('\n\n'));
     }
   }));

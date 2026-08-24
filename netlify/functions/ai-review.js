@@ -10,6 +10,7 @@
 //   OPENROUTER_MODEL   = stealth/ox-alpha   (valfri — se callOpenRouter nedan)
 //   OPENROUTER_REASONING_EFFORT = low        (valfri — low/medium/high)
 //   OPENROUTER_TIMEOUT_MS       = 7000       (valfri — höj om Netlify ger 26 s)
+//   OPENROUTER_FALLBACK_MODELS  = a,b        (valfri — reserver vid 429/driftstopp)
 //
 // Lägg INTE nycklar i denna fil. De läses från process.env vid körning.
 
@@ -144,6 +145,18 @@ async function callOpenRouter(system, userPrompt) {
 
   const model = process.env.OPENROUTER_MODEL || 'stealth/ox-alpha';
 
+  // Reservmodeller. ox-alpha är gratis och därmed hårt belastad — den svarar
+  // med 429 "rate-limited upstream" när leverantörens kapacitet är slut, vilket
+  // inte är vår kvot och inte går att vänta bort på ett vettigt sätt inom 7 s.
+  // OpenRouter faller själv igenom listan vid 429, driftstopp eller för långt
+  // sammanhang, och svarar med vilken modell som faktiskt körde.
+  // Urvalskriteriet är TILLGÄNGLIGHET, inte topprestanda: ett andra öga som
+  // svarar slår ett bättre som är upptaget. Byt ordning via env.
+  const fallbacks = (process.env.OPENROUTER_FALLBACK_MODELS ||
+    'nvidia/nemotron-3.5-lightning:free,cohere/north-mini-code:free')
+    .split(',').map(m => m.trim()).filter(Boolean);
+  const kedja = [model, ...fallbacks.filter(m => m !== model)];
+
   // 9 s låg för nära Netlifys 10 s: kallstart, parsning av upp till 500k tecken
   // och serialisering av svaret åt upp marginalen, så plattformen hann döda
   // funktionen (504) före vårt eget avbrott. 7 s lämnar den marginalen.
@@ -165,6 +178,7 @@ async function callOpenRouter(system, userPrompt) {
       },
       body: JSON.stringify({
         model,
+        models: kedja,
         // Tankekedjan räknas mot output-budgeten hos resonemangsmodeller. 1200
         // som för de andra providrarna ger tomt eller avhugget svar.
         max_tokens: 4000,
@@ -191,7 +205,9 @@ async function callOpenRouter(system, userPrompt) {
   if (!r.ok) {
     const errText = await r.text();
     // 404 här betyder oftast att stealth-modellen har avvecklats.
-    const hint = r.status === 404 ? ' — modellen finns inte längre? Byt OPENROUTER_MODEL.' : '';
+    const hint = r.status === 404 ? ' — modellen finns inte längre? Byt OPENROUTER_MODEL.'
+      : r.status === 429 ? ` — alla ${kedja.length} modeller var upptagna (${kedja.join(', ')}). Lägg till fler i OPENROUTER_FALLBACK_MODELS.`
+      : '';
     throw new Error(`OpenRouter HTTP ${r.status}: ${errText.slice(0, 200)}${hint}`);
   }
   const data = await r.json();
