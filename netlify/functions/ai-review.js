@@ -35,8 +35,14 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'Ingen kod att granska' }) };
   }
 
-  // Begränsa indatastorlek (skydd mot orimliga anrop)
-  const MAX = 60000;
+  // Begränsa indatastorlek (skydd mot orimliga anrop). Taket följer providerns
+  // kontextfönster i stället för att vara ett för alla: 60k tecken klipper
+  // sociala-medier.html (458k) till en åttondel, och då granskas inte filen —
+  // bara dess början. OpenRouter pekar mot 1M-kontextmodeller och tål hela.
+  // 500k tecken ≈ 125k tokens och rymmer varje faktisk källfil i repona.
+  // OBS: taket är inte längre det som binder — Netlifys 10 s är. Riktigt stora
+  // filer hinner inte klart, och callOpenRouter avbryter då med ett läsbart fel.
+  const MAX = { openrouter: 500000 }[provider] || 60000;
   const codeClipped = code.length > MAX ? code.slice(0, MAX) + '\n…(avkortat)' : code;
 
   const userPrompt =
