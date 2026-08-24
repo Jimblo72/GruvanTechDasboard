@@ -7,7 +7,7 @@
 //   ANTHROPIC_API_KEY  = sk-ant-...
 //   GEMINI_API_KEY     = ...
 //   OPENROUTER_API_KEY = sk-or-v1-...
-//   OPENROUTER_MODEL   = stealth/ox-alpha   (valfri — se callOpenRouter nedan)
+//   OPENROUTER_MODEL   = <modell-id>        (valfri — se callOpenRouter nedan)
 //   OPENROUTER_REASONING_EFFORT = low        (valfri — low/medium/high)
 //   OPENROUTER_TIMEOUT_MS       = 7000       (valfri — höj om Netlify ger 26 s)
 //   OPENROUTER_FALLBACK_MODELS  = a,b        (valfri — reserver vid 429/driftstopp)
@@ -147,7 +147,9 @@ async function callOpenRouter(system, userPrompt, startedAt) {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new Error('OPENROUTER_API_KEY saknas i Netlify environment variables');
 
-  const model = process.env.OPENROUTER_MODEL || 'stealth/ox-alpha';
+  // Förstahandsvalet är INTE ox-alpha längre. Den har 429:at varje gång och
+  // aldrig levererat en granskning; kvar i kedjan sist ifall den blir tillgänglig.
+  const model = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free';
 
   // Reservmodeller. ox-alpha är gratis och därmed hårt belastad — den svarar
   // med 429 "rate-limited upstream" när leverantörens kapacitet är slut, vilket
@@ -156,8 +158,18 @@ async function callOpenRouter(system, userPrompt, startedAt) {
   // sammanhang, och svarar med vilken modell som faktiskt körde.
   // Urvalskriteriet är TILLGÄNGLIGHET, inte topprestanda: ett andra öga som
   // svarar slår ett bättre som är upptaget. Byt ordning via env.
+  // Ordnade efter DJUP, inte fart. Första urvalet gick på tillgänglighet inom
+  // tidstaket och landade i nemotron-3.5-lightning — 3B aktiva parametrar av 30B,
+  // nvidias genomströmningsmodell. Den levererade en granskning som lät kunnig
+  // men vars tre "kritiska" fynd alla var falska. En 3B-modell klarar inte att
+  // spåra ett antagande genom en fil på hundratusentals tecken, och det är
+  // värre än ingen granskning: falska fynd kostar mer tid än de sparar.
+  // Aktiva parametrar: ultra 55B, inkling 41B, laguna 8B (men kodspecialist,
+  // 70,2 % Terminal-Bench). glm-5.2 är sannolikt samma familj som ox-alpha,
+  // fast namngiven. Djupet kostar svarstid — går det över tidstaket är det
+  // taket som måste bort, inte modellen som ska krympas igen.
   const fallbacks = (process.env.OPENROUTER_FALLBACK_MODELS ||
-    'nvidia/nemotron-3.5-lightning:free,cohere/north-mini-code:free')
+    'z-ai/glm-5.2:free,thinkingmachines/inkling:free,poolside/laguna-s-2.1:free,stealth/ox-alpha')
     .split(',').map(m => m.trim()).filter(Boolean);
   const kedja = [model, ...fallbacks.filter(m => m !== model)];
 
