@@ -233,6 +233,8 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 .agent-model{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;padding:1px 6px;border-radius:3px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);}
 .agent-model.claude{color:var(--accent);border-color:rgba(200,133,74,0.3);}
 .agent-model.gpt{color:var(--green);border-color:rgba(78,203,141,0.3);}
+.agent-model.gemini{color:var(--blue);border-color:rgba(125,184,212,0.3);}
+.agent-model.openrouter{color:var(--amber);border-color:rgba(218,176,128,0.3);}
 .agent-desc{font-size:10.5px;color:var(--text4);margin-top:3px;line-height:1.45;}
 
 .review-results{min-height:300px;}
@@ -1340,7 +1342,14 @@ const AGENTS = [
     avatar:'Ex', color:'var(--amber)', bg:'rgba(218,176,128,0.12)',
     desc:'Andra-modell-perspektiv för att fånga blinda fläckar.',
     system:'You are an independent senior engineer giving a second opinion. Challenge assumptions and surface blind spots the primary reviewers may have missed. Respond in Swedish, concisely.' },
+  { id:'external2', name:'Externt öga 2', provider:'openrouter', model:'OpenRouter',
+    avatar:'E2', color:'var(--amber)', bg:'rgba(218,176,128,0.12)',
+    desc:'Fri 1M-kontextmodell — läser hela filer, inte bara diffen. Obs: prompten sparas hos anonym leverantör, så klistra aldrig in kund- eller persondata.',
+    system:'You are an independent senior engineer with a very large context window, giving a second opinion. Read the entire submission before judging, and trace how the parts fit together rather than commenting line by line. Prioritise: contradictions between different parts of the code, assumptions that hold in one place but break in another, and problems that are only visible with the whole file in view rather than a diff. Respond in Swedish, concisely, as a prioritised list.' },
 ];
+
+// Vilken leverantör som står bakom varje provider — visas under agentnamnet.
+const PROVIDER_LABEL = { claude:'Anthropic', gemini:'Google', openrouter:'OpenRouter' };
 
 let selectedAgents = new Set(['architect','codereview','ui']);
 let currentSource = 'paste';
@@ -1410,7 +1419,7 @@ async function runReview() {
         <div class="verdict-avatar" style="background:${a.bg};color:${a.color}">${a.avatar}</div>
         <div class="verdict-meta">
           <div class="verdict-name">${a.name}</div>
-          <div class="verdict-sub">${a.model} · ${a.provider==='claude'?'Anthropic':'OpenAI'}</div>
+          <div class="verdict-sub" id="sub-${a.id}">${a.model} · ${PROVIDER_LABEL[a.provider] || a.provider}</div>
         </div>
         <div class="verdict-state" id="state-${a.id}"><span class="spinner"></span></div>
       </div>
@@ -1426,8 +1435,17 @@ async function runReview() {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ provider:a.provider, model:a.model, system:a.system, code, context })
       });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) {
+        // Funktionen skickar ett läsbart fel i kroppen (borttagen modell,
+        // överskridet tidstak, saknad nyckel) — visa det, inte bara koden.
+        const detail = await r.json().catch(() => null);
+        throw new Error(detail?.error || `HTTP ${r.status}`);
+      }
       const data = await r.json();
+      if (data.model) {
+        const subEl = document.getElementById(`sub-${a.id}`);
+        if (subEl) subEl.textContent = `${data.model} · ${PROVIDER_LABEL[a.provider] || a.provider}`;
+      }
       bodyEl.innerHTML = formatVerdict(data.text || '(tomt svar)');
       stateEl.textContent = '✓';
     } catch(e) {
