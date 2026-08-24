@@ -15,6 +15,10 @@
 // Lägg INTE nycklar i denna fil. De läses från process.env vid körning.
 
 exports.handler = async (event) => {
+  // Netlifys 10 s börjar ticka HÄR — vid kallstarten, inte när vi ringer ut.
+  // Budgeten måste räknas från denna punkt, annars kan en långsam kallstart
+  // plus en full fetch-budget tillsammans passera taket och ge 504.
+  const startedAt = Date.now();
   // CORS + metodkontroll
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -57,7 +61,7 @@ exports.handler = async (event) => {
     if (provider === 'gemini') {
       text = await callGemini(system, userPrompt);
     } else if (provider === 'openrouter') {
-      ({ text, model: usedModel, ms: elapsedMs } = await callOpenRouter(system, userPrompt));
+      ({ text, model: usedModel, ms: elapsedMs } = await callOpenRouter(system, userPrompt, startedAt));
     } else {
       text = await callAnthropic(system, userPrompt);
     }
@@ -139,7 +143,7 @@ async function callGemini(system, userPrompt) {
 // höja i netlify.toml (se kommentaren där). Resonemangsmodeller tänker innan de
 // svarar, så stora filer hinner inte klart. Vi avbryter själva strax innan och
 // ger ett läsbart fel i stället för Netlifys tysta 502.
-async function callOpenRouter(system, userPrompt) {
+async function callOpenRouter(system, userPrompt, startedAt) {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) throw new Error('OPENROUTER_API_KEY saknas i Netlify environment variables');
 
@@ -157,12 +161,20 @@ async function callOpenRouter(system, userPrompt) {
     .split(',').map(m => m.trim()).filter(Boolean);
   const kedja = [model, ...fallbacks.filter(m => m !== model)];
 
-  // 9 s låg för nära Netlifys 10 s: kallstart, parsning av upp till 500k tecken
-  // och serialisering av svaret åt upp marginalen, så plattformen hann döda
-  // funktionen (504) före vårt eget avbrott. 7 s lämnar den marginalen.
+  // OPENROUTER_TIMEOUT_MS är taket för HELA anropet räknat från funktionens
+  // ingång — inte för själva fetch:en. En fast fetch-budget gav 504 igen:
+  // kallstarten hade redan ätit flera sekunder innan timern ens startade.
   // Höj via env om sajten får 26 s-taket påslaget av Netlifys support.
-  const budgetMs = Number(process.env.OPENROUTER_TIMEOUT_MS) || 7000;
+  const takMs = Number(process.env.OPENROUTER_TIMEOUT_MS) || 8500;
   const t0 = Date.now();
+  const forbrukat = t0 - (startedAt || t0);
+  const budgetMs = takMs - forbrukat;
+  // Ett golv här skulle kunna spränga taket igen vid extrem kallstart. Är det
+  // för lite kvar är det ärligare att svara direkt — och nyttigt, för nu är
+  // funktionen varm och nästa försök startar utan kallstartskostnaden.
+  if (budgetMs < 1200) {
+    throw new Error(`Kallstarten åt upp budgeten (${(forbrukat / 1000).toFixed(1)} s av ${(takMs / 1000).toFixed(1)} s) innan anropet hann gå ut. Kör igen — funktionen är varm nu.`);
+  }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), budgetMs);
 
@@ -195,7 +207,9 @@ async function callOpenRouter(system, userPrompt) {
     });
   } catch (e) {
     if (e.name === 'AbortError') {
-      throw new Error(`${model} svarade inte inom ${budgetMs / 1000} s (Netlifys funktionstak är 10 s) — ${userPrompt.length} tecken skickades. Testa en kortare fil eller en snabbare modell i OPENROUTER_MODEL.`);
+      throw new Error(`Modellerna hann inte svara inom ${(budgetMs / 1000).toFixed(1)} s` +
+        `${forbrukat > 200 ? ` (kallstart och parsning tog ${(forbrukat / 1000).toFixed(1)} s av taket)` : ''}` +
+        ` — ${userPrompt.length} tecken skickades till ${kedja.join(' → ')}. Testa en kortare fil.`);
     }
     throw e;
   } finally {
