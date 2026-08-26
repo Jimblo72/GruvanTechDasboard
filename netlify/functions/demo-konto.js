@@ -4,7 +4,7 @@
 //
 // SÄTT I NETLIFY → Environment variables:
 //   DEMO_ADMIN_TOKEN = <samma slumpsträng som i maklargruvan-pilot>
-//   MG_APP_URL       = https://maklargruvan.netlify.app   (valfri, detta är default)
+//   MG_APP_URL       = https://app.maklargruvan.se   (valfri, detta är default)
 //
 // ── VARFÖR EN PROXY OCH INTE ETT DIREKTANROP FRÅN FRONTEND ────────────────
 // 🔴 DEMO_ADMIN_TOKEN får aldrig nå webbläsaren. Lade vi den i dashboardens
@@ -17,7 +17,7 @@
 // den stannar i maklargruvan-pilots miljö. Se kommentaren överst i
 // netlify/functions/demo-konto.js i det repot.
 
-const MG_URL = process.env.MG_APP_URL || 'https://maklargruvan.netlify.app';
+const MG_URL = process.env.MG_APP_URL || 'https://app.maklargruvan.se';
 const TILLATNA = ['lista', 'skapa', 'andra', 'forlang', 'slack'];
 
 exports.handler = async (event) => {

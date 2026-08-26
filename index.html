@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 /* ──────────────────────────────────────────────────────────────
-   MÄKLARGRUVAN DARK — härlett från maklargruvan.netlify.app
+   MÄKLARGRUVAN DARK — härlett från app.maklargruvan.se
    Bakgrund: #101925 / #152233 · Panel mörk: #0c1420
    Accent koppar: #b87539 → #c8854a · Text varmvit: #f3efe8
    Typsnitt: Cormorant Garamond (rubriker) + Inter Tight (brödtext)
@@ -628,7 +628,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     </div>
     <div class="nav-group">
       <div class="nav-group-label">Gruvan-serien</div>
-      <button class="nav-item" onclick="openApp('https://maklargruvan.netlify.app')"><div class="nav-dot" style="background:var(--green)"></div>Mäklargruvan ↗</button>
+      <button class="nav-item" onclick="openApp('https://app.maklargruvan.se')"><div class="nav-dot" style="background:var(--green)"></div>Mäklargruvan ↗</button>
       <button class="nav-item" style="opacity:0.4;cursor:default"><div class="nav-dot" style="background:var(--text3)"></div>Fordonsgruvan</button>
       <button class="nav-item" style="opacity:0.4;cursor:default"><div class="nav-dot" style="background:var(--text3)"></div>Gruvanbåt</button>
     </div>
@@ -702,7 +702,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
           <div class="card-tags"><span class="tag">Netlify</span><span class="tag">Claude API</span><span class="tag">Prowebb</span></div>
           <div class="card-actions">
             <button class="icon-btn" onclick="event.stopPropagation();openDemoModal()" title="Demokonton">◷</button>
-            <a class="icon-btn" href="https://maklargruvan.netlify.app" target="_blank" onclick="event.stopPropagation()" title="Öppna app">↗</a>
+            <a class="icon-btn" href="https://app.maklargruvan.se" target="_blank" onclick="event.stopPropagation()" title="Öppna app">↗</a>
             <a class="icon-btn" href="https://github.com/Jimblo72/maklargruvan-pilot" target="_blank" onclick="event.stopPropagation()" title="GitHub">⌥</a>
           </div>
         </div>
@@ -1546,7 +1546,7 @@ const APPS = {
       { t: 'Spotify-integration', d: 'Mini-player + stämningsanpassade spellistor (Fas 2)' },
     ],
     links: [
-      { label: '↗ Öppna app', href: 'https://maklargruvan.netlify.app', cls: 'primary' },
+      { label: '↗ Öppna app', href: 'https://app.maklargruvan.se', cls: 'primary' },
       { label: '⌥ GitHub', href: 'https://github.com/Jimblo72/maklargruvan-pilot', cls: 'secondary' },
     ]
   },
@@ -3702,7 +3702,7 @@ async function skickaAndring(payload){
          losenordet. */
       const mottagare = (d.anvandare && d.anvandare.epost) || document.getElementById('demo-epost').value;
       document.getElementById('demo-resultat-text').textContent =
-        `Adress: https://maklargruvan.netlify.app\nE-post: ${mottagare}\nLösenord: ${d.losenord}`;
+        `Adress: https://app.maklargruvan.se\nE-post: ${mottagare}\nLösenord: ${d.losenord}`;
       document.getElementById('demo-resultat').style.display = '';
     }
     avbrytRedigering();
@@ -3849,7 +3849,7 @@ async function skapaDemokonto(){
     });
 
     const rader = [
-      'Adress: https://maklargruvan.netlify.app',
+      'Adress: https://app.maklargruvan.se',
       `E-post: ${d.epost}`,
       d.losenord ? `Lösenord: ${d.losenord}` : 'Lösenord: (användaren fanns redan — befintligt lösenord gäller)',
       `Demokontot är aktivt till ${new Date(d.giltigt_till).toLocaleDateString('sv-SE')}.`
