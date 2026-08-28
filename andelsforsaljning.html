@@ -499,7 +499,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
         </div>
         <div class="form-row">
           <label class="form-label">BRF/förening</label>
-          <input type="text" class="form-input" id="signBrfNamn" placeholder="BRF Åre Village 1">
+          <input type="text" class="form-input" id="signBrfNamn" placeholder="Brf Åre Village 1">
         </div>
         <div class="form-row">
           <label class="form-label">Adress / lgh-nr</label>
@@ -663,7 +663,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 
 
 <script>
-const APT_DATA = {"av1-50": {"name": "Åre Village 1 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "BRF Åre Village 1", "brf_avgift": 1602, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 903, 908, 913 (C)", "sort": 1}, "av2-50": {"name": "Åre Village 2 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "BRF Åre Village 2", "brf_avgift": 1653, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 917, 922, 927 (C)", "sort": 2}, "av1-83": {"name": "Åre Village 1 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 904, 909, 914 (D)", "sort": 3}, "av2-83": {"name": "Åre Village 2 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 918, 923, 928 (D)", "sort": 4}, "av1-85": {"name": "Åre Village 1 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 5}, "av2-85": {"name": "Åre Village 2 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 6}, "av1-87": {"name": "Åre Village 1 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 7}, "av2-87": {"name": "Åre Village 2 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "BRF Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 8}, "snotorget-45": {"name": "Snötorget · 45 kvm", "area": "Sälen", "size_sqm": 45, "size_label": "45 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4-5 bäddar", "extras": "modern planlösning", "brf": "BRF Snötorget", "brf_avgift": 2315, "stad_0_6": 1343, "stad_7_11": 1695, "stad_12": 2148, "stad_jul_nyar": 2542.5, "lgh_nr": "Våning 2: 1B, 1C, 1D", "sort": 10}, "snotorget-85": {"name": "Snötorget · 85 kvm", "area": "Sälen", "size_sqm": 85, "size_label": "85 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "6-8 bäddar", "extras": "modern planlösning", "brf": "BRF Snötorget", "brf_avgift": 3125, "stad_0_6": 2030, "stad_7_11": 2519, "stad_12": 3237, "stad_jul_nyar": 3778.5, "lgh_nr": "Våning 1-2: 2A-3D", "sort": 11}, "timmerbyn-1-46": {"name": "Timmerbyn 1 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 1", "brf_avgift": 2376, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 106-110C", "sort": 20}, "timmerbyn-1-100": {"name": "Timmerbyn 1 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 1", "brf_avgift": 4135, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 106-110A", "sort": 21}, "timmerbyn-2-46": {"name": "Timmerbyn 2 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 2", "brf_avgift": 2449, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 111-114C", "sort": 22}, "timmerbyn-2-100": {"name": "Timmerbyn 2 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 2", "brf_avgift": 4463, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 111-114B", "sort": 23}, "timmerbyn-3-46": {"name": "Timmerbyn 3 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 3", "brf_avgift": 2131, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 148C, 151-153C", "sort": 24}, "timmerbyn-3-100": {"name": "Timmerbyn 3 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 3", "brf_avgift": 3864, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 148A, 151-153A", "sort": 25}, "timmerbyn-4-54": {"name": "Timmerbyn 4 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 4", "brf_avgift": 2380, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 115-116C, 120-121C", "sort": 26}, "timmerbyn-4-113": {"name": "Timmerbyn 4 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 4", "brf_avgift": 4140, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 115-116A, 120-121B", "sort": 27}, "timmerbyn-5-54": {"name": "Timmerbyn 5 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 5", "brf_avgift": 2303, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 117-118C", "sort": 28}, "timmerbyn-5-113": {"name": "Timmerbyn 5 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "BRF Timmerbyn 5", "brf_avgift": 4444, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 117-118A", "sort": 29}, "sorgardarna-80": {"name": "Sörgårdarna SAK2 · 80 kvm", "area": "Vemdalen", "size_sqm": 80, "size_label": "80 kvm", "rooms": "5 rum och kök", "bedrooms": "4 sovrum", "bed_count": "8 bäddar", "extras": "bastu", "brf": "BRF Sörgårdarna SAK2", "brf_avgift": 2200, "stad_0_6": 2583, "stad_7_11": 3072, "stad_12": 4132, "stad_jul_nyar": 4608, "lgh_nr": "BRF Sörgårdarna SAK2 (4 sovrum)", "sort": 40}};
+const APT_DATA = {"av1-50": {"name": "Åre Village 1 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "Brf Åre Village 1", "brf_avgift": 1602, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 903, 908, 913 (C)", "sort": 1}, "av2-50": {"name": "Åre Village 2 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "Brf Åre Village 2", "brf_avgift": 1653, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 917, 922, 927 (C)", "sort": 2}, "av1-83": {"name": "Åre Village 1 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 904, 909, 914 (D)", "sort": 3}, "av2-83": {"name": "Åre Village 2 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 918, 923, 928 (D)", "sort": 4}, "av1-85": {"name": "Åre Village 1 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 5}, "av2-85": {"name": "Åre Village 2 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 6}, "av1-87": {"name": "Åre Village 1 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 7}, "av2-87": {"name": "Åre Village 2 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 8}, "snotorget-45": {"name": "Snötorget · 45 kvm", "area": "Sälen", "size_sqm": 45, "size_label": "45 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4-5 bäddar", "extras": "modern planlösning", "brf": "Brf Snötorget", "brf_avgift": 2315, "stad_0_6": 1343, "stad_7_11": 1695, "stad_12": 2148, "stad_jul_nyar": 2542.5, "lgh_nr": "Våning 2: 1B, 1C, 1D", "sort": 10}, "snotorget-85": {"name": "Snötorget · 85 kvm", "area": "Sälen", "size_sqm": 85, "size_label": "85 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "6-8 bäddar", "extras": "modern planlösning", "brf": "Brf Snötorget", "brf_avgift": 3125, "stad_0_6": 2030, "stad_7_11": 2519, "stad_12": 3237, "stad_jul_nyar": 3778.5, "lgh_nr": "Våning 1-2: 2A-3D", "sort": 11}, "timmerbyn-1-46": {"name": "Timmerbyn 1 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 1", "brf_avgift": 2376, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 106-110C", "sort": 20}, "timmerbyn-1-100": {"name": "Timmerbyn 1 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 1", "brf_avgift": 4135, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 106-110A", "sort": 21}, "timmerbyn-2-46": {"name": "Timmerbyn 2 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 2", "brf_avgift": 2449, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 111-114C", "sort": 22}, "timmerbyn-2-100": {"name": "Timmerbyn 2 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 2", "brf_avgift": 4463, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 111-114B", "sort": 23}, "timmerbyn-3-46": {"name": "Timmerbyn 3 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 3", "brf_avgift": 2131, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 148C, 151-153C", "sort": 24}, "timmerbyn-3-100": {"name": "Timmerbyn 3 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 3", "brf_avgift": 3864, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 148A, 151-153A", "sort": 25}, "timmerbyn-4-54": {"name": "Timmerbyn 4 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 4", "brf_avgift": 2380, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 115-116C, 120-121C", "sort": 26}, "timmerbyn-4-113": {"name": "Timmerbyn 4 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 4", "brf_avgift": 4140, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 115-116A, 120-121B", "sort": 27}, "timmerbyn-5-54": {"name": "Timmerbyn 5 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 5", "brf_avgift": 2303, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 117-118C", "sort": 28}, "timmerbyn-5-113": {"name": "Timmerbyn 5 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 5", "brf_avgift": 4444, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 117-118A", "sort": 29}, "sorgardarna-80": {"name": "Sörgårdarna SAK2 · 80 kvm", "area": "Vemdalen", "size_sqm": 80, "size_label": "80 kvm", "rooms": "5 rum och kök", "bedrooms": "4 sovrum", "bed_count": "8 bäddar", "extras": "bastu", "brf": "Brf Sörgårdarna SAK 2", "brf_avgift": 2200, "stad_0_6": 2583, "stad_7_11": 3072, "stad_12": 4132, "stad_jul_nyar": 4608, "lgh_nr": "BRF Sörgårdarna SAK2 (4 sovrum)", "sort": 40}};
 
 // GENERERAD — redigera inte för hand. Kör scripts/gen_veckopris.py i
 // C:\dev\peakfast-verktyg när prislistan uppdaterats.
@@ -702,26 +702,26 @@ const VECKOPRIS = {
 // återanvändas av Mäklargruvan-andelsmodulen som plan B om Mspecs/
 // Vitec-API inte kan användas.
 const MSPECS_PROJECTS = {
-  'BRF Åre Village 1': {
+  'Brf Åre Village 1': {
     projekt_id: 'MDg0MHwwMDAwMDAwMDA4MHw1OA..',
     adress: 'Årevägen 150, Åre',
     nyckel: 'are_village_1'
   },
-  'BRF Åre Village 2': {
+  'Brf Åre Village 2': {
     projekt_id: 'MDg0MHwwMDAwMDAwMDA4MHw1OA..',  // Samma projekt enligt nuvarande info
     adress: 'Årevägen 150, Åre',
     nyckel: 'are_village_2'
   },
-  'BRF Snötorget': {
+  'Brf Snötorget': {
     projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..',  // Skistar Sälen (delat projekt för alla Sälen-BRF:er)
     adress: 'Experiumtorget, Lindvallen, 780 91 Sälen',
     nyckel: 'snotorget'
   },
-  'BRF Timmerbyn 1': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_1' },
-  'BRF Timmerbyn 2': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_2' },
-  'BRF Timmerbyn 3': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_3' },
-  'BRF Timmerbyn 4': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_4' },
-  'BRF Timmerbyn 5': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_5' }
+  'Brf Timmerbyn 1': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_1' },
+  'Brf Timmerbyn 2': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_2' },
+  'Brf Timmerbyn 3': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_3' },
+  'Brf Timmerbyn 4': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_4' },
+  'Brf Timmerbyn 5': { projekt_id: 'MDg0MHwwMDAwMDAwMDEzM3w1OA..', adress: 'Timmerbyn, Lindvallen, 780 91 Sälen', nyckel: 'timmerbyn_5' }
   // Sälen-BRF:erna delar projekt-ID (housing-development). Vemdalen (BRF Sörgårdarna) läggs till vid behov.
 };
 
@@ -913,14 +913,14 @@ function buildBenefits(area) {
 
 Aktiviteter och upplevelser
 • 25 % rabatt vinter: SkiPass
-• 25 % rabatt sommar: BikePass och TrailPass (gäller ej Sälen- eller Trysilpasset)
+• 25 % rabatt sommar: BikePass och TrailPass
 • 15 % rabatt på skidhyra
 • 15 % rabatt på cykelhyra
 • 15 % rabatt på skidskola
 • 15 % rabatt på aktiviteter (klätterpark, Mountain Coaster, SummerSki, barnaktiviteter med Valle, guidade turer m.m.)
 
 Boende
-• Upp till 25 % rabatt på SkiStars utvalda boenden 2025–2026
+• Upp till 25 % rabatt på SkiStars utvalda boenden
 • 50 % rabatt på boende vid bokning inom 5 dagar före ankomst (minst 2 dygn)
 
 Experium Sälen
@@ -933,14 +933,14 @@ Experium Sälen
 
 *Aktiviteter och upplevelser*
 • 25 % rabatt vinter: SkiPass
-• 25 % rabatt sommar: BikePass och TrailPass (gäller ej Sälen- eller Trysilpasset)
+• 25 % rabatt sommar: BikePass och TrailPass
 • 15 % rabatt på skidhyra och cykelhyra
 • 15 % rabatt på skidskola
 • 15 % rabatt på aktiviteter (klätterpark, Mountain Coaster, SummerSki, Valle-aktiviteter, guidade turer m.m.)
 • 50 % rabatt på skidupplevelser i Åre
 
 *Boende*
-• Upp till 25 % rabatt på SkiStars utvalda boenden 2025–2026
+• Upp till 25 % rabatt på SkiStars utvalda boenden
 • 50 % rabatt på boende vid bokning inom 5 dagar före ankomst (minst 2 dygn)`;
 
   if (area === 'Sälen') {
@@ -1345,15 +1345,15 @@ function buildFullTexts(type, weeksStr, sellerType, usp) {
 
   let sellerText;
   if (isSki) {
-    sellerText = `Som delägare i SkiStar Vacation Club får du ett smidigt och hotellliknande ägande där allt är ordnat när du kommer. Bäddade sängar, handdukar och avresestädning ingår alltid, och standarden hålls hög över tid tack vare gemensamma resurser och professionell service. Den årliga kostnaden är uppdelad i städ- och serviceavgift samt avgift till bostadsrättsföreningen, och som privatperson kan du nyttja RUT-avdrag på servicekostnaden vid eget nyttjande. Genom SkiStars serviceavtal säkerställs allt från stugservice och fastighetsunderhåll till snöskottning, inventarier, bäddning och städning — allt för att du ska kunna fokusera helt på att njuta av din tid i fjällen.`;
+    sellerText = `Som delägare i SkiStar Vacation Club får du ett smidigt och hotelliknande ägande där allt är ordnat när du kommer. Bäddade sängar, handdukar och avresestädning ingår alltid, och standarden hålls hög över tid tack vare gemensamma resurser och professionell service. Den årliga kostnaden är uppdelad i städ- och serviceavgift samt avgift till bostadsrättsföreningen. Som privatperson kan du nyttja RUT-avdrag på servicekostnaden vid eget nyttjande. Genom SkiStars serviceavtal säkerställs allt från stugservice och fastighetsunderhåll till snöskottning, inventarier, bäddning och städning — allt för att du ska kunna fokusera helt på att njuta av din tid i fjällen.`;
   } else {
     sellerText = `Andelsägandet ger dig ett enkelt och kostnadseffektivt sätt att äga fjällboende utan fullt ägaransvar. När du inte nyttjar dina veckor finns möjlighet till uthyrning via SkiStar Vacation Club, vilket skapar goda förutsättningar för intäkter och flexibilitet.`;
   }
 
   // RCI-text (SkiStar-läge inkluderar RCI-koppling)
-  const rciText = isSki ? `**Byt vecka eller destination med RCI**\nSkiStar Vacation Club samarbetar med RCI – världens största nätverk för semesterbyten. Som medlem kan du:\n• Byta din SkiStar-vecka till annan period\n• Uppgradera till större boende\n• Resa till någon av RCIs över 4 000 resorter i mer än 100 länder\nRCI har även uthyrningsgaranti samt medlems- och bokningsservice mot årlig avgift. Mer info: skistar.com/sv/skistar-vacation-club/rci` : '';
+  const rciText = isSki ? `**Byt vecka eller destination med RCI**\nSkiStar Vacation Club samarbetar med RCI – världens största nätverk för semesterbyten. Som medlem kan du:\n• Byta din SkiStar-vecka till en annan vecka\n• Resa till någon av RCIs över 4 000 resorter i mer än 100 länder\nMer info: skistar.com/sv/skistar-vacation-club/rci` : '';
 
-  const cost = `**Avgifter**\nAvgift till bostadsrättsföreningen: ${brfCalc.total.toLocaleString('sv-SE')} kr/år · ${brfCalc.monthly.toLocaleString('sv-SE')} kr/mån (${brfCalc.weeks} v × ${d.brf_avgift.toLocaleString('sv-SE')} kr${brfCalc.julNyar ? ', varav ' + brfCalc.julNyar + ' jul/nyår ×1,5' : ''})\nStäd- och serviceavgift: ${d.stad_7_11.toLocaleString('sv-SE')} kr/vecka (för vistelse 7–11 dygn)\nVid köp tillkommer en engångs anslutningsavgift på 1 500 kr som betalas av köparen.`;
+  const cost = `**Avgifter**\nAvgift till bostadsrättsföreningen: ${brfCalc.total.toLocaleString('sv-SE')} kr/år · ${brfCalc.monthly.toLocaleString('sv-SE')} kr/mån (${brfCalc.weeks} v × ${d.brf_avgift.toLocaleString('sv-SE')} kr${brfCalc.julNyar ? ', varav ' + brfCalc.julNyar + ' jul/nyår ×1,5' : ''})\nStäd- och serviceavgift: ${d.stad_7_11.toLocaleString('sv-SE')} kr/vecka\nVid köp tillkommer en engångs anslutningsavgift på 1 500 kr som betalas av köparen.`;
 
   const benefits = buildBenefits(d.area);
 
@@ -1404,7 +1404,7 @@ function joinSwedishList(items) {
 // ─── SkiStar STANDARDMALL ──────────────────────────────────────
 // SkiStar vill ha samma struktur på alla paketannonser. Mallen:
 // "[N] attraktiva veckor i en modern och välplanerad andelslägenhet
-//  i populära [destination] och erbjuder möjligheten att bli delägare
+//  i populära [destination] — en möjlighet att bli delägare
 //  i ett bekvämt och lättskött fjällboende av hög standard.
 //  [naturbeskrivning]. Vecka X, Y & Z."
 // Varierar bara antal veckor, destination, naturmiljö och vecklista.
@@ -1412,15 +1412,15 @@ function joinSwedishList(items) {
 function svcGetDestination(d) {
   const name = (d && d.name) || '';
   if (name.indexOf('Åre Village') !== -1) return 'Åre Village';
-  if (name.indexOf('Snötorget') !== -1) return 'Experiumtorget i Lindvallen';
-  if (name.indexOf('Timmerbyn') !== -1) return 'Timmerbyn i Sälen';
+  if (name.indexOf('Snötorget') !== -1) return 'Experiumtorget';
+  if (name.indexOf('Timmerbyn') !== -1) return 'Timmerbyn';
   if (name.indexOf('Sörgårdarna') !== -1) return 'Sörgårdarna i Vemdalen';
   return d.area || 'fjällen';
 }
 
 function svcGetNatureLine(area) {
   if (area === 'Åre') return 'Här bor du i ett naturskönt läge mellan fjäll och sjö!';
-  if (area === 'Sälen') return 'Här bor du mitt i Lindvallens fjällby med skidåkningen runt knuten!';
+  if (area === 'Sälen') return 'Här bor du mitt i Lindvallen med skidåkningen runt knuten!';
   if (area === 'Vemdalen') return 'Här bor du i Vemdalsskalets natursköna fjällmiljö med generös snöperiod!';
   return 'Här bor du i ett naturskönt fjälläge!';
 }
@@ -1447,7 +1447,7 @@ function buildSkiStarStandardIntro(d, ws) {
   const nature = svcGetNatureLine(d.area);
   const weeksList = svcFormatWeeksList(ws);
   return intro + ' i en modern och välplanerad andelslägenhet i populära ' + dest +
-         ' och erbjuder möjligheten att bli delägare i ett bekvämt och lättskött fjällboende av hög standard. ' +
+         ' — en möjlighet att bli delägare i ett bekvämt och lättskött fjällboende av hög standard. ' +
          nature + ' ' + weeksList + '.';
 }
 
@@ -1511,7 +1511,7 @@ function buildShortText(d, ws, cats, hook) {
 
   // Områdesnamn för avslut
   const areaName = d.area === 'Åre' ? 'Skandinaviens mest mångsidiga skidort' :
-                   d.area === 'Sälen' ? 'Lindvallens fjällby med Experium-anläggning' :
+                   d.area === 'Sälen' ? 'Lindvallen med Experium-anläggning' :
                    'Vemdalsskalet med generös snöperiod';
 
   // Räkna upp ALLA veckotyper som ingår
@@ -4272,7 +4272,7 @@ function buildBulkJSONData() {
                      (bc.monthly ? bc.monthly.toLocaleString('sv-SE') : '0') + ' kr/mån' +
                      (bc.weeks > 0 ? ' (' + bc.weeks + ' v × ' + d.brf_avgift.toLocaleString('sv-SE') + ' kr' +
                        (bc.julNyar ? ', varav ' + bc.julNyar + ' jul/nyår ×1,5' : '') + ')' : '') +
-                     '\nStäd- och serviceavgift: ' + d.stad_7_11.toLocaleString('sv-SE') + ' kr/vecka (vistelse 7–11 dygn)',
+                     '\nStäd- och serviceavgift: ' + d.stad_7_11.toLocaleString('sv-SE') + ' kr/vecka',
       // Texter
       kort_text: p.result.shortText,
       lang_text: p.result.longText
@@ -4428,7 +4428,7 @@ function buildCoworkClipboardText(data) {
       proj.objekt.forEach(function(o) {
         rows.push('| ' + n + ' | ' +
                   (o.enhet || '-') + ' | ' +
-                  (o.brf || '-').replace('BRF Åre Village ', 'AV') + ' | ' +
+                  (o.brf || '-').replace('Brf Åre Village ', 'AV') + ' | ' +
                   (o.kvm || '-') + ' | ' +
                   o.antal_veckor + ' (' + (o.veckor_text || '') + ')' + ' | ' +
                   (o.husdjur ? 'JA' : 'NEJ') + ' | ' +
