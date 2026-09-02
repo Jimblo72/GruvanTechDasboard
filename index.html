@@ -1191,7 +1191,10 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 
     <div id="seo-sajter" class="stats" style="grid-template-columns:repeat(2,1fr)"></div>
     <div id="seo-status" style="font-size:11.5px;color:var(--text3);margin:0 0 14px"></div>
-    <div id="seo-list"><div class="loading">Öppna vyn för att ladda…</div></div>
+    <!-- Luft i botten: chattbubblan svävar fast i nedre högra hörnet och lade sig
+         över Godkänn/Ångra på listans sista kort, så knappen gick inte att klicka.
+         Upptäckt vid första skarpa körningen. -->
+    <div id="seo-list" style="padding-bottom:72px"><div class="loading">Öppna vyn för att ladda…</div></div>
   </div>
 
   <!-- KONTEXT-HUB (Claude-brygga) -->
