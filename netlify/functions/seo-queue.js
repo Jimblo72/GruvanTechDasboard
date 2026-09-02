@@ -90,24 +90,12 @@ exports.handler = async (event) => {
 
     const { handling } = body;
 
-    // ── starta en genomgång ────────────────────────────────────────────────
-    if (handling === 'starta') {
-      const sajtId = body.sajt || '';
-      if (!SAJTER[sajtId]) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Okänd sajt' }) };
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'ANTHROPIC_API_KEY saknas i Netlify' }) };
-      }
-      const jobId = 'j' + Date.now().toString(36);
-      // Anropet till bakgrundsfunktionen måste gå via en absolut URL, och den
-      // returnerar 202 utan kropp. Vi väntar inte in den.
-      const bas = `https://${event.headers.host}`;
-      await fetch(`${bas}/.netlify/functions/seo-scan-background`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, sajt: sajtId }),
-      });
-      return { statusCode: 202, headers, body: JSON.stringify({ jobId, sajt: sajtId }) };
-    }
+    // Att starta en genomgång görs INTE härifrån. Sajten är lösenordsskyddad i
+    // Netlify, och skyddet gäller även funktionernas adresser — ett anrop från
+    // den här funktionen till seo-scan-background får 401 och dör tyst, vilket
+    // ser ut som ett jobb som aldrig blir klart. Webbläsaren har lösenordskakan,
+    // funktionen har den inte. Klienten anropar därför bakgrundsfunktionen
+    // direkt, precis som granskningspanelen gör med ai-review-background.
 
     // ── åtgärder på en post ────────────────────────────────────────────────
     const id = body.id || '';

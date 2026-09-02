@@ -1330,7 +1330,13 @@ const FN = {
   contextHub:'/.netlify/functions/context-hub',  // delad projektkontext + handoffs (data/context-hub.json)
   demoKonto: '/.netlify/functions/demo-konto',   // demokonton i Mäklargruvan (proxy → pilot-repots API)
   socialQueue:'/.netlify/functions/social-queue', // sociala förslag: kö + åtgärder (data/social-queue.json)
-  seoQueue:  '/.netlify/functions/seo-queue',    // SEO: läge + förslagskö + starta genomgång
+  seoQueue:  '/.netlify/functions/seo-queue',    // SEO: läge + förslagskö + åtgärder
+  // Genomgången startas av KLIENTEN, inte av seo-queue. Sajten är
+  // lösenordsskyddad i Netlify, och skyddet gäller även funktionernas adresser
+  // — ett server-till-server-anrop från en funktion till en annan får 401 och
+  // dör tyst. Webbläsaren har lösenordskakan, funktionen har den inte.
+  // Samma skäl som att reviewBg anropas härifrån.
+  seoScan:   '/.netlify/functions/seo-scan-background', // startar genomgången (202, svar via seoResult)
   seoResult: '/.netlify/functions/seo-result'    // SEO: pollar bakgrundsjobbets status
 };
 const GH_USER = 'Jimblo72';
@@ -4174,17 +4180,22 @@ async function seoStarta(sajtId, btn) {
   const not = document.getElementById('seo-jobb-' + sajtId);
   if (btn) btn.disabled = true;
   if (not) not.textContent = 'startar…';
+  // jobId skapas här, inte på servern: bakgrundsfunktionen svarar 202 utan
+  // kropp, så klienten måste känna sitt eget id i förväg för att kunna skilja
+  // sitt svar från en rest av en tidigare körning.
+  const jobId = 'j' + Date.now().toString(36);
   try {
-    const r = await fetch(FN.seoQueue, {
+    const r = await fetch(FN.seoScan, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handling: 'starta', sajt: sajtId }),
+      body: JSON.stringify({ jobId, sajt: sajtId }),
     });
-    // Läs kroppen en gång och använd den i båda grenarna. Kroppen kan bara
-    // läsas en gång, och ett tomt eller trasigt svar ska ge felmeddelandet
-    // nedan i stället för ett obegripligt parse-fel.
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    seoPolla(sajtId, d.jobId, btn);
+    // 202 = mottagen. Bakgrundsfunktioner returnerar ingen kropp, så det finns
+    // inget att läsa här; allt som händer sedan syns via pollningen.
+    if (!r.ok && r.status !== 202) {
+      const d = await r.text().catch(() => '');
+      throw new Error(d.slice(0, 120) || `HTTP ${r.status}`);
+    }
+    seoPolla(sajtId, jobId, btn);
   } catch (e) {
     if (not) not.textContent = 'kunde inte starta: ' + e.message;
     if (btn) btn.disabled = false;
