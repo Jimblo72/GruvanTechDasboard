@@ -624,6 +624,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" data-sec="offert" onclick="showSection('offert',this)"><div class="nav-dot" style="background:var(--amber)"></div>Offertgenerator</button>
       <button class="nav-item" onclick="showSection('mail',this)"><div class="nav-dot" style="background:var(--green)"></div>Mail-hub</button>
       <button class="nav-item" onclick="showSection('social',this)"><div class="nav-dot" style="background:var(--accent)"></div>Sociala förslag</button>
+      <button class="nav-item" onclick="showSection('seo',this)"><div class="nav-dot" style="background:var(--green)"></div>SEO</button>
       <button class="nav-item" onclick="showSection('kontext',this)"><div class="nav-dot" style="background:var(--blue)"></div>Kontext-hub</button>
     </div>
     <div class="nav-group">
@@ -1172,6 +1173,27 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     <div id="social-list"><div class="loading">Öppna vyn för att ladda kön…</div></div>
   </div>
 
+  <!-- SEO (maklargruvan.se + peakfast.se) -->
+  <div class="section" id="sec-seo">
+    <div class="topbar">
+      <div>
+        <div class="page-title">SEO</div>
+        <div class="page-sub">Ett verktyg för båda sajterna · hämtar läget, jämför mot förra gången, Claude föreslår åtgärder · inget utförs utan ditt godkännande</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="loadSeo(true)">↺ Uppdatera</button>
+      </div>
+    </div>
+
+    <div class="config-note" style="background:var(--green-bg);border-color:rgba(78,203,141,0.3);color:var(--text2)">
+      <strong>🔒 Förslag, inte åtgärder.</strong> En genomgång hämtar robots, sitemap och varje sida, mäter PageSpeed och läser Search Console när den är kopplad. Claude får de faktiska värdena och föreslår ändringar. Godkänner du något ändras bara statusen här — utförarsteget (PR för maklargruvan.se, mejlunderlag till Prowebb för peakfast.se) byggs separat och rör bara godkända poster. Kräver <code>ANTHROPIC_API_KEY</code> + <code>GH_TOKEN</code> i Netlify.
+    </div>
+
+    <div id="seo-sajter" class="stats" style="grid-template-columns:repeat(2,1fr)"></div>
+    <div id="seo-status" style="font-size:11.5px;color:var(--text3);margin:0 0 14px"></div>
+    <div id="seo-list"><div class="loading">Öppna vyn för att ladda…</div></div>
+  </div>
+
   <!-- KONTEXT-HUB (Claude-brygga) -->
   <div class="section" id="sec-kontext">
     <div class="topbar">
@@ -1307,7 +1329,9 @@ const FN = {
   mailLearnStyle:'/.netlify/functions/mail-learn-style', // lär in mejlstil från Sent Items → per-brevlåde-stilprofil
   contextHub:'/.netlify/functions/context-hub',  // delad projektkontext + handoffs (data/context-hub.json)
   demoKonto: '/.netlify/functions/demo-konto',   // demokonton i Mäklargruvan (proxy → pilot-repots API)
-  socialQueue:'/.netlify/functions/social-queue' // sociala förslag: kö + åtgärder (data/social-queue.json)
+  socialQueue:'/.netlify/functions/social-queue', // sociala förslag: kö + åtgärder (data/social-queue.json)
+  seoQueue:  '/.netlify/functions/seo-queue',    // SEO: läge + förslagskö + starta genomgång
+  seoResult: '/.netlify/functions/seo-result'    // SEO: pollar bakgrundsjobbets status
 };
 const GH_USER = 'Jimblo72';
 
@@ -2237,6 +2261,7 @@ function showSection(id, btn) {
   if (id === 'ideer') initIdeerPicker();
   if (id === 'mail') initMailHub();
   if (id === 'social' && !socialLoaded) loadSocial();
+  if (id === 'seo' && !seoLoaded) loadSeo();
   if (id === 'kontext' && !contextLoaded) loadContext();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
@@ -4001,6 +4026,198 @@ async function persistContacts(list){
   });
   if (!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.error || `HTTP ${r.status}`); }
   return r.json();
+}
+
+// ── SEO (maklargruvan.se + peakfast.se) ───────────────────────
+// Läser data/seo/queue.json via seo-queue. "Kör genomgång" startar ett
+// bakgrundsjobb (crawl + PageSpeed + Search Console + Claude) och pollar
+// seo-result tills det är klart — samma mönster som triggerScan i
+// granskningspanelen, av samma skäl: jobbet tar minuter, inte sekunder.
+let seoLoaded = false;
+let seoData = null;
+const seoPoll = {};   // sajt-id → intervall-id, så en avbruten körning inte lämnar en poller kvar
+
+async function loadSeo(force) {
+  const el = document.getElementById('seo-list');
+  if (!el) return;
+  if (seoLoaded && !force) return;
+  el.innerHTML = '<div class="loading">Hämtar läget…</div>';
+  try {
+    const r = await fetch(FN.seoQueue);
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { msg = (await r.json()).error || msg; } catch (e) {}
+      throw new Error(msg);
+    }
+    seoData = await r.json();
+    renderSeo();
+    seoLoaded = true;
+  } catch (e) {
+    el.innerHTML = `<div class="loading">Kunde inte läsa SEO-kön (${esc(e.message)}). Kräver GH_TOKEN + ANTHROPIC_API_KEY i Netlify och att funktionerna är deployade.</div>`;
+  }
+}
+
+function seoSajtKort(s) {
+  const lage = (seoData.senasteLage || {})[s.id];
+  const analys = (seoData.senasteAnalys || {})[s.id];
+  const vantar = (seoData.poster || []).filter(p => p.sajt === s.id && p.status === 'väntar').length;
+  const utf = s.utforare === 'pr'
+    ? '<span class="badge b-active" title="Godkänt förslag blir en PR i sajtens repo">PR</span>'
+    : '<span class="badge b-parked" title="Prowebb äger CMS:et — godkänt förslag blir ett mejlunderlag">Underlag</span>';
+
+  const rader = lage ? [
+    `${lage.antalSidor} sidor`,
+    lage.robots ? 'robots ✓' : 'robots ✗',
+    lage.sitemap ? `sitemap ${lage.sitemapAntal}` : 'sitemap ✗',
+    lage.pagespeed ? `prestanda ${lage.pagespeed.prestanda}` : null,
+    lage.gsc ? `${lage.gsc.klick} klick/28d` : null,
+  ].filter(Boolean).join(' · ') : 'Ingen genomgång körd än.';
+
+  return `<div class="stat" style="grid-column:span 1">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+      <div class="stat-label" style="margin:0">${esc(s.namn)}</div>${utf}
+    </div>
+    <div class="stat-value" style="font-size:26px">${vantar}<span style="font-size:12px;color:var(--text4);font-family:inherit;margin-left:6px">väntande förslag</span></div>
+    <div class="stat-note">${esc(rader)}</div>
+    ${analys ? `<div class="stat-note" style="margin-top:7px;color:var(--text3);line-height:1.5">${esc(analys.sammanfattning)}</div>` : ''}
+    <div style="margin-top:11px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="seoStarta('${s.id}',this)">▶ Kör genomgång</button>
+      <a class="btn" style="font-size:10.5px;padding:5px 11px" href="${esc(s.bas)}" target="_blank" rel="noopener">↗ Öppna sajten</a>
+      <span id="seo-jobb-${s.id}" style="font-size:10.5px;color:var(--text4)"></span>
+    </div>
+  </div>`;
+}
+
+const SEO_VIKT = { hog: ['Hög', 'var(--red)'], medel: ['Medel', 'var(--amber)'], lag: ['Låg', 'var(--text4)'] };
+
+function seoPostKort(p) {
+  const [viktText, viktFarg] = SEO_VIKT[p.vikt] || SEO_VIKT.lag;
+  const sajt = (seoData.sajter || []).find(s => s.id === p.sajt);
+  const klar = p.status === 'godkänd';
+  const kastad = p.status === 'kastad' || p.status === 'ersatt';
+  return `<div class="card" style="margin-bottom:10px;${kastad ? 'opacity:0.5' : ''}">
+    <div class="card-top">
+      <div>
+        <div style="font-weight:600;font-size:13.5px;color:var(--text)">${esc(p.rubrik)}</div>
+        <div style="font-size:10.5px;color:var(--text4);margin-top:3px">
+          ${esc(sajt ? sajt.namn : p.sajt)} · ${esc(p.typ)}${p.url ? ' · ' + esc(p.url.replace(/^https?:\/\/[^/]+/, '') || '/') : ''}
+        </div>
+      </div>
+      <span class="badge" style="color:${viktFarg};border-color:${viktFarg}">${viktText}</span>
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:10px">${esc(p.motivering)}</div>
+    ${p.nuvarande ? `<div style="font-size:11px;color:var(--text4);margin-bottom:6px"><strong>Nu:</strong> ${esc(p.nuvarande)}</div>` : ''}
+    ${p.obekraftadNulage ? `<div style="font-size:10.5px;color:var(--amber);margin-bottom:6px">⚠ Modellen beskrev ett nuläge som inte gick att hitta ordagrant i mätdatan. Fältet är tömt — kontrollera påståendet mot sidan innan du godkänner.</div>` : ''}
+    ${p.foreslaget ? `<textarea class="textarea" id="seo-text-${p.id}" style="min-height:64px;font-size:11.5px" ${klar || kastad ? 'readonly' : ''}>${esc(p.foreslaget)}</textarea>` : ''}
+    <div class="card-footer" style="margin-top:10px">
+      <span style="font-size:10.5px;color:var(--text4)">
+        ${klar ? '✓ Godkänd — väntar på utförarsteget' : kastad ? (p.status === 'ersatt' ? 'Ersatt av en nyare analys' : 'Kastad') : 'Väntar på ditt beslut'}
+      </span>
+      <div class="card-actions">
+        ${klar || kastad
+          ? `<button class="btn" style="font-size:10.5px;padding:4px 10px" onclick="seoAtgard('${p.id}','aterstall',this)">↺ Ångra</button>`
+          : `<button class="btn" style="font-size:10.5px;padding:4px 10px" onclick="seoAtgard('${p.id}','kasta',this)">Kasta</button>
+             <button class="btn btn-accent" style="font-size:10.5px;padding:4px 10px" onclick="seoAtgard('${p.id}','godkann',this)">✓ Godkänn</button>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderSeo() {
+  const korten = document.getElementById('seo-sajter');
+  const status = document.getElementById('seo-status');
+  const el = document.getElementById('seo-list');
+  if (!seoData || !el) return;
+
+  korten.innerHTML = (seoData.sajter || []).map(seoSajtKort).join('');
+  status.innerHTML = seoData.gscKopplad
+    ? '🔗 Search Console kopplad — förslagen tar hänsyn till vad folk faktiskt söker på.'
+    : '⚠️ Search Console <strong>inte kopplad</strong>. Genomgången mäter fortfarande sidorna, men Claude får inte veta något om trafik eller placeringar och är instruerad att inte gissa. Sätt <code>GSC_CLIENT_ID</code>, <code>GSC_CLIENT_SECRET</code> och <code>GSC_REFRESH_TOKEN</code> i Netlify.';
+
+  const poster = seoData.poster || [];
+  const vantar = poster.filter(p => p.status === 'väntar');
+  const ovriga = poster.filter(p => p.status !== 'väntar').slice(0, 40);
+
+  if (!poster.length) {
+    el.innerHTML = '<div class="loading">Inga förslag än. Tryck “▶ Kör genomgång” på en sajt ovan — första körningen tar ett par minuter och sår samtidigt historiken som nästa körning jämför mot.</div>';
+    return;
+  }
+  el.innerHTML =
+    (vantar.length
+      ? `<div class="sec-head"><div class="sec-title">Väntar på beslut</div><div class="sec-line"></div><div class="sec-count">${vantar.length}</div></div>` + vantar.map(seoPostKort).join('')
+      : '<div class="loading" style="margin-bottom:18px">Inga förslag väntar just nu.</div>') +
+    (ovriga.length
+      ? `<div class="sec-head" style="margin-top:26px"><div class="sec-title">Avgjorda</div><div class="sec-line"></div><div class="sec-count">${ovriga.length}</div></div>` + ovriga.map(seoPostKort).join('')
+      : '');
+}
+
+async function seoAtgard(id, handling, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const ta = document.getElementById('seo-text-' + id);
+    const r = await fetch(FN.seoQueue, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling, id, text: handling === 'godkann' && ta ? ta.value : undefined }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    await loadSeo(true);
+  } catch (e) {
+    // Repot har ingen toast-funktion; alert är vad de andra vyerna använder.
+    alert('Kunde inte spara: ' + e.message);
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function seoStarta(sajtId, btn) {
+  const not = document.getElementById('seo-jobb-' + sajtId);
+  if (btn) btn.disabled = true;
+  if (not) not.textContent = 'startar…';
+  try {
+    const r = await fetch(FN.seoQueue, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'starta', sajt: sajtId }),
+    });
+    // Läs kroppen en gång och använd den i båda grenarna. Kroppen kan bara
+    // läsas en gång, och ett tomt eller trasigt svar ska ge felmeddelandet
+    // nedan i stället för ett obegripligt parse-fel.
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    seoPolla(sajtId, d.jobId, btn);
+  } catch (e) {
+    if (not) not.textContent = 'kunde inte starta: ' + e.message;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// Pollar tills jobbet är klart. jobId matchas för att inte förväxla svaret med
+// en rest från en tidigare körning — resultatfilen är en per sajt, inte en per
+// jobb, just för att den aldrig ska växa obegränsat.
+function seoPolla(sajtId, jobId, btn) {
+  const not = document.getElementById('seo-jobb-' + sajtId);
+  const start = Date.now();
+  const TAK_MS = 10 * 60 * 1000;
+  clearInterval(seoPoll[sajtId]);
+  seoPoll[sajtId] = setInterval(async () => {
+    if (Date.now() - start > TAK_MS) {
+      clearInterval(seoPoll[sajtId]);
+      if (not) not.textContent = 'tog längre än 10 min — ladda om vyn för att se om den blev klar';
+      if (btn) btn.disabled = false;
+      return;
+    }
+    try {
+      const r = await fetch(`${FN.seoResult}?sajt=${encodeURIComponent(sajtId)}`);
+      const d = await r.json();
+      if (d.jobId !== jobId) { if (not) not.textContent = 'arbetar…'; return; }
+      if (d.status === 'kor') { if (not) not.textContent = d.steg ? `arbetar: ${d.steg}` : 'arbetar…'; return; }
+      clearInterval(seoPoll[sajtId]);
+      if (btn) btn.disabled = false;
+      if (d.status === 'fel') { if (not) not.textContent = 'fel: ' + (d.fel || 'okänt'); return; }
+      if (not) not.textContent = `✓ klar — ${d.antalForslag} förslag, ${d.antalSidor} sidor`;
+      await loadSeo(true);
+    } catch (e) { /* nätverksglapp: fortsätt polla, taket ovan avbryter till slut */ }
+  }, 4000);
 }
 
 // ── KONTEXT-HUB (Claude-brygga) ───────────────────────────────
