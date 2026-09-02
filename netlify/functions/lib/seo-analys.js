@@ -88,6 +88,11 @@ function system(sajt) {
     '',
     'PRIORITERA efter förväntad effekt: saker som blockerar indexering först, sedan',
     'titlar och beskrivningar på sidor som redan får visningar, sedan innehåll, sist kosmetika.',
+    '',
+    'GRUPPERA. Samma brist på flera sidor är EN åtgärd, inte en per sida. Saknas alt-texter',
+    'på sju sidor skriver du en enda åtgärd, räknar upp sidorna i motiveringen och lämnar',
+    'url tom. Åtta platser som går till samma sak sju gånger är en oanvändbar lista —',
+    'utrymmet ska gå till åtta OLIKA saker.',
   ].join('\n');
 }
 
