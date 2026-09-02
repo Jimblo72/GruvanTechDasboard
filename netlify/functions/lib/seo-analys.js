@@ -142,6 +142,25 @@ function bygguUnderlag(bild, diff) {
   return rader.join('\n');
 }
 
+// Verktygsschemat säger att atgarder är en array, och lokalt var den alltid
+// det. I den första skarpa körningen var den något annat, och koden dog på
+// "map is not a function" — ett fel som inte säger någonting om vad som hänt.
+//
+// Lärdomen är generell: ett schema styr modellen, det garanterar inte formen.
+// Allt som kommer ur ett modellsvar ska normaliseras innan det används, även
+// när API:t lovat en typ.
+function normaliseraAtgarder(v) {
+  if (Array.isArray(v)) return v.filter(a => a && typeof a === 'object');
+  if (v && typeof v === 'object') {
+    // Ett ensamt objekt är en åtgärd; ett objekt med numeriska nycklar är en
+    // array som tappat sin form på vägen.
+    const varden = Object.values(v);
+    if (varden.length && varden.every(x => x && typeof x === 'object')) return varden;
+    return [v];
+  }
+  return [];
+}
+
 async function analysera(sajt, bild, diff) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY saknas i Netlify environment variables');
@@ -163,6 +182,14 @@ async function analysera(sajt, bild, diff) {
 
   if (!r.ok) throw new Error(`Anthropic HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
   const d = await r.json();
+
+  // Ett avbrott på max_tokens ger ett HALVT verktygsanrop. Det måste bli ett
+  // begripligt fel här, annars visar sig samma sak längre ned som något
+  // kryptiskt om att en array inte är en array.
+  if (d.stop_reason === 'max_tokens') {
+    throw new Error('Svaret klipptes vid max_tokens — höj taket eller be om färre åtgärder.');
+  }
+
   const block = (d.content || []).find(b => b.type === 'tool_use');
   if (!block) throw new Error('Modellen svarade utan strukturerat resultat');
 
@@ -172,14 +199,25 @@ async function analysera(sajt, bild, diff) {
   // riktig ändå — men vi tömmer det obekräftade fältet och flaggar posten, så
   // att ingen läser ett påhittat "före"-värde som om det vore avläst.
   const underlag = bygguUnderlag(bild, diff);
-  const atgarder = (block.input.atgarder || []).map(a => {
+  const atgarder = normaliseraAtgarder(block.input.atgarder).map(a => {
     if (a.nuvarande && !underlag.includes(a.nuvarande)) {
       return { ...a, nuvarande: '', obekraftadNulage: true };
     }
     return a;
   });
 
-  return { ...block.input, atgarder, modell };
+  return {
+    ...block.input,
+    // Schemat kräver sammanfattning, men modellen utelämnade den i en av de
+    // skarpa körningarna. Ett obligatoriskt fält i ett schema är en instruktion,
+    // inte en garanti — behandla varje fält som frånvarande tills motsatsen
+    // bevisats.
+    sammanfattning: typeof block.input.sammanfattning === 'string' && block.input.sammanfattning.trim()
+      ? block.input.sammanfattning
+      : `${atgarder.length} förslag. (Modellen lämnade ingen sammanfattning.)`,
+    atgarder,
+    modell,
+  };
 }
 
 module.exports = { analysera, bygguUnderlag, DEFAULT_MODELL };
