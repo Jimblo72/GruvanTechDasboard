@@ -123,6 +123,20 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .app-card.c-amber::before{background:var(--amber);}
 .app-card.c-green::before{background:var(--green);}
 .app-card.c-muted::before{background:var(--muted);}
+/* Oläst-prick i navigeringen: nya köp eller uppsägningar sedan du sist tittade.
+   Det här ÄR pingen — ingen notis, ingen e-post, bara en prick som inte går att
+   missa när du ändå har dashboarden uppe. */
+.kunder-prick{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-left:7px;vertical-align:middle;}
+.kunder-prick[hidden]{display:none;}
+.kh-rad{display:flex;align-items:baseline;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-bottom:6px;}
+.kh-rad.ny{border-color:rgba(214,158,46,0.45);}
+.kh-typ{font-size:9px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:4px;border:1px solid;flex:0 0 auto;}
+.kh-kop{color:var(--green);background:var(--green-bg);border-color:rgba(78,203,141,0.25);}
+.kh-upp{color:var(--amber);background:rgba(214,158,46,0.1);border-color:rgba(214,158,46,0.3);}
+.kh-slut{color:var(--red,#e06c75);background:rgba(224,108,117,0.09);border-color:rgba(224,108,117,0.28);}
+.kh-trial{color:var(--text3);background:rgba(120,140,170,0.09);border-color:var(--border);}
+.kh-kontor{font-weight:600;color:var(--text);flex:1 1 auto;min-width:0;}
+.kh-detalj{font-size:11.5px;color:var(--text3);flex:0 0 auto;}
 .card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px;}
 .app-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;}
 .badge{font-size:9px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:4px;border:1px solid;}
@@ -625,6 +639,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" onclick="showSection('mail',this)"><div class="nav-dot" style="background:var(--green)"></div>Mail-hub</button>
       <button class="nav-item" onclick="showSection('social',this)"><div class="nav-dot" style="background:var(--accent)"></div>Sociala förslag</button>
       <button class="nav-item" onclick="showSection('seo',this)"><div class="nav-dot" style="background:var(--green)"></div>SEO</button>
+      <button class="nav-item" id="nav-kunder" onclick="showSection('kunder',this)"><div class="nav-dot" style="background:var(--amber)"></div>Kunder &amp; intäkter<span id="kunder-prick" class="kunder-prick" hidden></span></button>
       <button class="nav-item" onclick="showSection('kontext',this)"><div class="nav-dot" style="background:var(--blue)"></div>Kontext-hub</button>
     </div>
     <div class="nav-group">
@@ -1197,6 +1212,27 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
     <div id="seo-list" style="padding-bottom:72px"><div class="loading">Öppna vyn för att ladda…</div></div>
   </div>
 
+  <!-- KUNDER & INTÄKTER (Mäklargruvan) -->
+  <div class="section" id="sec-kunder">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Kunder &amp; intäkter</div>
+        <div class="page-sub">Betalande kontor i Mäklargruvan, månadsintäkt och en tidslinje över köp och uppsägningar &middot; demokonton räknas för sig</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="loadKunder(true)">&#8635; Uppdatera</button>
+      </div>
+    </div>
+
+    <div class="config-note" style="background:var(--amber-bg,rgba(214,158,46,0.08));border-color:rgba(214,158,46,0.3);color:var(--text2)">
+      <strong>Demokonton är inte kunder.</strong> Ett konto räknas som betalande först när det finns en prenumeration i Stripe. Demokonton skapas härifrån och passerar aldrig en betalning, så de redovisas separat som pipeline. Provperioder räknas inte som intäkt förrän de faktiskt debiterats.
+    </div>
+
+    <div id="kunder-stats" class="stats"></div>
+    <div id="kunder-status" style="font-size:11.5px;color:var(--text3);margin:0 0 14px"></div>
+    <div id="kunder-innehall" style="padding-bottom:72px"><div class="loading">Öppna vyn för att ladda…</div></div>
+  </div>
+
   <!-- KONTEXT-HUB (Claude-brygga) -->
   <div class="section" id="sec-kontext">
     <div class="topbar">
@@ -1340,7 +1376,8 @@ const FN = {
   // dör tyst. Webbläsaren har lösenordskakan, funktionen har den inte.
   // Samma skäl som att reviewBg anropas härifrån.
   seoScan:   '/.netlify/functions/seo-scan-background', // startar genomgången (202, svar via seoResult)
-  seoResult: '/.netlify/functions/seo-result'    // SEO: pollar bakgrundsjobbets status
+  seoResult: '/.netlify/functions/seo-result',   // SEO: pollar bakgrundsjobbets status
+  kundlage:  '/.netlify/functions/kundlage'      // Kunder & intäkter (proxy → pilot-repots API)
 };
 const GH_USER = 'Jimblo72';
 
@@ -2258,6 +2295,191 @@ function initIdeerPicker() {
 }
 
 // ── NAV ───────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════
+   KUNDER & INTÄKTER
+
+   Läser kundläget ur Mäklargruvan via proxyn (som bär admin-token; den når
+   aldrig hit). Visar tre saker:
+
+     · Vad som faktiskt kommer in — betalande kontor och månadsintäkt.
+     · Vem som är på väg bort — uppsagda betalar perioden ut, och där finns
+       fortfarande tid att agera. Det är den viktigaste raden på sidan.
+     · Demokontona för sig, som pipeline. De är inte kunder.
+
+   🔑 PINGEN. Jimmy ville bli notifierad vid köp, men i dashboarden och inte via
+   mejl. Lösningen är en prick i navigeringen när det finns händelser du inte
+   sett. Tidsstämpeln för "sist sedd" ligger i localStorage, så pricken följer
+   den här webbläsaren — vilket är rätt: det är DU som ska ha sett den, inte
+   någon server som ska hålla reda på det.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const KUNDER_SEDD_NYCKEL = 'kunder_sedda_tom';
+let kunderData = null;
+let kunderHamtas = false;
+
+function kunderSeddTom() {
+  try { return localStorage.getItem(KUNDER_SEDD_NYCKEL) || ''; } catch (e) { return ''; }
+}
+
+function kronor(n) {
+  if (n == null) return '–';
+  return Math.round(n).toLocaleString('sv-SE') + ' kr';
+}
+
+function kortDatum(iso) {
+  if (!iso) return '–';
+  try {
+    return new Date(iso).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+  } catch (e) { return '–'; }
+}
+
+function narSedan(iso) {
+  if (!iso) return '';
+  const dagar = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (dagar <= 0) return 'i dag';
+  if (dagar === 1) return 'i går';
+  if (dagar < 30) return dagar + ' dagar sedan';
+  return kortDatum(iso);
+}
+
+/* Bara köp och uppsägningar räknas som något att pinga om. En provperiod som
+   startar är inte en affär, och ett avslut har du redan sett som uppsägning. */
+const KUNDER_PING_TYPER = ['kop', 'uppsagning'];
+
+function uppdateraKunderPrick() {
+  const prick = document.getElementById('kunder-prick');
+  if (!prick) return;
+  const sedd = kunderSeddTom();
+  const nya = ((kunderData && kunderData.handelser) || [])
+    .filter(h => KUNDER_PING_TYPER.includes(h.typ) && (!sedd || h.skapad > sedd));
+  prick.hidden = nya.length === 0;
+  prick.title = nya.length ? nya.length + ' nya händelser' : '';
+}
+
+async function loadKunder(tvinga) {
+  if (kunderHamtas) return;
+  if (kunderData && !tvinga) { ritaKunder(); return; }
+  kunderHamtas = true;
+  const status = document.getElementById('kunder-status');
+  if (status) status.textContent = 'Hämtar från Mäklargruvan…';
+  try {
+    const r = await fetch(API.kundlage, { headers: { Accept: 'application/json' } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d && d.error ? d.error : 'Fel ' + r.status);
+    kunderData = d;
+    ritaKunder();
+    /* Markera som sett FÖRST efter att vyn ritats — annars nollas pricken av en
+       hämtning i bakgrunden som du aldrig tittade på. */
+    try {
+      const senaste = (d.handelser || []).filter(h => KUNDER_PING_TYPER.includes(h.typ))[0];
+      if (senaste) localStorage.setItem(KUNDER_SEDD_NYCKEL, senaste.skapad);
+    } catch (e) {}
+    uppdateraKunderPrick();
+  } catch (e) {
+    const el = document.getElementById('kunder-innehall');
+    if (el) el.innerHTML = '<div class="config-note">Kunde inte hämta kundläget: ' +
+      esc(String(e.message)) + '<br><br>Kräver <code>DEMO_ADMIN_TOKEN</code> i dashboardens Netlify-miljö, samma som demokontona använder.</div>';
+    if (status) status.textContent = '';
+  }
+  kunderHamtas = false;
+}
+
+function ritaKunder() {
+  const d = kunderData;
+  if (!d) return;
+  const b = d.betalande || {};
+  const demo = d.demo || {};
+
+  const stats = document.getElementById('kunder-stats');
+  if (stats) {
+    stats.innerHTML =
+      statKort('Betalande kontor', b.antalKontor || 0,
+        (b.platser || 0) + ' platser') +
+      statKort('Månadsintäkt', kronor(b.manadKr || 0),
+        'Årstakt ' + kronor(b.arstaktKr || 0)) +
+      statKort('På väg bort', b.pavagBortAntal || 0,
+        (b.pavagBortAntal ? '−' + kronor(b.pavagBortManadKr || 0) + '/mån' : 'inga uppsägningar')) +
+      statKort('Demokonton', demo.antal || 0, 'pipeline, ingen intäkt');
+  }
+
+  const status = document.getElementById('kunder-status');
+  if (status) {
+    status.textContent = 'Hämtat ' + new Date(d.hamtad).toLocaleTimeString('sv-SE',
+      { hour: '2-digit', minute: '2-digit' }) +
+      (b.provperioder ? ' · ' + b.provperioder + ' pågående provperiod' + (b.provperioder === 1 ? '' : 'er') : '');
+  }
+
+  const el = document.getElementById('kunder-innehall');
+  if (!el) return;
+
+  let html = '';
+
+  /* Har ingen köpt än ska sidan säga det rakt ut, inte visa tomma listor. Noll
+     är ett giltigt läge och ska gå att lita på. */
+  if (!(b.antalKontor || 0)) {
+    html += '<div class="config-note" style="margin-bottom:18px"><strong>Ingen betalande kund än.</strong> ' +
+      'Så fort någon genomför ett köp dyker det upp här, och en prick sätts i menyn till vänster. ' +
+      (demo.antal ? 'Just nu finns ' + demo.antal + ' demokonton igång.' : '') + '</div>';
+  }
+
+  if ((b.kontor || []).length) {
+    html += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text4);font-weight:600;margin:0 0 8px">Betalande kontor</div>';
+    html += (b.kontor || []).map(function (k) {
+      return '<div class="kh-rad' + (k.uppsagd ? ' ny' : '') + '">' +
+        '<span class="kh-typ ' + (k.uppsagd ? 'kh-upp">Säger upp' : 'kh-kop">Aktiv') + '</span>' +
+        '<span class="kh-kontor">' + esc(k.kontor) + '</span>' +
+        '<span class="kh-detalj">' + k.platser + ' platser · ' + kronor(k.manadKr) + '/mån' +
+          (k.fornyas ? ' · förnyas ' + kortDatum(k.fornyas) : '') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  const h = d.handelser || [];
+  html += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text4);font-weight:600;margin:22px 0 8px">Tidslinje</div>';
+  if (!h.length) {
+    html += '<div style="font-size:12.5px;color:var(--text3)">Inga händelser än. Tidslinjen fylls på när någon köper, säger upp eller avslutar.</div>';
+  } else {
+    const sedd = kunderSeddTom();
+    const etikett = { kop: ['kh-kop', 'Köp'], uppsagning: ['kh-upp', 'Uppsägning'],
+                      avslutad: ['kh-slut', 'Avslutad'], trial: ['kh-trial', 'Provperiod'] };
+    html += h.map(function (e) {
+      const et = etikett[e.typ] || ['kh-trial', e.typ];
+      const ny = KUNDER_PING_TYPER.includes(e.typ) && sedd && e.skapad > sedd;
+      return '<div class="kh-rad' + (ny ? ' ny' : '') + '">' +
+        '<span class="kh-typ ' + et[0] + '">' + et[1] + '</span>' +
+        '<span class="kh-kontor">' + esc(e.kontor) + '</span>' +
+        '<span class="kh-detalj">' +
+          (e.manadKr != null ? kronor(e.manadKr) + '/mån · ' : '') + narSedan(e.skapad) +
+        '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  if ((demo.kontor || []).length) {
+    html += '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text4);font-weight:600;margin:22px 0 8px">' +
+      'Demokonton (' + demo.antal + ')</div>' +
+      '<div style="font-size:12.5px;color:var(--text3);line-height:1.7">' +
+      demo.kontor.map(esc).join(' · ') + '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function statKort(etikett, varde, not) {
+  return '<div class="stat"><div class="stat-label">' + esc(etikett) + '</div>' +
+    '<div class="stat-value">' + esc(String(varde)) + '</div>' +
+    (not ? '<div class="stat-note">' + esc(String(not)) + '</div>' : '') + '</div>';
+}
+
+/* Hämta tyst vid sidladdning, bara för att kunna sätta pricken. Vyn ritas inte
+   förrän du öppnar den. */
+setTimeout(function () {
+  fetch(API.kundlage, { headers: { Accept: 'application/json' } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d) { kunderData = d; uppdateraKunderPrick(); } })
+    .catch(function () {});
+}, 2500);
+
 function showSection(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -2272,6 +2494,7 @@ function showSection(id, btn) {
   if (id === 'social' && !socialLoaded) loadSocial();
   if (id === 'seo' && !seoLoaded) loadSeo();
   if (id === 'kontext' && !contextLoaded) loadContext();
+  if (id === 'kunder') loadKunder();
 }
 function openApp(url) { if (url) window.open(url, '_blank'); }
 
