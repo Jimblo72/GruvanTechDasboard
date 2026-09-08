@@ -171,38 +171,55 @@ async function lasSitemap(url, djup = 0) {
 
 // ── PageSpeed ───────────────────────────────────────────────────────────────
 
+function tolkaPageSpeed(d, nyckel) {
+  const c = d.lighthouseResult.categories || {};
+  const a = d.lighthouseResult.audits || {};
+  const poang = k => (c[k] && c[k].score != null ? Math.round(c[k].score * 100) : null);
+  return {
+    prestanda: poang('performance'),
+    seo: poang('seo'),
+    tillganglighet: poang('accessibility'),
+    praxis: poang('best-practices'),
+    lcp: a['largest-contentful-paint']?.displayValue || null,
+    cls: a['cumulative-layout-shift']?.displayValue || null,
+    vikt: a['total-byte-weight']?.displayValue || null,
+    harNyckel: !!nyckel,
+  };
+}
+
 async function hamtaPageSpeed(url) {
   const nyckel = process.env.PAGESPEED_API_KEY;
   const q = new URLSearchParams({ url, strategy: 'mobile' });
   ['performance', 'seo', 'accessibility', 'best-practices'].forEach(c => q.append('category', c));
   if (nyckel) q.set('key', nyckel);
-  try {
-    // 60 s räckte inte i drift — PageSpeed kör en riktig Lighthouse-mätning på
-    // Googles servrar och tar regelmässigt längre än så för fyra kategorier.
-    // Vi sitter i en bakgrundsfunktion med 15 minuter, så snålheten köpte
-    // ingenting: den gav bara "aborted due to timeout" och en tom mätning.
-    const r = await hamta(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${q}`, { timeoutMs: 150000 });
-    const d = await r.json();
-    if (!d.lighthouseResult) {
-      // 429 utan nyckel är vanligt och betyder inte att sajten är trasig.
-      return { fel: d.error?.message?.slice(0, 160) || `HTTP ${r.status}`, harNyckel: !!nyckel };
+  const adress = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${q}`;
+
+  // Två saker har fällt den här mätningen i drift, båda utanför sajten:
+  // 1. 60 s räckte inte — PageSpeed kör en riktig Lighthouse-mätning på Googles
+  //    servrar och tar regelmässigt längre än så för fyra kategorier.
+  // 2. Lighthouse floppar då och då med "Lighthouse returned error: Something
+  //    went wrong" på en sida som mäts felfritt strax efteråt. maklargruvan.se
+  //    gav det felet i verktyget och 87/97/100/100 i PageSpeeds egen webbvy
+  //    några minuter senare.
+  // Båda är gratis att vara generös med: vi sitter i en bakgrundsfunktion med
+  // 15 minuters tak, och snålheten köpte bara en tom mätning.
+  let sistaFel = null;
+  for (let forsok = 1; forsok <= 2; forsok++) {
+    try {
+      const r = await hamta(adress, { timeoutMs: 150000 });
+      const d = await r.json();
+      if (d.lighthouseResult) return tolkaPageSpeed(d, nyckel);
+      sistaFel = d.error?.message?.slice(0, 160) || `HTTP ${r.status}`;
+    } catch (e) {
+      sistaFel = e.message;
     }
-    const c = d.lighthouseResult.categories || {};
-    const a = d.lighthouseResult.audits || {};
-    const poang = k => (c[k] && c[k].score != null ? Math.round(c[k].score * 100) : null);
-    return {
-      prestanda: poang('performance'),
-      seo: poang('seo'),
-      tillganglighet: poang('accessibility'),
-      praxis: poang('best-practices'),
-      lcp: a['largest-contentful-paint']?.displayValue || null,
-      cls: a['cumulative-layout-shift']?.displayValue || null,
-      vikt: a['total-byte-weight']?.displayValue || null,
-      harNyckel: !!nyckel,
-    };
-  } catch (e) {
-    return { fel: e.message, harNyckel: !!nyckel };
+    // Kvotfel läker inte på fem sekunder — det är en dygnsgräns, inte en flopp.
+    // (Utan nyckel är 429 dessutom normaltillståndet: den anonyma poolen delas
+    // av hela världen och är i praktiken alltid slut.)
+    if (/quota/i.test(sistaFel || '')) break;
+    if (forsok === 1) await new Promise(r => setTimeout(r, 5000));
   }
+  return { fel: sistaFel, harNyckel: !!nyckel };
 }
 
 // ── Search Console ──────────────────────────────────────────────────────────

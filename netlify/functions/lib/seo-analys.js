@@ -85,6 +85,20 @@ function system(sajt) {
     '- Bättre noll åtgärder än en åtgärd som bygger på en gissning.',
     '- Föreslå aldrig sökordsstoppning. Texten ska läsas av människor.',
     '- Påstå inget om trafik eller placeringar om Search Console-data saknas i underlaget.',
+    '- Föreslå aldrig åtgärder som handlar om mätningen i sig. Misslyckad PageSpeed eller',
+    '  saknad Search Console är brister i VÅRT verktyg, inte på sajten — nämn det i',
+    '  sammanfattningen i stället. Varje åtgärd ska vara något som ändras på webbplatsen.',
+    '',
+    'SÅ LÄSER DU SEARCH CONSOLE (position är den vanligaste felläsningen):',
+    '- "position" är genomsnittlig placering i resultatlistan och 1 är BÄST. Ungefär 1–10',
+    '  är sida ett, 11–20 sida två, och allt över 20 betyder att sidan i praktiken inte syns.',
+    '  Ett HÖGT tal är alltså ett DÅLIGT läge. Skriv aldrig att en hög position är bra.',
+    '- Noll klick vid position sämre än 10 är helt väntat och säger INGENTING om titeln',
+    '  eller beskrivningen. Dra slutsatser om klickfrekvens enbart för sökord som ligger på',
+    '  position 10 eller bättre. Ligger ordet längre ner är problemet placeringen, inte',
+    '  utseendet i resultatlistan.',
+    '- Enstaka visningar är brus. Bygg inga rekommendationer på sökord med färre än 50',
+    '  visningar i perioden — de säger inget om vad målgruppen faktiskt söker på.',
     '',
     'PRIORITERA efter förväntad effekt: saker som blockerar indexering först, sedan',
     'titlar och beskrivningar på sidor som redan får visningar, sedan innehåll, sist kosmetika.',
@@ -116,7 +130,8 @@ function bygguUnderlag(bild, diff) {
 
   if (bild.gsc && !bild.gsc.fel) {
     rader.push('', `SEARCH CONSOLE ${bild.gsc.period.fran}–${bild.gsc.period.till}: ${bild.gsc.summa.klick} klick, ${bild.gsc.summa.visningar} visningar`);
-    rader.push('Toppsökord (ord | klick | visningar | ctr% | position):');
+    // Legenden står här och inte bara i systemprompten: siffran misstolkas där den läses.
+    rader.push('Toppsökord (ord | klick | visningar | ctr% | position — position 1 = överst, högre tal = längre ner):');
     bild.gsc.sokord.slice(0, 25).forEach(s => rader.push(`  ${s.ord} | ${s.klick} | ${s.visningar} | ${s.ctr} | ${s.position}`));
     rader.push('Toppsidor:');
     bild.gsc.sidor.slice(0, 15).forEach(s => rader.push(`  ${s.sida} | ${s.klick} | ${s.visningar} | ${s.ctr} | ${s.position}`));
