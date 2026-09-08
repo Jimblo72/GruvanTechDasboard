@@ -177,7 +177,11 @@ async function hamtaPageSpeed(url) {
   ['performance', 'seo', 'accessibility', 'best-practices'].forEach(c => q.append('category', c));
   if (nyckel) q.set('key', nyckel);
   try {
-    const r = await hamta(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${q}`, { timeoutMs: 60000 });
+    // 60 s räckte inte i drift — PageSpeed kör en riktig Lighthouse-mätning på
+    // Googles servrar och tar regelmässigt längre än så för fyra kategorier.
+    // Vi sitter i en bakgrundsfunktion med 15 minuter, så snålheten köpte
+    // ingenting: den gav bara "aborted due to timeout" och en tom mätning.
+    const r = await hamta(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${q}`, { timeoutMs: 150000 });
     const d = await r.json();
     if (!d.lighthouseResult) {
       // 429 utan nyckel är vanligt och betyder inte att sajten är trasig.
