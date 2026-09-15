@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Åre Strand — Gruvan Tech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..600;1,8..60,400..500&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Samma tema som andelsforsaljning.html — variablerna är kopierade, klasserna egna. */
+select { color-scheme: dark; }
+select option { background: #1e2837; color: #e8e2d2; }
+select option:checked { background: #8b634b; color: #fff; }
+:root {
+  --bg:#1d2a3e;--bg-elev:#27374e;--bg-elev-2:#31435d;
+  --text:#f6efe0;--text-dim:#c2b8a1;--text-mute:#897f6d;
+  --line:rgba(236,228,211,0.10);--line-2:rgba(236,228,211,0.18);
+  --accent:#c89070;--accent-2:#9c6a3e;
+  --signal:#94d2ac;--warn:#d4a056;--danger:#d48a7a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter Tight',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;font-weight:300;}
+.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:36px 28px;}
+.header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:22px;}
+.section-marker{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:8px;}
+.h1{font-family:'Source Serif 4',serif;font-size:34px;font-weight:400;line-height:1.1;}
+.h1 em{font-style:italic;color:var(--accent);}
+.sub{color:var(--text-dim);font-size:13px;margin-top:6px;max-width:640px;}
+.header-meta{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--text-mute);text-align:right;line-height:1.8;}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line-2);margin-bottom:26px;flex-wrap:wrap;}
+.tab{padding:10px 18px;background:none;border:none;color:var(--text-mute);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.section{display:none;}
+.section.active{display:block;}
+.grid-2{display:grid;grid-template-columns:400px 1fr;gap:26px;align-items:flex-start;}
+@media(max-width:960px){.grid-2{grid-template-columns:1fr;}}
+.card{background:var(--bg-elev);border:1px solid var(--line);border-radius:4px;padding:22px 24px;margin-bottom:18px;}
+.card-title{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+.form-group{margin-bottom:14px;}
+.form-label{display:block;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-mute);margin-bottom:5px;}
+.form-select,.form-input,.form-textarea{width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--line-2);border-radius:3px;color:var(--text);font-family:'Inter Tight',sans-serif;font-size:13px;}
+.form-textarea{min-height:70px;resize:vertical;}
+.form-help{font-size:11px;color:var(--text-mute);margin-top:4px;line-height:1.5;}
+.info{background:var(--bg);border:1px solid var(--line);border-radius:3px;padding:10px 14px;margin-top:8px;}
+.info-row{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:11px;border-bottom:1px solid var(--line);}
+.info-row:last-child{border-bottom:none;}
+.info-label{color:var(--text-mute);}
+.info-val{color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;text-align:right;}
+.btn{padding:10px 16px;background:var(--bg-elev-2);border:1px solid var(--line-2);border-radius:3px;color:var(--text);font-family:'Inter Tight',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;}
+.btn:hover{border-color:var(--accent);}
+.btn:disabled{opacity:.55;cursor:default;}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:500;width:100%;}
+.btn-primary:hover{background:var(--accent-2);}
+.btn-claude{background:#6b5aad;border-color:#6b5aad;color:#fff;width:100%;margin-top:8px;}
+.btn-claude:hover{background:#8070c0;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.api-panel{background:var(--bg-elev-2);border:1px solid var(--line);border-radius:3px;padding:12px;margin-top:8px;display:none;}
+#apiKeyStatus{font-size:11px;color:var(--signal);margin-top:6px;min-height:14px;}
+.big{font-family:'Source Serif 4',serif;font-size:40px;font-weight:400;line-height:1.05;}
+.big small{font-size:14px;color:var(--text-mute);font-family:'Inter Tight',sans-serif;}
+.range{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);margin-top:6px;}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.chip{background:var(--bg);border:1px solid var(--line-2);border-radius:3px;padding:8px 12px;min-width:120px;}
+.chip .k{font-size:10px;color:var(--text-mute);letter-spacing:0.08em;text-transform:uppercase;}
+.chip .v{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);margin-top:2px;}
+.warn{background:rgba(212,160,86,.12);border:1px solid rgba(212,160,86,.4);color:var(--warn);padding:8px 12px;border-radius:3px;font-size:12px;margin-top:12px;}
+.note{font-size:11px;color:var(--text-mute);line-height:1.6;margin-top:14px;padding-top:10px;border-top:1px solid var(--line);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-mute);text-align:left;padding:8px 8px;border-bottom:1px solid var(--line-2);font-weight:400;}
+td{padding:7px 8px;border-bottom:1px solid var(--line);color:var(--text-dim);vertical-align:top;}
+td.num,th.num{text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;}
+tr.n1 td{color:var(--text);}
+.niva{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;padding:1px 5px;border-radius:2px;border:1px solid var(--line-2);color:var(--text-mute);}
+.niva.n1{border-color:var(--signal);color:var(--signal);}
+.niva.n2{border-color:var(--accent);color:var(--accent);}
+.table-wrap{overflow-x:auto;}
+/* Resultat (samma klasser som andels-core.js renderResult förväntar sig) */
+.results{background:var(--bg-elev);border:1px solid var(--line);border-radius:4px;overflow:hidden;}
+.results-empty{padding:60px 30px;text-align:center;color:var(--text-mute);font-size:13px;font-style:italic;}
+.result-tabs{display:flex;border-bottom:1px solid var(--line);background:var(--bg);}
+.result-tab{flex:1;padding:14px;color:var(--text-mute);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:none;background:none;font-family:'JetBrains Mono',monospace;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.result-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--bg-elev);}
+.result-content{padding:24px 28px;}
+.result-text{font-family:'Source Serif 4',serif;font-size:15px;line-height:1.75;color:var(--text);white-space:pre-wrap;}
+.result-text-short{font-family:'Inter Tight',sans-serif;font-size:14px;line-height:1.6;}
+.result-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-mute);letter-spacing:0.08em;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;}
+.copy-btn{background:none;border:1px solid var(--line-2);color:var(--text-dim);padding:4px 10px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;border-radius:2px;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+.length-badge{display:inline-block;padding:1px 6px;border-radius:2px;font-size:9px;letter-spacing:0.08em;margin-left:6px;}
+.length-ok{background:rgba(148,210,172,0.15);color:var(--signal);}
+.length-warn{background:rgba(212,160,86,0.15);color:var(--warn);}
+/* Bilder */
+.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;}
+.img-card{aspect-ratio:4/3;background:var(--bg);border:1px solid var(--line);border-radius:4px;overflow:hidden;position:relative;}
+.img-card img{width:100%;height:100%;object-fit:cover;display:block;}
+.img-card .nm{position:absolute;left:0;right:0;bottom:0;padding:5px 8px;background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:10px;color:#fff;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--text-mute);margin-right:6px;}
+.status-dot.on{background:var(--signal);box-shadow:0 0 8px rgba(148,210,172,.5);}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+.stat-msg{font-size:12px;color:var(--text-dim);margin-top:8px;min-height:16px;}
+.pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;padding:1px 6px;border-radius:2px;background:var(--bg);border:1px solid var(--line-2);color:var(--text-mute);margin-left:4px;}
+::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="header">
+    <div>
+      <div class="section-marker">§ 05 / ÅRE STRAND · HOLIDAY CLUB</div>
+      <h1 class="h1">Åre <em>Strand</em></h1>
+      <div class="sub">Riktvärde ur slutpriser, jämförelser per enhet och vecka, annonstext med Mäklargruvans språkregler.</div>
+    </div>
+    <div class="header-meta" id="headerMeta">65 ENHETER · 3 FÖRENINGAR<br>BRF ÅRE SJÖ 1 · 7 · 10</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('objekt', this)">Objekt &amp; värdering</button>
+    <button class="tab" onclick="showTab('text', this)">Text</button>
+    <button class="tab" onclick="showTab('bilder', this)">Bilder</button>
+    <button class="tab" onclick="showTab('statistik', this)">Statistik</button>
+  </div>
+
+  <!-- OBJEKT & VÄRDERING -->
+  <div class="section active" id="sec-objekt">
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-title">Objekt</div>
+          <div class="form-group">
+            <label class="form-label" for="enhet">Enhet</label>
+            <select class="form-select" id="enhet" onchange="valdEnhet()"></select>
+            <div class="form-help">1A2 = hus 1, trapphus A, lägenhet 2. 19:1 = strandvilla 19, lägenhet 1.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="vecka">Vecka</label>
+            <select class="form-select" id="vecka" onchange="valdVecka()"></select>
+            <div class="form-help" id="veckaHelp"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="paket">Andelsform</label>
+            <select class="form-select" id="paket" onchange="valdVecka()">
+              <option value="vecka">En fast vecka</option>
+              <option value="paket">Paket, var sjätte vecka (hus 6, HC Villas)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="utgangspris">Utgångspris (kr)</label>
+            <input class="form-input" id="utgangspris" type="text" placeholder="fylls i från värderingen" oninput="prisAndratForHand=true">
+            <div class="form-help">Förslaget kommer från värderingen till höger. Skriv över om du vill sätta ett eget.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="usp">Säljpunkter för just detta objekt (valfritt)</label>
+            <textarea class="form-textarea" id="usp" placeholder="t.ex. nyrenoverat kök 2024, hörnläge, husdjur tillåtet"></textarea>
+          </div>
+          <div class="info" id="objInfo"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card" id="vardCard">
+          <div class="card-title">Riktvärde</div>
+          <div id="vardOut"><div class="results-empty">Välj enhet och vecka.</div></div>
+          <div class="note">Riktvärdet är statistiskt: en modell över alla enveckasaffärer (bas per lägenhetstyp × veckofaktor × årstrend) vägd mot de direkta jämförelserna nedan. Intervallet ±25 % fångar två tredjedelar av affärerna i underlaget. Det är ett underlag för prissättning, inte en värdering i fastighetsmäklarlagens mening.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Jämförelser</div>
+          <div class="table-wrap"><div id="jfOut"><div class="results-empty">Inga jämförelser än.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEXT -->
+  <div class="section" id="sec-text">
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-title">Generera</div>
+          <div class="info" id="textObjInfo" style="margin-bottom:14px"></div>
+          <button class="btn btn-primary" onclick="genereraMall()">Generera text — mall-version</button>
+          <button class="btn btn-claude" id="claudeBtn" onclick="genereraClaude()">✨ Generera med Claude AI</button>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn" style="font-size:11px;padding:6px 10px" onclick="showApiPanel()">API-nyckel</button>
+            <span id="apiKeyStatus"></span>
+          </div>
+          <div class="api-panel" id="apiPanel">
+            <label class="form-label" for="apiKeyInput">Claude API-nyckel (sparas bara i den här webbläsaren)</label>
+            <input class="form-input" id="apiKeyInput" type="password" placeholder="sk-ant-…">
+            <button class="btn" style="margin-top:8px" onclick="saveApiKey()">Spara</button>
+          </div>
+          <div class="note">Samma språkregler som Mäklargruvans textmodul (js/andels-core.js). Ramen är Åre Strands: fast vecka i namngiven enhet, Holiday Clubs service, RCI, strandläget. Avgiften anges i texten, priset aldrig.</div>
+        </div>
+      </div>
+      <div>
+        <div class="results" id="results"><div class="results-empty">Ingen text genererad än.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILDER -->
+  <div class="section" id="sec-bilder">
+    <div class="card">
+      <div class="card-title">Bildmapp</div>
+      <div class="btn-row">
+        <span><span class="status-dot" id="bbDot"></span><span id="bbText">Ingen mapp ansluten</span></span>
+        <button class="btn" onclick="bbValjMapp()">Anslut mapp…</button>
+        <button class="btn" id="bbReconnect" style="display:none" onclick="bbAteranslut()">Återanslut</button>
+        <span class="mono" id="bbPath"></span>
+      </div>
+      <div class="form-help" style="margin-top:8px">Peka på <span class="mono">D:\PeakFast\Föreningar\Åre Strand Blandat</span> — undermapparna heter som enheterna (1A2, 19_1). Bilder med "Exempelbild" i namnet är typbilder som får återanvändas inom samma hus. Mappen läses direkt från disk, inget laddas upp.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="bbTitle">Bilder</div>
+      <div id="bbGrid"><div class="results-empty">Anslut mappen och välj en enhet.</div></div>
+    </div>
+  </div>
+
+  <!-- STATISTIK -->
+  <div class="section" id="sec-statistik">
+    <div class="card">
+      <div class="card-title">Underlag</div>
+      <div class="btn-row">
+        <button class="btn" id="hemnetBtn" onclick="hamtaHemnet()">Hämta nya slutpriser från Hemnet</button>
+        <button class="btn" onclick="visaEgenForm()">Lägg till egen affär</button>
+        <button class="btn" onclick="visaKlistra()">Klistra in från Hemnet</button>
+        <button class="btn" onclick="laddaNerDatafil()">Ladda ner datafil (JS)</button>
+        <button class="btn" onclick="rensaLokalt()" title="Tar bort lokalt tillagda rader">Rensa lokala tillägg</button>
+      </div>
+      <div class="stat-msg" id="statMsg"></div>
+      <div id="egenForm" style="display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+        <div class="btn-row">
+          <select class="form-select" id="egEnhet" style="width:130px"></select>
+          <input class="form-input" id="egVecka" type="number" min="1" max="52" placeholder="vecka" style="width:90px">
+          <input class="form-input" id="egDatum" type="date" style="width:160px">
+          <input class="form-input" id="egPris" type="text" placeholder="slutpris kr" style="width:130px">
+          <input class="form-input" id="egUtg" type="text" placeholder="utgångspris kr" style="width:140px">
+          <input class="form-input" id="egMaklare" type="text" value="PeakFast" style="width:140px">
+          <button class="btn btn-primary" style="width:auto" onclick="sparaEgen()">Spara</button>
+        </div>
+      </div>
+      <div id="klistraForm" style="display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+        <div class="form-help" style="margin-bottom:6px">Reservväg när Hemnet inte går att läsa automatiskt: <a href="https://www.hemnet.se/salda/lagenhet/are-kommun/are-strand" target="_blank" rel="noopener" style="color:var(--accent)">öppna slutprissidan</a>, markera allt (Ctrl+A), kopiera (Ctrl+C) och klistra in här. Sida 2 och 3 på samma sätt om du vill ha allt.</div>
+        <textarea class="form-textarea" id="klistraText" placeholder="Klistra in sidtexten från Hemnet här…" style="min-height:120px"></textarea>
+        <div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" style="width:auto" onclick="tolkaKlistrat()">Tolka inklistrad text</button></div>
+      </div>
+      <div class="note" id="modellInfo"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Medianpris per typ och veckoklass <span class="pill">enveckasaffärer, alla år</span></div>
+      <div class="table-wrap" id="matris"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Alla affärer <span class="pill" id="affCount"></span></div>
+      <div class="btn-row" style="margin-bottom:10px">
+        <select class="form-select" id="fTyp" style="width:200px" onchange="renderAffarer()"><option value="">Alla typer</option></select>
+        <select class="form-select" id="fEnhet" style="width:140px" onchange="renderAffarer()"><option value="">Alla enheter</option></select>
+      </div>
+      <div class="table-wrap" id="affTable"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/andels-core.js"></script>
+<script src="js/data/arestrand-katalog.js"></script>
+<script src="js/data/arestrand-affarer.js"></script>
+<script src="js/arestrand-vardering.js"></script>
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════════════════════════
+   arestrand.html — Åre Strand Holiday Club.
+   Kärnan (språkregler, Claude-anrop, resultat, veckoinfo) i js/andels-core.js.
+   Datamodell i js/data/, värderingen i js/arestrand-vardering.js.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const LS_EXTRA = 'as_affarer_extra';      // lokalt tillagda affärer (Hemnet-knappen + egna)
+let prisAndratForHand = false;
+let senasteVardering = null;
+
+// ── Data ─────────────────────────────────────────────────────────────────
+function lasExtra() { try { const a = JSON.parse(localStorage.getItem(LS_EXTRA) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function skrivExtra(a) { localStorage.setItem(LS_EXTRA, JSON.stringify(a)); }
+function nyckel(r) { return r.listingId ? 'id:' + r.listingId : [r.enhet, (r.veckor || []).join('+'), r.pris, (r.datum || '').slice(0, 7)].join('|'); }
+function allaAffarer() {
+  const bas = ARESTRAND_AFFARER.slice();
+  const sedd = new Set(bas.map(nyckel));
+  for (const r of lasExtra()) { const k = nyckel(r); if (!sedd.has(k)) { sedd.add(k); bas.push(r); } }
+  return bas;
+}
+function enhetAv(id) { return ARESTRAND_KATALOG.find(k => k.id === id) || null; }
+function kr(n) { return n == null ? '–' : Math.round(n).toLocaleString('sv-SE') + ' kr'; }
+function esc(s) { return String(s == null ? '' : s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+function veckolabel(v) { const w = WEEK_INFO[v]; return w ? w.label : 'Vecka ' + v; }
+function veckousp(v) { const w = WEEK_INFO[v]; return w ? w.usp : ''; }
+
+// ── Flikar ───────────────────────────────────────────────────────────────
+function showTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'bilder') bbVisaEnhet();
+  if (id === 'statistik') renderStatistik();
+  if (id === 'text') renderTextInfo();
+}
+
+// ── Formulär ─────────────────────────────────────────────────────────────
+function fyllEnheter() {
+  const sel = document.getElementById('enhet');
+  const grupper = {};
+  for (const k of ARESTRAND_KATALOG) {
+    const g = k.slag === 'villa' ? 'Strandvillor 13–23 (Brf Åre Sjö 1)' : `Hus ${k.hus} (${k.brf})`;
+    (grupper[g] = grupper[g] || []).push(k);
+  }
+  sel.innerHTML = '<option value="">Välj enhet…</option>' + Object.entries(grupper).map(([g, list]) =>
+    `<optgroup label="${esc(g)}">` + list.map(k => `<option value="${esc(k.id)}">${esc(k.id)} · ${k.boarea} kvm · ${k.rum} rok</option>`).join('') + '</optgroup>').join('');
+  const eg = document.getElementById('egEnhet');
+  eg.innerHTML = ARESTRAND_KATALOG.map(k => `<option value="${esc(k.id)}">${esc(k.id)}</option>`).join('');
+  const vs = document.getElementById('vecka');
+  vs.innerHTML = Array.from({ length: 52 }, (_, i) => i + 1).map(v => `<option value="${v}">v.${v} — ${esc(veckolabel(v))}</option>`).join('');
+  vs.value = '9';
+}
+
+function valdEnhet() {
+  const k = enhetAv(document.getElementById('enhet').value);
+  const p = document.getElementById('paket');
+  if (k && k.hus === 6) p.value = 'paket'; else p.value = 'vecka';
+  prisAndratForHand = false;
+  valdVecka();
+  bbVisaEnhet();
+}
+
+function valdVecka() {
+  const k = enhetAv(document.getElementById('enhet').value);
+  const v = parseInt(document.getElementById('vecka').value, 10);
+  document.getElementById('veckaHelp').textContent = veckousp(v);
+  const info = document.getElementById('objInfo');
+  if (!k) { info.innerHTML = ''; document.getElementById('vardOut').innerHTML = '<div class="results-empty">Välj enhet och vecka.</div>'; document.getElementById('jfOut').innerHTML = ''; return; }
+  const paket = document.getElementById('paket').value === 'paket';
+  info.innerHTML = [
+    ['Förening', k.brf], ['Typ', k.typnamn], ['Boarea', k.boarea + ' kvm'], ['Rum', `${k.rum} rok · ${k.sovrum} sovrum · ${k.baddar} bäddar`],
+    ['Byggår', k.byggar], ['Avgift', paket ? 'ca 1 100–1 200 kr/mån (paket)' : (k.avgift ? k.avgift + ' kr/mån' : 'okänd — kontrollera')],
+    ['Bildmapp', k.bildmapp], ['Faktakälla', k.kalla === 'pdf' ? 'objektsbeskrivning' : 'Hemnet']
+  ].map(([a, b]) => `<div class="info-row"><span class="info-label">${esc(a)}</span><span class="info-val">${esc(b)}</span></div>`).join('');
+  vardera(k, v, paket);
+  renderTextInfo();
+}
+
+// ── Värdering ────────────────────────────────────────────────────────────
+function vardera(k, v, paket) {
+  const aff = allaAffarer();
+  const out = document.getElementById('vardOut'), jf = document.getElementById('jfOut');
+  if (paket) {
+    const p = aff.filter(r => r.typ === 'paket_1_6').sort((a, b) => b.datum.localeCompare(a.datum));
+    const senaste = p.slice(0, 5);
+    const med = senaste.length ? senaste.map(r => r.pris).sort((a, b) => a - b)[Math.floor(senaste.length / 2)] : null;
+    senasteVardering = { varde: med, utgangspris: med ? AV.avrunda5000(med) : null, paket: true };
+    out.innerHTML = med == null ? '<div class="results-empty">Inga paketaffärer i underlaget.</div>' : `
+      <div class="big">${kr(med)} <small>median av de ${senaste.length} senaste paketaffärerna</small></div>
+      <div class="range">spann ${kr(Math.min(...senaste.map(r => r.pris)))} – ${kr(Math.max(...senaste.map(r => r.pris)))}</div>
+      <div class="warn">Paketen (var sjätte vecka, hus 6) värderas inte med veckomodellen — de är för få (${p.length} affärer) och prissätts som helhet. Kontrollera vilka veckor som ingår i paketet innan pris sätts.</div>`;
+    jf.innerHTML = tabellJf(p.map(r => ({ ...r, niva: r.enhet === k.id ? 1 : 3, perVecka: r.pris })));
+    if (!prisAndratForHand && med) document.getElementById('utgangspris').value = AV.avrunda5000(med).toLocaleString('sv-SE');
+    return;
+  }
+  const r = AV.vardera(aff, k.id, k.typ, v);
+  senasteVardering = r;
+  const n1 = r.jamforelser.filter(j => j.niva === 1).length, n2 = r.jamforelser.filter(j => j.niva === 2).length, n3 = r.jamforelser.filter(j => j.niva === 3).length;
+  out.innerHTML = `
+    <div class="big">${kr(r.varde)} <small>riktvärde ${new Date().getFullYear()}</small></div>
+    <div class="range">intervall ${kr(r.lag)} – ${kr(r.hog)} · rekommenderat utgångspris ${kr(r.utgangspris)}</div>
+    <div class="chips">
+      <div class="chip"><div class="k">Modellvärde</div><div class="v">${kr(r.modell)}</div></div>
+      <div class="chip"><div class="k">Jämförelsevärde</div><div class="v">${kr(r.jamforelsevarde)}</div></div>
+      <div class="chip"><div class="k">Vikt jämförelser</div><div class="v">${Math.round(r.andelJamforelser * 100)} %</div></div>
+      <div class="chip"><div class="k">Veckoklass</div><div class="v">${esc(r.klassNamn)}</div></div>
+      <div class="chip"><div class="k">Jämförelser</div><div class="v">${n1} samma enhet+vecka · ${n2} samma typ+vecka · ${n3} samma typ+klass</div></div>
+    </div>
+    ${r.tunt ? '<div class="warn">Tunt underlag: färre än tre direkta jämförelser. Riktvärdet vilar mest på modellen — visa intervallet, inte siffran.</div>' : ''}`;
+  jf.innerHTML = tabellJf(r.jamforelser);
+  if (!prisAndratForHand && r.utgangspris) document.getElementById('utgangspris').value = r.utgangspris.toLocaleString('sv-SE');
+}
+
+function tabellJf(list) {
+  if (!list.length) return '<div class="results-empty">Inga jämförbara affärer.</div>';
+  const nivaText = { 1: 'enhet+vecka', 2: 'typ+vecka', 3: 'typ+klass', 4: 'enhet' };
+  return `<table><thead><tr><th>Nivå</th><th>Datum</th><th>Objekt</th><th>Veckor</th><th class="num">Slutpris</th><th>Mäklare</th><th>Källa</th></tr></thead><tbody>` +
+    list.map(j => `<tr class="n${j.niva}"><td><span class="niva n${j.niva}">${nivaText[j.niva]}</span></td><td class="mono">${esc(j.datum)}</td><td>${esc(j.objekt)}</td><td class="mono">${(j.veckor || []).join(', ')}</td><td class="num">${kr(j.pris)}${j.veckor && j.veckor.length > 1 ? ' <span class="pill">' + j.veckor.length + ' veckor</span>' : ''}</td><td>${esc(j.maklare)}</td><td class="mono">${esc(j.kalla)}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+// ── Text ─────────────────────────────────────────────────────────────────
+function renderTextInfo() {
+  const k = enhetAv(document.getElementById('enhet').value);
+  const v = parseInt(document.getElementById('vecka').value, 10);
+  const el = document.getElementById('textObjInfo');
+  if (!k) { el.innerHTML = '<div class="info-row"><span class="info-label">Objekt</span><span class="info-val">välj enhet under Objekt &amp; värdering</span></div>'; return; }
+  el.innerHTML = [['Objekt', `Åre Strand ${k.id}, v.${v}`], ['Typ', k.typnamn], ['Vecka', veckolabel(v)], ['Utgångspris', document.getElementById('utgangspris').value || '–']]
+    .map(([a, b]) => `<div class="info-row"><span class="info-label">${esc(a)}</span><span class="info-val">${esc(b)}</span></div>`).join('');
+}
+
+function faktaFor(k, v) {
+  const paket = document.getElementById('paket').value === 'paket';
+  const usp = document.getElementById('usp').value.trim();
+  return {
+    objekt: `Åre Strand ${k.id}`, hus: k.slag === 'villa' ? `strandvilla ${k.hus} (parhus)` : `hus ${k.hus}`, brf: k.brf,
+    boarea: k.boarea, rum: k.rum, sovrum: k.sovrum, baddar: k.baddar, byggar: k.byggar,
+    planlosning: k.planlosning, hustext: k.hustext,
+    vecka: v, veckolabel: veckolabel(v), veckousp: veckousp(v),
+    avgift: paket ? null : k.avgift, paket, usp,
+  };
+}
+
+function byggStrandPrompt(f) {
+  const ram = f.paket
+    ? `Andelsform: paket om var sjätte vecka, 8–9 veckor per år fördelade över alla årstider enligt rullande schema (HC Villas, hus 6). Avgift ca 1 100–1 200 kr/mån.`
+    : `Andelsform: en fast vecka per år, vecka ${f.vecka} (${f.veckolabel}). Avgift ${f.avgift ? f.avgift + ' kr/mån' : 'enligt förening'} som täcker drift, städning, byte av sänglinne och handdukar.`;
+  return `Du skriver säljtexter för andelsveckor på Åre Strand Holiday Club i Åre. Direkt konkret svenska, inga högtravande fraser. Förbjudna ord: erbjuder, inbjuder, unikt, fantastisk, exklusivt. Inled INTE med Välkommen.${SPRAKREGLER}
+
+Skriv exakt två texter ÅTSKILDA med texten ---KORT---:
+1. LÅNG text (300-430 ord) — informativ, beskrivande, faktabaserad. Avsluta med avgiften.
+2. KORT text (260-300 tecken EXAKT) — SÄLJANDE krok. Måste väcka intresse på 2 sekunder. Använd:
+   - Kort konkret öppning (vilken vecka + Åre Strand, max 5 ord, gärna utropstecken)
+   - Lägenhetens nyckelfakta (storlek, rum, bäddar)
+   - Veckan med nummer
+   - En specifik säljpunkt som gör att läsaren vill veta mer
+   Skriv som en rubrik som lockar — inte som en bostadsbeskrivning.
+
+Objekt: ${f.objekt}, ${f.hus}, ${f.brf}
+Storlek: ${f.boarea} kvm, ${f.rum} rum och kök, ${f.sovrum} sovrum, ${f.baddar} bäddar, byggt ${f.byggar}
+Planlösning: ${f.planlosning}
+Huset: ${f.hustext}
+${ram}
+Vecka: ${f.veckolabel}${f.veckousp ? ' — ' + f.veckousp : ''}
+${f.usp ? 'Säljpunkter för just detta objekt: ' + f.usp + '\n' : ''}Läge och service: intill Åresjöns strand, några minuters promenad till hotellet Holiday Club med restaurang, spa, bad, gym och shopping; medlemmar har rabatt på hotellets aktiviteter. Via gångbron från hotellet når man tågstationen och Åre by med butiker och restauranger; från torget tar bergbanan dig upp i skidsystemet. Fullt möblerad och utrustad, bäddat och rena handdukar vid ankomst. Andelen kan nyttjas själv, hyras ut eller anslutas till RCI för byte till boende på andra orter.
+Nämn ALDRIG utgångspris eller pris i texten. Bytesdag och husdjur nämns bara om det står ovan.
+SKRIV BARA TEXTERNA, inga rubriker eller förklaringar.`;
+}
+
+function genereraClaude() {
+  const k = enhetAv(document.getElementById('enhet').value);
+  if (!k) { alert('Välj enhet först.'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey) { showApiPanel(); document.getElementById('apiKeyStatus').textContent = 'Ange API-nyckel'; return; }
+  const v = parseInt(document.getElementById('vecka').value, 10);
+  const btn = document.getElementById('claudeBtn'); btn.disabled = true; btn.textContent = 'Genererar… (30–60 s)';
+  anropaClaudeTvaTexter(byggStrandPrompt(faktaFor(k, v)), apiKey).then(res => {
+    renderResult(res);
+    document.getElementById('apiKeyStatus').textContent = '✓ Genererad med Claude AI';
+    setTimeout(() => document.getElementById('apiKeyStatus').textContent = '', 3000);
+  }).catch(e => alert('Claude API-fel: ' + e.message))
+    .finally(() => { btn.disabled = false; btn.textContent = '✨ Generera med Claude AI'; });
+}
+
+/* Mall-version utan AI: samma disposition som objektsbeskrivningarna. */
+function genereraMall() {
+  const k = enhetAv(document.getElementById('enhet').value);
+  if (!k) { alert('Välj enhet först.'); return; }
+  const v = parseInt(document.getElementById('vecka').value, 10);
+  const f = faktaFor(k, v);
+  const stycken = [];
+  stycken.push(f.paket
+    ? `Känn dig som hemma i Åre. Med den här andelen disponerar du lägenheten var sjätte vecka, 8–9 veckor om året fördelade över alla årstider enligt ett rullande schema.`
+    : `Tillbringa vecka ${f.vecka} i Åre, år efter år. ${f.veckousp ? f.veckousp + '.' : ''} Andelen ger dig en fast vecka i ${k.slag === 'villa' ? 'en strandvilla' : 'en lägenhet'} vid Åresjöns strand, fullt möblerad och utrustad.`);
+  stycken.push(`Bostaden är på ${f.boarea} kvm med ${f.rum} rum och kök, ${f.sovrum} sovrum och ${f.baddar} bäddar: ${f.planlosning}. ${f.hustext.charAt(0).toUpperCase() + f.hustext.slice(1)}.`);
+  if (f.usp) stycken.push(f.usp.charAt(0).toUpperCase() + f.usp.slice(1) + '.');
+  stycken.push(`Några minuters promenad bort ligger hotellet Holiday Club med restaurang, spa, bad, gym och shopping, och som medlem i föreningen har du rabatt på hotellets aktiviteter. Via gångbron från hotellet når du tågstationen och Åre by, och från torget tar bergbanan dig upp i skidsystemet.`);
+  stycken.push(`Du anländer till bäddade sängar och rena handdukar. Andelen kan nyttjas av dig själv, hyras ut eller anslutas till RCI och bytas mot boende på andra orter.`);
+  stycken.push(f.paket ? `Avgift: ca 1 100–1 200 kr/mån.` : `Avgift: ${f.avgift ? f.avgift + ' kr/mån' : 'enligt föreningen'}, vilket täcker drift, städning och byte av sänglinne och handdukar.`);
+  const longText = stycken.join('\n\n');
+  let shortText = `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år, bäddat och klart vid ankomst, Holiday Clubs spa och restaurang intill. ${f.usp ? f.usp.split(',')[0] + '.' : 'Anslut till RCI och byt till andra orter.'}`;
+  if (shortText.length > 300) shortText = shortText.slice(0, 297) + '...';
+  renderResult({ longText, shortText, charsShort: shortText.length });
+}
+
+// ── Bilder (File System Access, mappen läses direkt från disk) ───────────
+const BB_DB = 'arestrand_bildbank';
+let bbRoot = null;
+function bbOpenDb() { return new Promise((res, rej) => { const q = indexedDB.open(BB_DB, 1); q.onupgradeneeded = () => q.result.createObjectStore('s'); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+async function bbSpara(h) { const db = await bbOpenDb(); await new Promise((res, rej) => { const t = db.transaction('s', 'readwrite'); t.objectStore('s').put(h, 'root'); t.oncomplete = res; t.onerror = () => rej(t.error); }); }
+async function bbLas() { const db = await bbOpenDb(); return new Promise((res) => { const t = db.transaction('s', 'readonly'); const q = t.objectStore('s').get('root'); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); }
+async function bbValjMapp() {
+  if (!window.showDirectoryPicker) { alert('Webbläsaren saknar stöd för att läsa mappar (kräver Chrome/Edge).'); return; }
+  try { bbRoot = await window.showDirectoryPicker({ mode: 'read' }); await bbSpara(bbRoot); bbStatus(); bbVisaEnhet(); } catch (e) { /* avbrutet */ }
+}
+async function bbAteranslut() { if (!bbRoot) return; const p = await bbRoot.requestPermission({ mode: 'read' }); if (p === 'granted') { bbStatus(); bbVisaEnhet(); } }
+async function bbInit() {
+  try { bbRoot = await bbLas(); } catch (e) { bbRoot = null; }
+  if (bbRoot) { const p = await bbRoot.queryPermission({ mode: 'read' }); document.getElementById('bbReconnect').style.display = p === 'granted' ? 'none' : ''; }
+  bbStatus();
+}
+function bbStatus() {
+  document.getElementById('bbDot').className = 'status-dot' + (bbRoot ? ' on' : '');
+  document.getElementById('bbText').textContent = bbRoot ? 'Ansluten' : 'Ingen mapp ansluten';
+  document.getElementById('bbPath').textContent = bbRoot ? bbRoot.name : '';
+}
+async function bbVisaEnhet() {
+  const k = enhetAv(document.getElementById('enhet').value);
+  const grid = document.getElementById('bbGrid');
+  document.getElementById('bbTitle').textContent = k ? `Bilder · ${k.id} (mapp ${k.bildmapp})` : 'Bilder';
+  if (!bbRoot || !k) { grid.innerHTML = `<div class="results-empty">${!bbRoot ? 'Anslut mappen först.' : 'Välj en enhet.'}</div>`; return; }
+  try {
+    if ((await bbRoot.queryPermission({ mode: 'read' })) !== 'granted') { grid.innerHTML = '<div class="results-empty">Klicka Återanslut för att ge läsrättighet igen.</div>'; document.getElementById('bbReconnect').style.display = ''; return; }
+    let dir; try { dir = await bbRoot.getDirectoryHandle(k.bildmapp); } catch (e) { grid.innerHTML = `<div class="results-empty">Ingen mapp "${esc(k.bildmapp)}" i ${esc(bbRoot.name)}.</div>`; return; }
+    const filer = [];
+    for await (const [namn, h] of dir.entries()) if (h.kind === 'file' && /\.(jpe?g|png|webp)$/i.test(namn)) filer.push({ namn, h });
+    filer.sort((a, b) => a.namn.localeCompare(b.namn, 'sv'));
+    if (!filer.length) { grid.innerHTML = '<div class="results-empty">Mappen är tom.</div>'; return; }
+    grid.innerHTML = '<div class="img-grid">' + filer.map((f, i) => `<div class="img-card"><img id="bbimg${i}" alt=""><div class="nm">${esc(f.namn)}</div></div>`).join('') + '</div>';
+    for (let i = 0; i < filer.length; i++) { const file = await filer[i].h.getFile(); const el = document.getElementById('bbimg' + i); if (el) el.src = URL.createObjectURL(file); }
+  } catch (e) { grid.innerHTML = `<div class="results-empty">Kunde inte läsa mappen: ${esc(e.message)}</div>`; }
+}
+
+// ── Statistik ────────────────────────────────────────────────────────────
+function renderStatistik() {
+  const aff = allaAffarer();
+  const m = AV.skatta(aff);
+  document.getElementById('affCount').textContent = aff.length + ' rader · ' + lasExtra().length + ' lokala';
+  document.getElementById('modellInfo').innerHTML = `Modell skattad på ${m.n} enveckasaffärer: medianfel ${Math.round(m.medianfel * 100)} %, ${Math.round(m.inom25 * 100)} % inom ±25 %, årstrend ${((m.arsfaktor - 1) * 100).toFixed(1)} %/år. Veckofaktor mot jul/nyår: ` +
+    AV.KLASSER.slice(1).map(k => `${k} ${m.vecko[k].toFixed(2)}`).join(' · ') + '.';
+  // matris
+  const cell = {};
+  for (const r of aff) if (r.veckor && r.veckor.length === 1 && AV.TYPER.includes(r.typ)) { const key = r.typ + '|' + AV.veckoklass(r.veckor[0]); (cell[key] = cell[key] || []).push(r.pris); }
+  document.getElementById('matris').innerHTML = '<table><thead><tr><th>Typ</th>' + AV.KLASSER.map(k => `<th class="num">${esc(AV.KLASS_NAMN[k].split(' (')[0])}</th>`).join('') + '</tr></thead><tbody>' +
+    AV.TYPER.map(t => `<tr><td>${esc((ARESTRAND_TYPER[t] || {}).namn || t)}</td>` + AV.KLASSER.map(k => { const a = (cell[t + '|' + k] || []).sort((x, y) => x - y); return `<td class="num">${a.length ? Math.round(a[Math.floor(a.length / 2)] / 1000) + ' tkr <span class="pill">' + a.length + '</span>' : '–'}</td>`; }).join('') + '</tr>').join('') + '</tbody></table>';
+  // filter
+  const fT = document.getElementById('fTyp'), fE = document.getElementById('fEnhet');
+  if (fT.options.length === 1) { for (const t of [...AV.TYPER, 'paket_1_6']) fT.add(new Option((ARESTRAND_TYPER[t] || { namn: 'Paket 1/6' }).namn, t)); }
+  if (fE.options.length === 1) { for (const e of [...new Set(aff.map(r => r.enhet))].sort()) fE.add(new Option(e, e)); }
+  renderAffarer();
+}
+function renderAffarer() {
+  const fT = document.getElementById('fTyp').value, fE = document.getElementById('fEnhet').value;
+  const aff = allaAffarer().filter(r => (!fT || r.typ === fT) && (!fE || r.enhet === fE)).sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
+  document.getElementById('affTable').innerHTML = '<table><thead><tr><th>Datum</th><th>Objekt</th><th>Enhet</th><th>Veckor</th><th>Typ</th><th class="num">Boarea</th><th class="num">Slutpris</th><th>Mäklare</th><th>Källa</th></tr></thead><tbody>' +
+    aff.map(r => `<tr><td class="mono">${esc(r.datum)}</td><td>${esc(r.objekt)}</td><td class="mono">${esc(r.enhet)}</td><td class="mono">${(r.veckor || []).join(', ')}</td><td class="mono">${esc(r.typ || '')}</td><td class="num">${r.boarea || ''}</td><td class="num">${kr(r.pris)}</td><td>${esc(r.maklare)}</td><td class="mono">${esc(r.kalla)}</td></tr>`).join('') + '</tbody></table>';
+}
+
+async function hamtaHemnet() {
+  const btn = document.getElementById('hemnetBtn'), msg = document.getElementById('statMsg');
+  btn.disabled = true; btn.textContent = 'Läser Hemnet…'; msg.textContent = '';
+  try {
+    const r = await fetch('/.netlify/functions/hemnet-slutpriser');
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
+    const nya = laggTillRader(d.rader);
+    msg.innerHTML = `Hemnet visar ${d.totalt ?? d.antal} slutpriser, ${d.antal} lästa. <strong>${nya.length} nya</strong> lades till${nya.length ? ': ' + nya.map(n => esc(n.objekt) + ' ' + kr(n.pris)).join(', ') : ''}.`;
+    renderStatistik(); valdVecka();
+  } catch (e) {
+    msg.innerHTML = `<span style="color:var(--danger)">Kunde inte läsa Hemnet automatiskt: ${esc(e.message)}.</span> Använd reservvägen nedan: öppna sidan, kopiera allt och klistra in.`;
+    visaKlistra(true);
+  } finally { btn.disabled = false; btn.textContent = 'Hämta nya slutpriser från Hemnet'; }
+}
+
+function visaKlistra(oppna) { const f = document.getElementById('klistraForm'); f.style.display = (oppna || f.style.display === 'none') ? '' : 'none'; }
+
+/* Tolkar Hemnets sidtext (markera allt + kopiera). Varje affär ligger som ett
+   block: "Såld 4 sep. 2026" / adress / område / "119 m²" / "4 rum" / "396 kr/mån"
+   / … / "Slutpris 90 000 kr" / … / mäklare. Samma normalisering av enhet och
+   vecka som Netlify-funktionen och analysskriptet. */
+function tolkaHemnetText(text) {
+  const MAN = { jan: 1, feb: 2, mar: 3, apr: 4, maj: 5, jun: 6, jul: 7, aug: 8, sep: 9, okt: 10, nov: 11, dec: 12 };
+  const rader = text.split(/\r?\n/).map(r => r.trim()).filter(Boolean);
+  const ut = [];
+  for (let i = 0; i < rader.length; i++) {
+    const m = rader[i].match(/^Såld\s+(\d{1,2})\s+([a-zåäö]{3})\.?\s+(\d{4})$/i);
+    if (!m) continue;
+    const datum = `${m[3]}-${String(MAN[m[2].toLowerCase()] || 0).padStart(2, '0')}-${String(m[1]).padStart(2, '0')}`;
+    const objekt = rader[i + 1] || '';
+    let boarea = null, rum = null, avgift = null, pris = null, maklare = '';
+    for (let j = i + 2; j < Math.min(i + 16, rader.length); j++) {
+      const r = rader[j];
+      if (/^Såld\s/.test(r)) break;
+      let x;
+      if ((x = r.match(/^(\d+)(?:\+\d+)?\s*m²$/))) boarea = parseInt(x[1], 10);
+      else if ((x = r.match(/^(\d+(?:,\d)?)\s*rum$/))) rum = parseFloat(x[1].replace(',', '.'));
+      else if ((x = r.match(/^([\d\s\u00a0]+)\s*kr\/mån$/))) avgift = parseInt(x[1].replace(/[\s\u00a0]/g, ''), 10);
+      else if ((x = r.match(/^Slutpris\s+([\d\s\u00a0]+)\s*kr$/))) pris = parseInt(x[1].replace(/[\s\u00a0]/g, ''), 10);
+      else if (pris != null && !/kr\/m²|^[+±-]\s*\d+\s*%$|^Maps Data|^Balkong$|^Uteplats$/.test(r) && !/^\d/.test(r)) { maklare = r; break; }
+    }
+    if (!pris || !objekt) continue;
+    ut.push({ datum, objekt, ...tolkaObjekt(objekt), boarea, rum, avgift, pris, maklare, kalla: 'hemnet' });
+  }
+  return ut;
+}
+function tolkaObjekt(adress) {
+  let n = String(adress || '').replace(/Åre\s*Strand/i, '').trim().replace(/^[\s,–-]+/, '');
+  let enhet = null, m;
+  if ((m = n.match(/^(\d{1,2})\s*:\s*0?(\d)\b/))) enhet = `${parseInt(m[1], 10)}:${m[2]}`;
+  else if ((m = n.match(/^(\d)\s*:?\s*([AB])\s*:?\s*(\d)\b/i))) enhet = `${m[1]}${m[2].toUpperCase()}${m[3]}`;
+  else if ((m = n.match(/^(\d)\s*\/?\s*([ABC])\b/i))) enhet = `${m[1]}${m[2].toUpperCase()}?`;
+  else if ((m = n.match(/^(\d{1,2})\b/))) enhet = `${m[1]}?`;
+  const veckor = new Set();
+  for (const x of n.matchAll(/(?:[vV]\.?\s*|[vV]ecka\s*|[vV]\s)(\d{1,2})/g)) veckor.add(parseInt(x[1], 10));
+  for (const x of n.matchAll(/&\s*[vV]?\.?\s*(\d{1,2})\b/g)) veckor.add(parseInt(x[1], 10));
+  return { enhet, veckor: [...veckor].filter(v => v >= 1 && v <= 53).sort((a, b) => a - b) };
+}
+/* Lägger till rader som inte redan finns. Returnerar de nya. Används av både
+   Hemnet-knappen och klistra-in-vägen. */
+function laggTillRader(rader) {
+  const kanda = new Set(allaAffarer().map(nyckel));
+  const extra = lasExtra(), nya = [];
+  for (const row of rader) {
+    if (!row.pris || row.pris > 1500000 || (row.enhet || '').startsWith('8')) continue;   // hela lägenheter
+    const rad = { ...row, typ: AV.typAvBoarea(row.boarea, row.avgift), kalla: 'hemnet' };
+    const k = nyckel(rad), k2 = [rad.enhet, (rad.veckor || []).join('+'), rad.pris, (rad.datum || '').slice(0, 7)].join('|');
+    if (kanda.has(k) || kanda.has(k2)) continue;
+    kanda.add(k); kanda.add(k2); nya.push(rad); extra.push(rad);
+  }
+  skrivExtra(extra);
+  return nya;
+}
+function tolkaKlistrat() {
+  const text = document.getElementById('klistraText').value;
+  const rader = tolkaHemnetText(text);
+  const nya = laggTillRader(rader);
+  document.getElementById('statMsg').innerHTML = rader.length
+    ? `${rader.length} affärer tolkade ur texten, <strong>${nya.length} nya</strong> lades till${nya.length ? ': ' + nya.map(n => esc(n.objekt) + ' ' + kr(n.pris)).join(', ') : ''}.`
+    : '<span style="color:var(--danger)">Hittade inga affärer i texten.</span> Kopiera hela sidan (Ctrl+A, Ctrl+C) från Hemnets slutprissida.';
+  if (nya.length) document.getElementById('klistraText').value = '';
+  renderStatistik(); valdVecka();
+}
+
+function visaEgenForm() { const f = document.getElementById('egenForm'); f.style.display = f.style.display === 'none' ? '' : 'none'; if (!document.getElementById('egDatum').value) document.getElementById('egDatum').value = new Date().toISOString().slice(0, 10); }
+function tal(s) { const m = String(s || '').replace(/\s/g, '').match(/\d+/); return m ? parseInt(m[0], 10) : null; }
+function sparaEgen() {
+  const enhet = document.getElementById('egEnhet').value, v = parseInt(document.getElementById('egVecka').value, 10), datum = document.getElementById('egDatum').value;
+  const pris = tal(document.getElementById('egPris').value), utg = tal(document.getElementById('egUtg').value), maklare = document.getElementById('egMaklare').value.trim() || 'PeakFast';
+  if (!enhet || !v || !datum || !pris) { alert('Enhet, vecka, datum och slutpris krävs.'); return; }
+  const k = enhetAv(enhet);
+  const rad = { datum, enhet, veckor: [v], typ: k.hus === 6 && utg && utg > 400000 ? 'paket_1_6' : k.typ, boarea: k.boarea, avgift: k.avgift, pris, utgangspris: utg, maklare, kalla: 'egen', objekt: `Åre Strand ${enhet} v.${v}` };
+  const extra = lasExtra(); extra.push(rad); skrivExtra(extra);
+  document.getElementById('statMsg').textContent = `Sparad: ${rad.objekt} ${kr(pris)}. Ladda ner datafilen och lägg den i repot så följer den med till alla webbläsare.`;
+  document.getElementById('egPris').value = ''; document.getElementById('egUtg').value = '';
+  renderStatistik(); valdVecka();
+}
+function laddaNerDatafil() {
+  const aff = allaAffarer().sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
+  const js = `// GENERERAD ${new Date().toISOString().slice(0, 10)} från arestrand.html (Ladda ner datafil).\n// Sålda andelar på Åre Strand. Append-only. Ersätt js/data/arestrand-affarer.js med den här filen.\nconst ARESTRAND_AFFARER = ` + JSON.stringify(aff).replace(/\},\{/g, '},\n{') + ';\n';
+  const blob = new Blob(['\ufeff' + js], { type: 'text/javascript;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'arestrand-affarer.js'; a.click();
+}
+function rensaLokalt() { if (!confirm('Ta bort alla lokalt tillagda affärer (Hemnet-hämtningar och egna)?')) return; localStorage.removeItem(LS_EXTRA); renderStatistik(); valdVecka(); }
+
+// ── Start ────────────────────────────────────────────────────────────────
+fyllEnheter();
+AV.skatta(allaAffarer());
+valdVecka();
+bbInit();
+document.getElementById('headerMeta').innerHTML = `${ARESTRAND_KATALOG.length} ENHETER · 3 FÖRENINGAR<br>${allaAffarer().length} AFFÄRER I UNDERLAGET`;
+</script>
+</body>
+</html>

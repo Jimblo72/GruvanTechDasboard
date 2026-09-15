@@ -2,7 +2,7 @@ datum;enhet;veckor;typ;boarea;avgift;pris;maklare;kalla;objekt
 2026-09-04;20:2;29;villa_118;119;396;90000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 20:2 V29
 2026-07-08;1A2;14;lgh_74_81;76;330;70000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 1A2 vecka 14
 2026-07-03;3A4;17;lgh_74_81;81;329;60000;Fastighetsbyrån Åre;hemnet;Åre Strand 3A4 Vecka 17
-2026-06-03;6A4;;paket_1_6;81;1168;500000;PeakFast;hemnet;Åre strand 6A4
+2026-06-03;6A4;;paket_1_6;81;1168;500000;PeakFast;hemnet+mspecs;Åre strand 6A4
 2026-05-26;5B4;52;lgh_53_59;57;296;100000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 5B4 v52
 2026-05-15;5B3;;lgh_53_59;58;305;5000;Hometown Fastighetsmäkleri;hemnet;Åre Strand, 5B3
 2026-05-14;19:1;29;villa_118;118;395;75000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 19:1 vecka 29
@@ -12,9 +12,10 @@ datum;enhet;veckor;typ;boarea;avgift;pris;maklare;kalla;objekt
 2026-03-20;1A2;16;lgh_74_81;76;321;120000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 1A2 vecka 16
 2026-03-14;14:1;12;lgh_90_95;95;385;125000;Hometown Fastighetsmäkleri;hemnet;Åre strand 14:1 vecka 12
 2026-03-13;6B3;11;lgh_74_81;78;346;125000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 6B3 V11
+2026-03-09;23:1;9;villa_118;118;;300000;PeakFast;mspecs;Åre strand 23:1 v.9
 2026-03-05;7A1;15;lgh_74_81;74;308;50000;Fastighetsbyrån Åre;hemnet;Åre Strand 7A1, Vecka 15
 2026-03-04;19:1;39;villa_118;118;390;50000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 19:1 vecka 39
-2026-03-02;20:1;14;villa_118;119;388;250000;PeakFast;hemnet;Åre strand 20:1 vecka 14
+2026-03-02;20:1;14;villa_118;119;388;250000;PeakFast;hemnet+mspecs;Åre strand 20:1 vecka 14
 2026-03-02;1B3;52;lgh_74_81;76;329;150000;Fastighetsbyrån Åre;hemnet;Åre Strand 1B3, vecka 52
 2026-02-27;21:2;15;villa_118;118;400;160000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 21:2 vecka 15
 2026-02-27;7B4;8;lgh_53_59;53;261;115000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 7B4 V8
@@ -22,6 +23,7 @@ datum;enhet;veckor;typ;boarea;avgift;pris;maklare;kalla;objekt
 2026-02-09;5A2;7;lgh_53_59;59;304;80000;Fastighetsbyrån Åre;hemnet;Åre strand 5A2 v7
 2026-01-23;19:1;31;villa_118;118;;125000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 19:1 V31
 2026-01-21;1B4;1;lgh_63;63;305;130000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 1B4 vecka 1
+2026-01-20;7A2;1;lgh_53_59;53;;100000;PeakFast;mspecs;Åre strand 7A2 v.1
 2026-01-02;2A3;;lgh_74_81;76;355;130000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 2A3
 2025-11-14;14:2;6;lgh_90_95;95;;150000;HusmanHagberg Åre;hh;Åre strand 14:2 v.6
 2025-10-23;2B4;1;lgh_63;63;;125000;HusmanHagberg Åre;hh;Åre strand 2B4 v.1

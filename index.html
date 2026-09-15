@@ -661,6 +661,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       <button class="nav-item" data-sec="verktyg" onclick="showSection('verktyg',this)"><div class="nav-dot" style="background:var(--accent)"></div>PeakFast-verktyg</button>
       <button class="nav-item" data-sec="tomt" onclick="showSection('tomt',this)"><div class="nav-dot" style="background:var(--accent)"></div>Tomtgränsritare</button>
       <button class="nav-item" data-sec="andels" onclick="showSection('andels',this)"><div class="nav-dot" style="background:var(--accent)"></div>Andelsförsäljning</button>
+      <button class="nav-item" data-sec="arestrand" onclick="showSection('arestrand',this)"><div class="nav-dot" style="background:var(--accent)"></div>Åre Strand</button>
       <button class="nav-item" onclick="openApp('https://maklargruvan-peakfast.netlify.app/mallverkstad.html')"><div class="nav-dot" style="background:var(--accent)"></div>Mallverkstaden ↗</button>
     </div>
   </nav>
@@ -1050,6 +1051,15 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
         <div id="ideas-out-t_andels" style="margin-top:10px"></div>
       </div>
 
+      <div class="app-card c-accent" style="cursor:default">
+        <div class="card-top"><div class="app-icon" style="background:var(--accent-glow);color:var(--accent)">ÅS</div><span class="badge b-active">Webbverktyg</span></div>
+        <div class="app-name">Åre Strand</div>
+        <div class="app-desc">Värdering och annonstext för andelsveckor på Åre Strand Holiday Club.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:11px;border-top:1px solid var(--border)">
+          <button class="btn btn-accent" style="font-size:10.5px;padding:5px 11px" onclick="openTool('arestrand')">▶ Öppna</button>
+        </div>
+      </div>
+
       <div class="app-card c-amber" style="cursor:default">
         <div class="card-top"><div class="app-icon" style="background:var(--amber-bg);color:var(--amber)">Of</div><span class="badge b-active">Webbverktyg</span></div>
         <div class="app-name">Offertgenerator</div>
@@ -1109,6 +1119,12 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
   <div class="section" id="sec-andels">
     <div class="topbar"><div><div class="page-title">Andelsförsäljning</div><div class="page-sub">Annonstext- och skyltgenerator för andelsförsäljning</div></div></div>
     <iframe src="andelsforsaljning.html" title="Andelsförsäljning" style="width:100%;height:calc(100vh - 150px);min-height:620px;border:0;border-radius:14px;background:#f7f5f0"></iframe>
+  </div>
+
+  <!-- ÅRE STRAND -->
+  <div class="section" id="sec-arestrand">
+    <div class="topbar"><div><div class="page-title">Åre Strand</div><div class="page-sub">Värdering ur slutpriser och annonstext för andelsveckor på Holiday Club</div></div></div>
+    <iframe src="arestrand.html" title="Åre Strand" style="width:100%;height:calc(100vh - 150px);min-height:620px;border:0;border-radius:14px;background:#1d2a3e"></iframe>
   </div>
 
   <!-- MAIL-HUB -->
@@ -1833,6 +1849,17 @@ const APPS = {
     planned: [
       { t: 'Mallbibliotek', d: 'Fler färdiga text- och skyltmallar per objekttyp och säsong' },
       { t: 'Bulk-export', d: 'Generera texter för hela objektlistan i ett svep' },
+    ],
+    links: []
+  },
+  t_arestrand: {
+    icon: 'ÅS', iconStyle: 'background:var(--accent-glow);color:#c8854a',
+    title: 'Åre Strand', subtitle: 'PeakFast-verktyg · webbverktyg',
+    status: 'active',
+    about: 'Syskon till andelsförsäljningen för Åre Strand Holiday Club: riktvärde per enhet och vecka ur 130+ slutpriser (HusmanHagberg, Hemnet, Mspecs), jämförelselista, annonstext med Mäklargruvans språkregler, Hemnet-avläsning med en knapp. Delar kärnan js/andels-core.js med andelsförsäljningen.',
+    planned: [
+      { t: 'Skylt och Mspecs-paket', d: 'Samma export som andelsförsäljningen har' },
+      { t: 'Veckovis prisfaktor', d: 'Påskveckan och v.51/52 särskilt när underlaget räcker' },
     ],
     links: []
   },

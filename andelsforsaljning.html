@@ -662,6 +662,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 </div>
 
 
+<script src="js/andels-core.js"></script>
 <script>
 const APT_DATA = {"av1-50": {"name": "Åre Village 1 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "Brf Åre Village 1", "brf_avgift": 1602, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 903, 908, 913 (C)", "sort": 1}, "av2-50": {"name": "Åre Village 2 · 50 kvm", "area": "Åre", "size_sqm": 50, "size_label": "50 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4 bäddar", "extras": "balkong med utsikt över Åresjön", "brf": "Brf Åre Village 2", "brf_avgift": 1653, "stad_0_6": 1281, "stad_7_11": 1619, "stad_12": 2050, "stad_jul_nyar": 2428.5, "lgh_nr": "Lgh 917, 922, 927 (C)", "sort": 2}, "av1-83": {"name": "Åre Village 1 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 904, 909, 914 (D)", "sort": 3}, "av2-83": {"name": "Åre Village 2 · 83 kvm", "area": "Åre", "size_sqm": 83, "size_label": "83 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 918, 923, 928 (D)", "sort": 4}, "av1-85": {"name": "Åre Village 1 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 5}, "av2-85": {"name": "Åre Village 2 · 85 kvm", "area": "Åre", "size_sqm": 85, "size_label": "85 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 6}, "av1-87": {"name": "Åre Village 1 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 1", "brf_avgift": 3172, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 901-912 (A/B/E)", "sort": 7}, "av2-87": {"name": "Åre Village 2 · 87 kvm", "area": "Åre", "size_sqm": 87, "size_label": "87 kvm", "rooms": "3 rum och kök", "bedrooms": "2-3 sovrum", "bed_count": "8 bäddar", "extras": "balkong med utsikt över Åresjön, två badrum, bastu", "brf": "Brf Åre Village 2", "brf_avgift": 3265, "stad_0_6": 1966, "stad_7_11": 2435, "stad_12": 3146, "stad_jul_nyar": 3652.5, "lgh_nr": "Lgh 915-926 (A/B/E)", "sort": 8}, "snotorget-45": {"name": "Snötorget · 45 kvm", "area": "Sälen", "size_sqm": 45, "size_label": "45 kvm", "rooms": "2 rum och kök", "bedrooms": "1 sovrum", "bed_count": "4-5 bäddar", "extras": "modern planlösning", "brf": "Brf Snötorget", "brf_avgift": 2315, "stad_0_6": 1343, "stad_7_11": 1695, "stad_12": 2148, "stad_jul_nyar": 2542.5, "lgh_nr": "Våning 2: 1B, 1C, 1D", "sort": 10}, "snotorget-85": {"name": "Snötorget · 85 kvm", "area": "Sälen", "size_sqm": 85, "size_label": "85 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "6-8 bäddar", "extras": "modern planlösning", "brf": "Brf Snötorget", "brf_avgift": 3125, "stad_0_6": 2030, "stad_7_11": 2519, "stad_12": 3237, "stad_jul_nyar": 3778.5, "lgh_nr": "Våning 1-2: 2A-3D", "sort": 11}, "timmerbyn-1-46": {"name": "Timmerbyn 1 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 1", "brf_avgift": 2376, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 106-110C", "sort": 20}, "timmerbyn-1-100": {"name": "Timmerbyn 1 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 1", "brf_avgift": 4135, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 106-110A", "sort": 21}, "timmerbyn-2-46": {"name": "Timmerbyn 2 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 2", "brf_avgift": 2449, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 111-114C", "sort": 22}, "timmerbyn-2-100": {"name": "Timmerbyn 2 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 2", "brf_avgift": 4463, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 111-114B", "sort": 23}, "timmerbyn-3-46": {"name": "Timmerbyn 3 · 46 kvm", "area": "Sälen", "size_sqm": 46, "size_label": "46 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "5 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 3", "brf_avgift": 2131, "stad_0_6": 1566, "stad_7_11": 1919, "stad_12": 2506, "stad_jul_nyar": 2878.5, "lgh_nr": "Lgh 148C, 151-153C", "sort": 24}, "timmerbyn-3-100": {"name": "Timmerbyn 3 · 100 kvm", "area": "Sälen", "size_sqm": 100, "size_label": "100 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 3", "brf_avgift": 3864, "stad_0_6": 2672, "stad_7_11": 3161, "stad_12": 4275, "stad_jul_nyar": 4741.5, "lgh_nr": "Lgh 148A, 151-153A", "sort": 25}, "timmerbyn-4-54": {"name": "Timmerbyn 4 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 4", "brf_avgift": 2380, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 115-116C, 120-121C", "sort": 26}, "timmerbyn-4-113": {"name": "Timmerbyn 4 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 4", "brf_avgift": 4140, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 115-116A, 120-121B", "sort": 27}, "timmerbyn-5-54": {"name": "Timmerbyn 5 · 54 kvm", "area": "Sälen", "size_sqm": 54, "size_label": "54 kvm", "rooms": "3 rum och kök", "bedrooms": "2 sovrum", "bed_count": "6 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 5", "brf_avgift": 2303, "stad_0_6": 1630, "stad_7_11": 1983, "stad_12": 2607, "stad_jul_nyar": 2974.5, "lgh_nr": "Lgh 117-118C", "sort": 28}, "timmerbyn-5-113": {"name": "Timmerbyn 5 · 113 kvm", "area": "Sälen", "size_sqm": 113, "size_label": "113 kvm", "rooms": "4 rum och kök", "bedrooms": "3 sovrum", "bed_count": "8-10 bäddar", "extras": "bastu, parkering", "brf": "Brf Timmerbyn 5", "brf_avgift": 4444, "stad_0_6": 2796, "stad_7_11": 3285, "stad_12": 4473, "stad_jul_nyar": 4927.5, "lgh_nr": "Lgh 117-118A", "sort": 29}, "sorgardarna-80": {"name": "Sörgårdarna SAK2 · 80 kvm", "area": "Vemdalen", "size_sqm": 80, "size_label": "80 kvm", "rooms": "5 rum och kök", "bedrooms": "4 sovrum", "bed_count": "8 bäddar", "extras": "bastu", "brf": "Brf Sörgårdarna SAK 2", "brf_avgift": 2200, "stad_0_6": 2583, "stad_7_11": 3072, "stad_12": 4132, "stad_jul_nyar": 4608, "lgh_nr": "BRF Sörgårdarna SAK2 (4 sovrum)", "sort": 40}};
 
@@ -827,84 +828,6 @@ function sortByMspecsUploadOrder(files) {
   } catch(e) { console.warn('Kunde inte ladda apt-overrides:', e); }
 })();
 
-// ── VECKOR — kategorier och USP per destination ───────────────
-const WEEK_INFO = {
-  // JUL & NYÅR — högsäsong med 1,5× BRF
-  51:{ type:'jul',    label:'Julvecka',         usp:'Julmagi i fjällen — snösäkra spår, värmande eldar och vintermys' },
-  52:{ type:'nyar',   label:'Nyårsvecka',       usp:'Fira nyår med fjällvy och fyrverkerier över byn' },
-  1: { type:'nyar',   label:'Nyårsvecka',       usp:'Nyårsfirande och trettondagsledigt — lugn vecka efter julruschen' },
-
-  // EFTERJUL — uppbyggande säsong
-  2: { type:'efterjul', label:'Vintervecka',    usp:'Lugn vecka med stabilt skidföre och korta liftköer' },
-  3: { type:'efterjul', label:'Vintervecka',    usp:'Prisvärd snösäker vecka i fjällen' },
-  4: { type:'efterjul', label:'Vintervecka',    usp:'Stabilt vinterföre och få besökare' },
-  5: { type:'efterjul', label:'Vintervecka',    usp:'Bästa skidföret är här — strax före sportlovstider' },
-  6: { type:'efterjul', label:'Vintervecka',    usp:'Stabilt skidföre inför sportlovsperioden' },
-
-  // SPORTLOV — högsäsong, regional
-  7: { type:'sportlov', region:'Norrland',                  label:'Sportlov v.7',  usp:'Sportlovsvecka för Norrland — fjällen i full säsong' },
-  8: { type:'sportlov', region:'Mellansverige',             label:'Sportlov v.8',  usp:'Sportlovsvecka för Mellansverige — en av årets mest eftertraktade veckor' },
-  9: { type:'sportlov', region:'Stockholm/Uppland',         label:'Sportlov v.9',  usp:'Sportlovsvecka för Stockholm — fullt pistsystem och pulserande by' },
-  10:{ type:'sportlov', region:'Skåne/Halland/Blekinge',    label:'Sportlov v.10', usp:'Sportlovsvecka för södra Sverige — snöfest i fjällen' },
-
-  // SENVINTER — fullt pistsystem, sol
-  11:{ type:'senvinter', label:'Senvinter',     usp:'Lugn vecka efter sportlovet — fullt pistsystem och solljus' },
-  12:{ type:'senvinter', label:'Senvinter',     usp:'Marssol över fjällen — perfekt skidvecka' },
-  13:{ type:'senvinter', label:'Senvinter',     usp:'Solskidning med långa dagar och stabilt snödjup' },
-
-  // VÅRVINTER / PÅSK — sol, värme och bra snö
-  14:{ type:'varvinter', label:'Vårvintervecka',                       usp:'Vårvinter med långa solljusa skiddagar' },
-  15:{ type:'varvinter', label:'Vårvintervecka (kan vara påsk)',       usp:'Vårvinter i fjällen — påsken infaller ofta här' },
-  16:{ type:'varvinter', label:'Vårvintervecka (kan vara påsk)',       usp:'Säsongens sista snöveckor med vårens första värme' },
-  17:{ type:'varvinter', label:'Säsongsavslutning',                    usp:'Bland säsongens sista skidveckor — sol, värme och snö' },
-  18:{ type:'varvinter', label:'Säsongsavslutning',                    usp:'Sista skidveckan innan sommarsäsongen tar vid' },
-
-  // SERVICE / MELLANSÄSONG
-  19:{ type:'service',   label:'Servicevecka' },
-  20:{ type:'service',   label:'Servicevecka' },
-
-  // FÖRSOMMAR
-  21:{ type:'forsommar', label:'Försommar',     usp:'Försommar i fjällen — vandring, fågelliv och ljusa nätter' },
-  22:{ type:'forsommar', label:'Försommar',     usp:'Försommar med långa kvällar och blommande fjäll' },
-  23:{ type:'forsommar', label:'Försommar',     usp:'Försommar med vandringsleder och fiske i fjällsjöar' },
-  24:{ type:'forsommar', label:'Försommar',     usp:'Försommar med midsommarmagi i sikte' },
-  25:{ type:'midsommar', label:'Midsommarvecka', usp:'Midsommar med fjällvy, ljusa nätter och fjälltradition' },
-
-  // SOMMAR — peak
-  26:{ type:'sommar',    label:'Sommarvecka',   usp:'Sommar i fjällen — bad i fjällsjöar, vandring och cykling' },
-  27:{ type:'sommar',    label:'Sommarvecka',   usp:'Högsommar — vandring, cykling och fjällaktiviteter' },
-  28:{ type:'sommar',    label:'Sommar – peak', usp:'Bland Sveriges mest populära fjällsommarveckor' },
-  29:{ type:'sommar',    label:'Sommar – peak', usp:'Peak sommarvecka — vandring, paddling, cykel och fiske' },
-  30:{ type:'sommar',    label:'Sommar – peak', usp:'Peak sommarvecka — semesterhögtid i fjällen' },
-  31:{ type:'sommar',    label:'Sommar – peak', usp:'Peak sommarvecka — fjällvyer i sitt bästa skick' },
-  32:{ type:'sommar',    label:'Sommar – peak', usp:'Sista sommarpeak-veckan innan skolstart' },
-
-  // SENSOMMAR / TIDIG HÖST
-  33:{ type:'sensommar', label:'Sensommar',     usp:'Sensommar med varma dagar och lugnare fjäll' },
-  34:{ type:'sensommar', label:'Sensommar',     usp:'Lugn sensommarvecka — bär, svamp och vandring' },
-  35:{ type:'sensommar', label:'Sensommar',     usp:'Sensommar med första höstfärgerna' },
-
-  // HÖST
-  36:{ type:'host',      label:'Höst',          usp:'Färgsprakande höst i fjällen — bär, svamp och vandring' },
-  37:{ type:'host',      label:'Höst',          usp:'Höst med klar luft och magiska solnedgångar' },
-  38:{ type:'host',      label:'Höst',          usp:'Höstvecka för ren fjällupplevelse i lugn miljö' },
-  39:{ type:'host',      label:'Höst',          usp:'Höst med fjällens vackraste färgprakt' },
-  40:{ type:'host',      label:'Höst',          usp:'Sen höst — fjällro och ren luft' },
-  41:{ type:'host',      label:'Höst',          usp:'Höstvecka inför säsongspaus' },
-
-  // HÖSTLOV
-  42:{ type:'hostlov',   label:'Höstlov',       usp:'Höstlov i fjällen — familjeaktiviteter och naturäventyr' },
-  43:{ type:'hostlov',   label:'Höstlov',       usp:'Höstlov med fjällvy och utomhusliv' },
-  44:{ type:'hostlov',   label:'Höstlov',       usp:'Höstlov för södra Sverige — sista höstveckan' },
-
-  // FÖRVINTER — uppbyggnad inför säsong
-  45:{ type:'forvinter', label:'Förvinter' },
-  46:{ type:'forvinter', label:'Förvinter' },
-  47:{ type:'forvinter', label:'Säsongsstart', usp:'Säsongsstart i fjällen — nya pister och färre besökare' },
-  48:{ type:'forvinter', label:'Tidig vinter', usp:'Tidig vintersäsong med pisterna i full beredskap' },
-  49:{ type:'forvinter', label:'Tidig vinter', usp:'Tidig vinter — bästa läget för säsongspremiär' },
-  50:{ type:'forvinter', label:'Tidig vinter', usp:'Tidig vintervecka strax före jul — snö och stämning' },
-};
 
 // ── BENEFITS (region-baserat) ─────────────────────────────────
 function buildBenefits(area) {
@@ -1565,43 +1488,6 @@ function buildShortText(d, ws, cats, hook) {
   return text;
 }
 
-function renderResult({ shortText, longText, charsShort }) {
-  const lengthClass = charsShort >= 260 && charsShort <= 300 ? 'length-ok' : 'length-warn';
-  const lengthLabel = charsShort >= 260 && charsShort <= 300 ? 'OK' : 'JUSTERA';
-
-  document.getElementById('results').innerHTML = `
-    <div class="result-tabs">
-      <button class="result-tab active" onclick="switchResultTab('long', this)">Lång variant</button>
-      <button class="result-tab" onclick="switchResultTab('short', this)">Kort <span class="length-badge ${lengthClass}">${charsShort}/300 · ${lengthLabel}</span></button>
-    </div>
-    <div class="result-content" id="result-long">
-      <div class="result-meta">
-        <span>LÅNG VARIANT · ${longText.length} TECKEN</span>
-        <button class="copy-btn" onclick="copyText(\`${longText.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">Kopiera</button>
-      </div>
-      <div class="result-text">${longText.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--accent);font-weight:500">$1</strong>').replace(/\*(.+?)\*/g, '<em style="color:var(--text-dim);font-style:italic">$1</em>')}</div>
-    </div>
-    <div class="result-content" id="result-short" style="display:none;">
-      <div class="result-meta">
-        <span>KORT VARIANT · ${charsShort}/300 TECKEN <span class="length-badge ${lengthClass}">${lengthLabel}</span></span>
-        <button class="copy-btn" onclick="copyText(\`${shortText.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">Kopiera</button>
-      </div>
-      <div class="result-text result-text-short">${shortText}</div>
-    </div>`;
-}
-
-function switchResultTab(variant, btn) {
-  document.querySelectorAll('.result-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('result-long').style.display = variant === 'long' ? 'block' : 'none';
-  document.getElementById('result-short').style.display = variant === 'short' ? 'block' : 'none';
-}
-
-function copyText(text) {
-  navigator.clipboard.writeText(text);
-  event.target.textContent = 'Kopierat ✓';
-  setTimeout(() => event.target.textContent = 'Kopiera', 1500);
-}
 
 function renderGallery() {
   const grid = document.getElementById('gallery-grid');
@@ -2326,11 +2212,6 @@ var signTempl="1b";var signImgs=[];var signLogoChoice="none";var _logoCache={};v
   var pk=new Image(); pk.onload=function(){_logoCache.pk=pk;}; pk.src=src; _logoCache.pk=pk;
 })();
 
-function getMaklarInfo(){
-  var s=localStorage.getItem('pf_maklarinfo');
-  if(s){try{return JSON.parse(s);}catch(e){}}
-  return{mNamn:"Jimmy Blomgren",mTel:"070-788 57 00",mEmail:"jimmy@peakfast.se",mWeb:"www.peakfast.se",mTitel:"Registrerad Fastighetsmäklare"};
-}
 function signAddFiles(files){
   Array.from(files).forEach(function(f){
     if(!f.type.startsWith("image/")) return;
@@ -3530,20 +3411,6 @@ function bulkSignSetAllTmpl(tmpl) {
 }
 
 
-// ── Claude API
-function getApiKey(){return localStorage.getItem('af_apikey')||"";}
-function saveApiKey(){
-  var k=document.getElementById("apiKeyInput");if(!k)return;
-  localStorage.setItem('af_apikey',k.value.trim());
-  document.getElementById("apiPanel").style.display='none';
-  document.getElementById("apiKeyStatus").textContent="✓ API-nyckel sparad";
-  setTimeout(function(){document.getElementById("apiKeyStatus").textContent="";},2500);
-}
-function showApiPanel(){
-  var p=document.getElementById("apiPanel");
-  if(p){p.style.display=p.style.display==='none'?'block':'none';}
-  var k=getApiKey();if(k){var i=document.getElementById("apiKeyInput");if(i)i.value=k;}
-}
 function categorizeWeeksForAI(weeksStr){
   var cats={sportlov:[],jul:[],nyar:[],mellandagar:[],forskidvecka:[],forvinter:[],sommar:[],varvinter:[],paskvecka:[],senvinter:[],efterjul:[],forsommar:[],midsommar:[],sensommar:[],host:[],hostlov:[],service:[]};
   if(!weeksStr)return cats;
@@ -3552,43 +3419,6 @@ function categorizeWeeksForAI(weeksStr){
   });
   return cats;
 }
-/* ── Språkregler, delade med Mäklargruvan ─────────────────────────────────
-   KOPIA av regelblocket REGLER i buildPrompt() i maklargruvan-pilot
-   (public/text.html), hämtad 2026-09-15. Originalet bor där och slipas
-   mot mäklarnas granskning; ändra helst där och kopiera hit igen.
-
-   Medvetet UTELÄMNAT från Mäklargruvan: dispositionen i tre delar,
-   rundvandringen, stilexemplen och förbudet mot avgift/pris i löptexten —
-   för en andelsrätt är avgiften, städavgiften och veckorna själva
-   produkten, och lägenhetstyperna har ingen planlösning att vandra i.
-   Två regler är anpassade: exemplen med "erbjuder"/"bjuder in" är borta
-   (orden är förbjudna i andelstexterna) och benämningsregeln talar om
-   andel och vecka i stället för bostadsrätt. */
-var SPRAKREGLER = `\n\nVIKTIGT – språk och trohet mot underlaget:
-- Använd ENBART fakta som finns i underlaget ovan. Hitta INTE på mått, material, rum, utrustning eller egenskaper som inte står där.
-- Återge fakta med korrekt fackterminologi och exakta benämningar: skriv t.ex. "badrum" när det är badrum (aldrig "dusch"/"duschar" som ersättning) och blanda inte ihop begrepp. Skriv "våningsplan" om antal plan (inte "nivåer"). Skriv inte "fjällhus" eller "fjällboende" – använd hellre "fritidshus i fjällen", "boende i fjällen" eller "ditt eget boende i fjällen". Skriv ut låga antal i bokstäver i löpande text (t.ex. "sex rum", "fyra sovrum", "tre plan") och var konsekvent – men mått, årtal och ytor skrivs med siffror (t.ex. "81 kvm", "2008"). Versalisera inte vanliga substantiv mitt i mening (skriv "byliften", "skidleden" – inte "Byliften").
-- Beskriv konkret vad som FINNS (rum, ytor, material, läge), men texten FÅR vara varm och säljande – särskilt i inledningen och den korta texten (t.ex. "ett härligt läge", "en härlig altan", "ett av byns bästa lägen", "byliften tar dig direkt upp i systemet"). Lägg dig på samma värmenivå som en välskriven svensk mäklarannons — varmare än en faktatext, men aldrig påklistrad. Uttryck som "för den som uppskattar" och "läget är svårslaget" är genrespråk och GÅR BRA när de har täckning i underlaget. Det som ska bort är tomma överord utan förankring: skriv inte "bokstavligen" eller "löser sig av sig självt", och avsluta inte med innehållslösa omdömen ("en fastighet med kvalitet och potential").
-- Varje värmande formulering måste bära KONKRET innehåll. Skriv inte om "en känsla" utan att säga vilken, och skriv inte att något "sätter tonen", "tar vara på läget", "tar andan ur dig" eller "ger utsikten en plats att njutas från" — det är omdömen utan innehåll, inte värme. TESTET: stryk meningen och se efter om någon uppgift försvann. Försvann ingenting ska meningen bort. Värme skapas av konkreta saker (braskaminen, kvällssolen på altanen, skidbod med torkskåp), aldrig av ord om känslor.
-- Beskriv ett rum som en YTA eller PLATS med en egenskap — inte som ett påstående om vad det "är": skriv "en social yta som blir en naturlig samlingspunkt efter en lång dag i backarna", inte "det är naturligt familjens och gästernas samlingspunkt". Förankra gärna scenen i ett konkret ögonblick, men bara ett sådant som underlaget bär.
-- MÄKLARSPRÅK, inte byggteknik. Skriv "vitmålad trappa" — inte "trappa med vita vangstycken och trästeg". Skriv "braskamin med skiffervägg" — inte "braskamin med accentvägg i skiffer". Skriv "räcke i trä" och lämna spjälornas riktning därhän. Regeln: bygg- och inredningstermer som en spekulant inte använder ska bort, även när de står i underlaget.
-- UTSIKT skrivs "utsikt ÖVER" när blicken går ut över ett landskap — "utsikt över fjället", "utsikt över sjön" — och gärna med ett enkelt adjektiv ("härlig utsikt över fjäll och sjö"). "Utsikt mot" används bara om en enskild riktning eller ett enskilt föremål.
-- RUMSANTAL skrivs på mäklarvis: "sex rum och kök", aldrig bara "sex rum". Andra uppgifter (bäddar, plan) läggs som egna led — "sex rum och kök med tolv bäddar på två våningsplan" — och radas inte upp som om de vore rum.
-- Stapla inte detaljer på samma sak. När en uppgift redan är sagd, säg den inte en gång till i annan form, och upprepa inte samma inledande konstruktion i en uppräkning ("ett med balkong … och ett med panoramafönster" blir "ett med balkong … och ett med panoramafönster från golv till tak" bara om båda leden bär ny information — annars skriv andra ledet kort).
-- Välj vardagliga värdeord framför tekniska: "härlig utsikt" hellre än "direkt utblick", "utgång till altanen" hellre än "altanen utanför". Och låt de konkreta sakerna FÅ sitt enkla adjektiv — "fin utsikt mot Åreskutan", "generös hall", "ljust allrum" — hellre än att nämnas naket ("utsikt mot Åreskutan"). Det är där värmen ska sitta, inte i stora ord om känslor. Sätt måttet i en naturlig prepositionsfras: bostaden har "en boarea på" så och så många kvm, eller är helt enkelt "på" så många kvm. Skriv det ALDRIG som objekt till "omfattar" och sätt aldrig ordet boarea efter kvadratmetertalet.
-- Håll det enkelt när det räcker: "med plats för alla" är bättre än "rymligt nog för ett helt kompisgäng". Upprepa inte målgruppen i varje stycke; nämn den en gång.
-- PLACERA INTE UT saker i förhållande till varandra om underlaget inte säger var de ligger. Står det bara att det finns en altan får du skriva "utgång till altanen" — inte "altanen utanför allrummet". Rumsplacering är en sakuppgift, inte en formulering.
-- Skriv "ski in/ski out TILL" (dit man faktiskt tar sig), inte "ski in/ski out mot". Samma sak med andra närhetsuttryck: man kommer TILL backen, inte mot den.
-- Använd det konkreta vardagsordet för det som ligger NÄRA bostaden, och spara det abstrakta systemordet till HELHETEN. Skriv "ski in/ski out till Björnens backar" — inte "mot Björnens skidsystem" — och låt systemordet beteckna hela anläggningen: "som tar dig smidigt ut i hela Åres skidsystem". Samma princip överallt: "bussen stannar utanför porten" hellre än "goda kollektivtrafikförbindelser".
-- Bind hellre ihop en fortsättning med en RELATIVSATS än med tankstreck och en ny huvudsats: "... till Björnens backar SOM tar dig ut i hela Åres skidsystem" läser bättre än "... till Björnens backar — därifrån tar du dig ut i ...". Skriv "hela" om helheten, inte "övriga".
-- Tilltala läsaren direkt med "du" (eller "ni" om texten redan gör det) — så skriver nio av tio riktiga annonser: "här bor du", "möts du av", "tar du dig". Skriv inte om bostaden i tredje person hela vägen.
-- Skriv FLYTANDE prosa på korrekt svenska med varierad meningsbyggnad – inte stolpiga, staplade fragment och inga syftningsfel. Undvik upprepningar och att samma sak sägs flera gånger, och var konsekvent (motsäg dig inte, t.ex. om antal rum eller badrum). Språkkvaliteten är viktig: texten ska kunna publiceras utan efterredigering.
-- Lägg INTE till värdeord, garantier, superlativ eller JÄMFÖRELSER med andra objekt som saknar stöd i underlaget. Förbjudet är alltså inte bara "garanterar", "helt unikt" och "bäst i området", utan även mjukare komparativer som "ett av de rymligare i området", "ovanligt stor för sin storlek" eller "sällsynt läge" — du vet inget om de andra objekten. Beskriv bostaden som den är; läsaren gör jämförelsen själv. Förfina eller tolka inte neutrala fakta – återge dem som de står: "dränerad och helisolerad grund" (inte "väl underhållen grund"), "biarea" (inte "påbyggd biarea"), "murstock med skorsten" (inte "eldstad").
-- Skilj på det som FINNS och det som är PLANERAT. En planerad eller kommande åtgärd får ALDRIG skrivas som redan utförd, och hitta aldrig på ett "ytterligare"/"kompletterande" som saknas i underlaget. Står det "fiber installeras sommaren 2026" är fiber alltså INTE indraget i dag – skriv då att fiber installeras sommaren 2026, punkt.
-- Kalla bostaden vid namn: skriv "lägenheten" eller "bostaden" – inte "bostadsrätten" och inte "andelsrätten" som namn på själva bostaden. Det som säljs är andelen och veckorna, så "andel", "andelsvecka" och "vecka" används om DET – inte som benämning på lägenheten i varje mening. Blanda inte två benämningar i samma mening.
-- Förklara inte bort etablerade begrepp – de bär redan sin betydelse. "Ski in/ski out" säger i sig att man åker till och från dörren; skriv därför inte att läget dessutom ligger "intill backen" eller att systemet är "ihopkopplat med" resten av anläggningen. Vill du säga mer ska det TILLFÖRA något, t.ex. vart man tar sig vidare: "med ski in/ski out – och från Björnens backar tar du dig smidigt vidare ut i Åresystemet".
-- Skriv "högt läge" – inte "högt beläget" och inte heller bara "högt i ...". Substantivet läge ska stå kvar: "Högt läge i Åre Björnen", inte "Högt i Åre Björnen". Undvik particip-inledningar av typen "Beläget i ...", "Placerat vid ...", "Högt beläget ..."; börja hellre med en riktig mening.
-- Skriv INTE meta-meningar som sammanfattar det du nyss räknat upp. Det gäller HELA mönstret, inte bara enskilda ordval: varje mening av typen "det är/det här är X för den här bostaden", "det är X du hittar här", "det är ramen för ...", "så ser förutsättningarna ut", "detta är hemmet för ..." ska bort — oavsett vilket ord som står på X-platsen (förutsättningarna, läget, ramen, utgångspunkten). Låt uppräkningen stå för sig själv och gå vidare; ingen mäklare knyter ihop sin egen inledning på det sättet.
-- Beskriv målgrupper med vardaglig svenska – "den stora familjen", "kompisgänget", "vännerna som åker tillsammans" – och håll formerna PARALLELLA när du räknar upp flera: "plats för den stora familjen eller kompisgänget" (båda i bestämd form, ingen artikel framför den andra). Skriv alltså inte "den stora familjen eller ett kompisgäng", och aldrig "ett kompisgänget". Använd inte resebranschord som "sällskapsresor" eller "sällskap".`;
 
 /* En enda promptbyggare för både enskilt objekt och bulk — tidigare låg
    samma prompt i två kopior som gled isär. o = { d, areas, enhet, husdjur,
@@ -3637,21 +3467,11 @@ function generateWithClaude(){
   var prompt = buildAndelsPrompt({d:d, areas:areas, enhet:null, husdjur:false, weeks:weeks, sellerType:sellerType, calc:calc, hook:hook});
   
   var btn=document.getElementById("claudeBtn");btn.disabled=true;btn.textContent="Genererar…";
-  fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({model:"claude-opus-5",max_tokens:8000,messages:[{role:"user",content:prompt}]})
-  }).then(function(r){return r.json();}).then(function(data){
-    if(data.error){alert("Claude API-fel: "+data.error.message);return;}
-    // Nyare modeller lägger ett tänkeblock först i svaret — plocka textblocken, inte content[0].
-    var txt=(data.content||[]).filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");
-    var parts=txt.split("---KORT---");
-    var longTxt=parts[0].trim(),shortTxt=parts[1]?parts[1].trim():"";
-    if(shortTxt.length>300)shortTxt=shortTxt.substring(0,297)+"...";
-    renderResult({shortText:shortTxt,longText:longTxt,charsShort:shortTxt.length});
+  anropaClaudeTvaTexter(prompt, apiKey).then(function(res){
+    renderResult(res);
     document.getElementById("apiKeyStatus").textContent="✓ Genererad med Claude AI";
     setTimeout(function(){document.getElementById("apiKeyStatus").textContent="";},3000);
-  }).catch(function(e){alert("Nätverksfel: "+e.message);})
+  }).catch(function(e){alert("Claude API-fel: "+e.message);})
   .finally(function(){btn.disabled=false;btn.textContent="✨ Generera med Claude AI";});
 }
 
@@ -3940,18 +3760,7 @@ function genClaudeForPaket(p, apiKey) {
       'Vemdalen': 'Vemdalsskalet med generös snöperiod och lugn fjällkaraktär'
     };
     var prompt = buildAndelsPrompt({ d: d, areas: areas, enhet: p.enhet, husdjur: !!p.husdjur, weeks: weeks, sellerType: sellerType, calc: brfCalc, hook: hook });
-    fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-opus-5', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] })
-    }).then(function(r){return r.json();}).then(function(data){
-      if (data.error) { reject(data.error.message); return; }
-      var txt = (data.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
-      var parts = txt.split('---KORT---');
-      var longTxt = parts[0].trim(), shortTxt = parts[1] ? parts[1].trim() : '';
-      if (shortTxt.length > 300) shortTxt = shortTxt.substring(0, 297) + '...';
-      resolve({ longText: longTxt, shortText: shortTxt, charsShort: shortTxt.length });
-    }).catch(reject);
+    anropaClaudeTvaTexter(prompt, apiKey).then(resolve).catch(function(e){ reject(e.message || String(e)); });
   });
 }
 
