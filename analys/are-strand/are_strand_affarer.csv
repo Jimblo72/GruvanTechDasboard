@@ -93,6 +93,7 @@ datum;enhet;veckor;typ;boarea;avgift;pris;maklare;kalla;objekt
 2021-11-15;4B4;9;lgh_74_81;76;;250000;HusmanHagberg Åre;hh;Åre Strand 4B4 v.9
 2021-10-12;7B2;10;lgh_53_59;53;;199000;HusmanHagberg Åre;hemnet;Åre strand 7B2 v.10
 2021-10-12;23:1;1;villa_118;118;;230000;HusmanHagberg Åre;hh;Åre strand 23:1 v.1
+2021-09-23;17?;;;118;371;85000;okänd (Booli);booli;Åre Strand 17 (Booli, vecka okänd)
 2021-09-10;6B3;52;lgh_74_81;78;308;215000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 6B3 vecka 52
 2021-08-27;6B3;4;lgh_74_81;78;308;60000;HusmanHagberg Åre;hemnet;Åre Strand 6B3 v.4
 2021-08-11;14:1;13;lgh_90_95;95;;240000;HusmanHagberg Åre;hh;Åre strand 14:1 v.13
@@ -100,6 +101,7 @@ datum;enhet;veckor;typ;boarea;avgift;pris;maklare;kalla;objekt
 2021-08-03;21:1;50;villa_118;119;;70000;Magnusson Mäkleri Täby AB;hemnet;Åre strand 21:1 - V.50
 2021-07-20;18:2;;villa_118;118;371;120000;Hemverket AB;hemnet;Åre Strand 18:2
 2021-07-07;21:1;7;villa_118;119;;200000;Magnusson Mäkleri Täby AB;hemnet;Åre strand 21:1 - V.7
+2021-05-31;3B?;;;81;304;75000;okänd (Booli);booli;Åre Strand 3B (Booli, vecka okänd)
 2021-05-26;4A2;1;lgh_74_81;76;;160000;HusmanHagberg Åre;hemnet;Åre strand 4A2 v.1
 2021-05-19;23:2;8;villa_118;118;;295000;HusmanHagberg Åre;hemnet;Åre strand 23:2 v.8
 2021-05-11;20:2;15+24;villa_118;118;;290000;Fastighetsbyrån Åre;hemnet;Åre Strand 20:2 v.15 & v.24
@@ -121,15 +123,19 @@ datum;enhet;veckor;typ;boarea;avgift;pris;maklare;kalla;objekt
 2020-07-21;23:2;1;villa_118;118;371;225000;HusmanHagberg Åre;hemnet;Åre strand 23:2 v.1
 2020-07-04;22:2;;villa_118;118;371;115000;HusmanHagberg Åre;hemnet;Åre strand 22:2
 2020-03-08;23:1;14+29;villa_118;118;729;300000;HusmanHagberg Åre;hemnet;Åre Strand 23:1 v.14 & 14:2 v.29
+2020-02-27;3A?;;;76;;60000;okänd (Booli);booli;Åre Strand 3A (Booli, vecka okänd)
 2020-02-21;1B2;11;lgh_74_81;76;300;170000;HusmanHagberg Åre;hemnet;Åre strand 1B2, v.11
 2020-02-19;17:2;;villa_118;118;375;220000;HusmanHagberg Åre;hemnet;Åre strand 17:2 AB
 2019-12-23;23:2;6;villa_118;118;371;135000;HusmanHagberg Åre;hemnet;Åre strand 23:2 AB, v.6
+2019-10-24;13:1;;;105;;150000;okänd (Booli);booli;Åre Strand 13A (Booli, vecka okänd)
 2019-10-19;19:1;;villa_118;118;371;240000;HusmanHagberg Åre;hemnet;Åre strand 19:1
 2019-10-14;23:1;;villa_118;119;371;69000;HusmanHagberg Åre;hemnet;Åre strand 23:1
 2019-10-07;17?;;villa_118;118;371;220000;SkandiaMäklarna Saltsjöbaden;hemnet;Åre Strand 17
+2019-10-01;14?;;;95;;60000;okänd (Booli);booli;Åre Strand 2, 95 kvm (Booli, vecka okänd)
 2019-07-15;15:2;;villa_118;118;375;95000;HusmanHagberg Åre;hemnet;Åre strand 15:2
 2019-04-12;14:1;15;lgh_90_95;95;358;220000;HusmanHagberg Åre;hemnet;Åre strand 14:1 v.15
 2019-03-14;1B3;;lgh_74_81;78;300;120000;HusmanHagberg Åre;hemnet;Åre strand 1B3
 2019-02-10;6A1;;paket_1_6;111;1075;775000;Hemverket AB;hemnet;Åre Strand 6A1
 2019-01-30;22:1;;villa_118;119;371;115000;Hemverket AB;hemnet;Åre Strand 22:1 A B
+2018-11-08;1A?;;;63;;98000;okänd (Booli);booli;Åre Strand 1A (Booli, vecka okänd)
 2017-11-05;6?;;paket_1_6;81;928;695000;Hemverket AB;hemnet;Åre Strand 6
