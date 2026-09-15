@@ -36,7 +36,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 375,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "1A1",
   "kalla": "hemnet"
@@ -54,7 +54,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 305,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "1A2",
   "kalla": "pdf"
@@ -72,7 +72,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 300,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "1B2",
   "kalla": "pdf"
@@ -90,7 +90,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 314,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "1B3",
   "kalla": "pdf"
@@ -108,7 +108,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 305,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "1B4",
   "kalla": "hemnet"
@@ -126,7 +126,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 459,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "2A1",
   "kalla": "hemnet"
@@ -144,7 +144,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 355,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "2A3",
   "kalla": "hemnet"
@@ -162,7 +162,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "2A4",
   "kalla": "pdf"
@@ -180,7 +180,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "2B1",
   "kalla": "pdf"
@@ -198,7 +198,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "2B3",
   "kalla": "hemnet"
@@ -216,7 +216,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 220,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "2B4",
   "kalla": "pdf"
@@ -234,7 +234,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 358,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "3A1",
   "kalla": "pdf"
@@ -252,7 +252,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 300,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "3A2",
   "kalla": "hemnet"
@@ -270,7 +270,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 300,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "3A3",
   "kalla": "pdf"
@@ -288,7 +288,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 316,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "3A4",
   "kalla": "hemnet"
@@ -306,7 +306,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 375,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "3B1",
   "kalla": "pdf"
@@ -324,7 +324,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 308,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "3B3",
   "kalla": "hemnet"
@@ -342,7 +342,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 321,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "3B4",
   "kalla": "hemnet"
@@ -360,7 +360,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 358,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "4A1",
   "kalla": "pdf"
@@ -378,7 +378,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "4A2",
   "kalla": "pdf"
@@ -396,7 +396,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 321,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "4A4",
   "kalla": "hemnet"
@@ -414,7 +414,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 383,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "4B1",
   "kalla": "hemnet"
@@ -432,7 +432,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 321,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "4B2",
   "kalla": "hemnet"
@@ -450,7 +450,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 313,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "4B3",
   "kalla": "hemnet"
@@ -468,7 +468,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 300,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, kallförråd för skidor, cykelförråd, parkering med elstolpe, intill strandområdet",
   "bildmapp": "4B4",
   "kalla": "hemnet"
@@ -486,7 +486,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5A1",
   "kalla": "pdf"
@@ -504,7 +504,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 304,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5A2",
   "kalla": "hemnet"
@@ -522,7 +522,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 279,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5A5",
   "kalla": "hemnet"
@@ -540,7 +540,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5A6",
   "kalla": "hemnet"
@@ -558,7 +558,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 305,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5B1",
   "kalla": "hemnet"
@@ -576,7 +576,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 280,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5B2",
   "kalla": "hemnet"
@@ -594,7 +594,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 305,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5B3",
   "kalla": "hemnet"
@@ -612,7 +612,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 296,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5B4",
   "kalla": "hemnet"
@@ -630,7 +630,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5B5",
   "kalla": "pdf"
@@ -648,7 +648,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 279,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "balkong eller uteplats, byggt 2009, parkering",
   "bildmapp": "5B6",
   "kalla": "hemnet"
@@ -666,7 +666,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2015, två altaner med tak, klädkammare, förråd för skidor, säljs som andelspaket om var sjätte vecka",
   "bildmapp": "6A1",
   "kalla": "pdf"
@@ -684,7 +684,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 323,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2015, två altaner med tak, klädkammare, förråd för skidor, säljs som andelspaket om var sjätte vecka",
   "bildmapp": "6A2",
   "kalla": "hemnet"
@@ -702,7 +702,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 326,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2015, två altaner med tak, klädkammare, förråd för skidor, säljs som andelspaket om var sjätte vecka",
   "bildmapp": "6A3",
   "kalla": "hemnet"
@@ -720,7 +720,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2015, två altaner med tak, klädkammare, förråd för skidor, säljs som andelspaket om var sjätte vecka",
   "bildmapp": "6A4",
   "kalla": "pdf"
@@ -738,7 +738,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 330,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2015, två altaner med tak, klädkammare, förråd för skidor, säljs som andelspaket om var sjätte vecka",
   "bildmapp": "6B3",
   "kalla": "pdf"
@@ -756,7 +756,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 458,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2018, stort inglasat uterum med elgrill, golvvärme, loft, förråd, nära sjön och tågstationen",
   "bildmapp": "7A1",
   "kalla": "hemnet"
@@ -774,7 +774,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 261,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2018, stort inglasat uterum med elgrill, golvvärme, loft, förråd, nära sjön och tågstationen",
   "bildmapp": "7A3",
   "kalla": "hemnet"
@@ -792,7 +792,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 279,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2018, stort inglasat uterum med elgrill, golvvärme, loft, förråd, nära sjön och tågstationen",
   "bildmapp": "7A4",
   "kalla": "pdf"
@@ -810,7 +810,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 279,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2018, stort inglasat uterum med elgrill, golvvärme, loft, förråd, nära sjön och tågstationen",
   "bildmapp": "7A5",
   "kalla": "pdf"
@@ -828,7 +828,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2018, stort inglasat uterum med elgrill, golvvärme, loft, förråd, nära sjön och tågstationen",
   "bildmapp": "7B2",
   "kalla": "pdf"
@@ -846,7 +846,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 257,
   "typ": "liten",
   "typnamn": "Liten · 53–66 kvm · 2–3 rok",
-  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "ett till två sovrum, allrum och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2018, stort inglasat uterum med elgrill, golvvärme, loft, förråd, nära sjön och tågstationen",
   "bildmapp": "7B4",
   "kalla": "hemnet"
@@ -864,7 +864,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "mellan",
   "typnamn": "Mellan · 74–81 kvm · 3 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "byggt 2018, stort inglasat uterum med elgrill, golvvärme, loft, förråd, nära sjön och tågstationen",
   "bildmapp": "7B6",
   "kalla": "pdf"
@@ -882,7 +882,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 375,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "13_1",
   "kalla": "pdf"
@@ -900,7 +900,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 367,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "14_1",
   "kalla": "pdf"
@@ -918,7 +918,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 375,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och duschrum, allrum med braskamin och kök i öppen planlösning, duschrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "tre sovrum varav ofta ett som studio med egen ingång, pentry och eget badrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "14_2",
   "kalla": "pdf"
@@ -936,7 +936,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "15_2",
   "kalla": "pdf"
@@ -954,7 +954,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 371,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "17_1",
   "kalla": "pdf"
@@ -972,7 +972,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 375,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "17_2",
   "kalla": "pdf"
@@ -990,7 +990,7 @@ const ARESTRAND_KATALOG = [
   "avgift": null,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "18_1",
   "kalla": "pdf"
@@ -1008,7 +1008,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 373,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "18_2",
   "kalla": "hemnet"
@@ -1026,7 +1026,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 379,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "19_1",
   "kalla": "pdf"
@@ -1044,7 +1044,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 388,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "19_2",
   "kalla": "pdf"
@@ -1062,7 +1062,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 388,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "20_1",
   "kalla": "hemnet"
@@ -1080,7 +1080,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 387,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "20_2",
   "kalla": "hemnet"
@@ -1098,7 +1098,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 379,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "21_1",
   "kalla": "hemnet"
@@ -1116,7 +1116,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 400,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "21_2",
   "kalla": "pdf"
@@ -1134,7 +1134,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 388,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "22_1",
   "kalla": "pdf"
@@ -1152,7 +1152,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 371,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "22_2",
   "kalla": "pdf"
@@ -1170,7 +1170,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 550,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "23_1",
   "kalla": "hemnet"
@@ -1188,7 +1188,7 @@ const ARESTRAND_KATALOG = [
   "avgift": 371,
   "typ": "villa",
   "typnamn": "Strandvilla · 4 rok · 118 kvm",
-  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, duschrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, två duschrum varav ett med bastu och tvättmaskin, gästtoalett, altan i sydvästläge mot Åresjön",
+  "planlosning": "två plan, tre sovrum varav ett som studio med egen ingång, pentry, eget badrum och egen altan, allrum med braskamin och kök i öppen planlösning, allrum även på ovanvåningen, totalt två badrum (studions och lägenhetens med bastu och tvättmaskin) samt en gästtoalett utan dusch, altan i sydvästläge mot Åresjön",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering intill huset, husdjursfritt",
   "bildmapp": "23_2",
   "kalla": "pdf"

@@ -412,13 +412,21 @@ function faktaFor(k, v) {
   };
 }
 
+/* Fast RCI-stycke, samma i alla annonser. Underlag: holidayclub.se/ownership och
+   /ownership/res-med-rci (2026-09-15): RCI Points/Weeks, över 3,7 miljoner medlemmar,
+   mer än 4 000 anläggningar i över 100 länder, Åre-veckor med högt poängvärde som ofta
+   räcker till två eller tre veckor utomlands, egen vecka bokas 12–13 månader i förväg
+   utan poängförbrukning, Holiday Clubs egna anläggningar i Finland och på Kanarieöarna,
+   poäng sparas automatiskt till nästa år, årlig medlemsavgift i RCI tillkommer. */
+const RCI_TEXT = 'Vill du inte vara i Åre varje år byter du. Andelen kan anslutas till RCI, världens största bytessystem för semesterboende med över 3,7 miljoner medlemmar och mer än 4 000 anläggningar i över 100 länder. Din vecka får ett poängvärde, och Åre värderas högt: en vecka här räcker ofta till två eller tre veckor utomlands. Poängen använder du till en annan vecka i Åre, till Holiday Clubs anläggningar i Finland och på Kanarieöarna eller till boende var som helst i RCI:s nät, från Alperna till Medelhavet. Din egen vecka bokar du alltid först, upp till 13 månader i förväg, utan att poäng förbrukas, och poäng du inte använder sparas till nästa år. Anslutningen är frivillig och kostar en årlig medlemsavgift; vill du hellre använda veckan själv eller hyra ut den gör du det.';
+
 /* Säsongens karaktär i ord — råmaterial för inledningen, som ska handla om
    veckan och läget innan bostaden beskrivs (Jimmys granskning 2026-09-15). */
 const SASONG_KARAKTAR = {
   jul_nyar: 'jul- och nyårsvecka i fjällen, snösäkert, ljus och eldar i byn, den vecka flest vill åt',
   vinter: 'lugn vintervecka med stabilt skidföre och korta liftköer, före sportlovsruschen',
   sportlov: 'sportlovsvecka med fullt pistsystem, liv i byn och årets högsta tryck på boende',
-  varvinter: 'härlig vårvintervecka med långa ljusa dagar, solskidning och mjuk snö — vissa år infaller påsken här',
+  varvinter: 'härlig vårvintervecka med bra skidåkning i vårsolen, säsongens sista snöveckor och vårens första värme, långa ljusa dagar — vissa år infaller påsken här',
   var: 'vårvecka när snön släpper och Åre blir stilla, vandring och cykel börjar, sjön öppnar sig',
   sommar: 'sommarvecka vid Åresjön med bad, bike park, vandring och fjället i grönt',
   host: 'höstvecka med klar luft, färgerna på fjället och ett Åre i lugnt tempo',
@@ -431,9 +439,9 @@ function byggStrandPrompt(f) {
   return `Du skriver säljtexter för andelsveckor på Åre Strand Holiday Club i Åre. Direkt konkret svenska, inga högtravande fraser. Förbjudna ord: erbjuder, inbjuder, unikt, fantastisk, exklusivt. Inled INTE med Välkommen.${SPRAKREGLER}
 
 DISPOSITION för den långa texten — följ den:
-(1) INLEDNINGEN säljer. Två till fyra meningar om VECKAN och LÄGET innan bostaden nämns: vad den här veckan i Åre är för slags vecka (se "Veckans karaktär"), strandläget vid Åresjön, närheten till hotellet Holiday Club och till centrala Åre. Konkret och varmt, som en mäklare som vill att läsaren ska se sig själv där. Inga siffror i inledningen.
+(1) INLEDNINGEN säljer. Börja den långa texten med en kort ingressrad i formen "<Bostadstyp> vecka <nr> – " (t.ex. "Strandvilla vecka 16 – ") och fortsätt direkt i samma stycke. Två till fyra meningar om VECKAN och LÄGET innan bostaden nämns: vad den här veckan i Åre är för slags vecka (se "Veckans karaktär"), strandläget vid Åresjön, närheten till hotellet Holiday Club och till centrala Åre. Konkret och varmt, som en mäklare som vill att läsaren ska se sig själv där. Inga siffror i inledningen.
 (2) BOSTADEN som ett flöde, inte en uppräkning: led läsaren genom lägenheten från entrén, ge ett eller två rum en scen (kvällen vid braskaminen, morgonen på altanen mot sjön). Skriv inte listor med kommatecken i rad — högst tre led i en uppräkning, hellre två meningar än en lång.
-(3) SERVICEN OCH ÄGANDET: bäddat och klart vid ankomst, Holiday Clubs restaurang, spa och bad, RCI-byte — kort, som en fördel, inte som en produktbeskrivning.
+(3) SERVICEN: bäddat och klart vid ankomst, Holiday Clubs restaurang, spa och bad, medlemsrabatten — kort, som en fördel. Därefter RCI-STYCKET nedan ORDAGRANT som ett eget stycke (ändra inte ett ord, skriv ingen egen RCI-text).
 (4) AVGIFTEN allra sist, en mening.
 
 Skriv exakt två texter ÅTSKILDA med texten ---KORT---:
@@ -452,8 +460,11 @@ Huset: ${f.hustext}
 ${ram}
 Vecka: ${f.veckolabel}${f.veckousp ? ' — ' + f.veckousp : ''}
 Veckans karaktär: ${SASONG_KARAKTAR[AV.veckoklass(f.vecka)] || ''}
-${f.usp ? 'Säljpunkter för just detta objekt: ' + f.usp + '\n' : ''}Läge och service: intill Åresjöns strand, några minuters promenad till hotellet Holiday Club med restaurang, spa, bad, gym och shopping; medlemmar har rabatt på hotellets aktiviteter. Via gångbron från hotellet når man tågstationen och Åre by med butiker och restauranger; från torget tar bergbanan dig upp i skidsystemet. Fullt möblerad och utrustad, bäddat och rena handdukar vid ankomst. Andelen kan nyttjas själv, hyras ut eller anslutas till RCI för byte till boende på andra orter.
+${f.usp ? 'Säljpunkter för just detta objekt: ' + f.usp + '\n' : ''}Läge och service: intill Åresjöns strand, några minuters promenad till hotellet Holiday Club med restaurang, spa, bad, gym och shopping; medlemmar har rabatt på hotellets aktiviteter. Via gångbron från hotellet når man tågstationen och Åre by med butiker och restauranger; från torget tar bergbanan dig upp i skidsystemet. Fullt möblerad och utrustad, bäddat och rena handdukar vid ankomst.
+RCI-STYCKET (ordagrant): ${RCI_TEXT}
+
 Nämn ALDRIG utgångspris eller pris i texten. Bytesdag och husdjur nämns bara om det står ovan.
+ORDVAL: skriv "badrum", aldrig "duschrum". Antal badrum och toaletter EXAKT som i planlösningen ovan — hitta inte på fler. Skriv inte "mjuk snö" (det betyder slaskföre) — vårvinterns snö beskrivs med sol och bra skidåkning.
 
 EXEMPEL PÅ ÖNSKAT TONLÄGE (påhittat objekt — hämta ALDRIG fakta härifrån, bara rytmen):
 "Vecka 8 är den vecka Åre lever som mest: sportlov, fulla backar och kvällar när hela byn är ute. Från Åre Strand går du längs sjön till hotellet Holiday Club på några minuter, och via gångbron är du inne i centrala Åre med butiker, restauranger och bergbanan upp i systemet. Här är veckan din, år efter år.
@@ -491,10 +502,11 @@ function genereraMall() {
   stycken.push(`Bostaden är på ${f.boarea} kvm med ${f.rum} rum och kök, ${f.sovrum} sovrum och ${f.baddar} bäddar: ${f.planlosning}. ${f.hustext.charAt(0).toUpperCase() + f.hustext.slice(1)}.`);
   if (f.usp) stycken.push(f.usp.charAt(0).toUpperCase() + f.usp.slice(1) + '.');
   stycken.push(`Några minuters promenad bort ligger hotellet Holiday Club med restaurang, spa, bad, gym och shopping, och som medlem i föreningen har du rabatt på hotellets aktiviteter. Via gångbron från hotellet når du tågstationen och Åre by, och från torget tar bergbanan dig upp i skidsystemet.`);
-  stycken.push(`Du anländer till bäddade sängar och rena handdukar. Andelen kan nyttjas av dig själv, hyras ut eller anslutas till RCI och bytas mot boende på andra orter.`);
+  stycken.push(`Du anländer till bäddade sängar och rena handdukar, och som medlem i föreningen har du rabatt på hotellets aktiviteter.`);
+  stycken.push(RCI_TEXT);
   stycken.push(f.paket ? `Avgift: ca 1 100–1 200 kr/mån.` : `Avgift: ${f.avgift ? f.avgift + ' kr/mån' : 'enligt föreningen'}, vilket täcker drift, städning och byte av sänglinne och handdukar.`);
   const longText = stycken.join('\n\n');
-  let shortText = `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år, bäddat och klart vid ankomst, Holiday Clubs spa och restaurang intill. ${f.usp ? f.usp.split(',')[0] + '.' : 'Anslut till RCI och byt till andra orter.'}`;
+  let shortText = `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år, bäddat och klart vid ankomst, Holiday Clubs spa och restaurang intill. ${f.usp ? f.usp.split(',')[0] + '.' : 'Byt via RCI till över 4 000 anläggningar världen över.'}`;
   if (shortText.length > 300) shortText = shortText.slice(0, 297) + '...';
   renderResult({ longText, shortText, charsShort: shortText.length });
 }
