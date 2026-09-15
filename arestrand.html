@@ -206,7 +206,7 @@ tr.n1 td{color:var(--text);}
         <button class="btn" id="bbReconnect" style="display:none" onclick="bbAteranslut()">Återanslut</button>
         <span class="mono" id="bbPath"></span>
       </div>
-      <div class="form-help" style="margin-top:8px">Peka på <span class="mono">OneDrive - Peak Fast\…\Gruvan Tech AB\PeakFast verktyg\ÅreStrand</span> — allt Åre Strand-material samlat, en undermapp per enhet (1A2, 19_1 för 19:1). Bilder med "Exempelbild" i namnet är typbilder som får återanvändas inom samma hus. Mappen läses direkt från disk, inget laddas upp.</div>
+      <div class="form-help" style="margin-top:8px">Anslut <strong>huvudmappen</strong> <span class="mono">ÅreStrand</span> (OneDrive - Peak Fast › Dokument › 01 Verksamheter › Gruvan Tech AB › PeakFast verktyg › ÅreStrand), inte en enhetsmapp. Den har en undermapp per enhet (1A2, 19_1 för 19:1) och verktyget öppnar rätt undermapp när du byter enhet. Bilder med "Exempelbild" i namnet är typbilder som får återanvändas inom samma hus. Mappen läses direkt från disk, inget laddas upp.</div>
     </div>
     <div class="card">
       <div class="card-title" id="bbTitle">Bilder</div>
@@ -492,7 +492,8 @@ async function bbInit() {
 }
 function bbStatus() {
   document.getElementById('bbDot').className = 'status-dot' + (bbRoot ? ' on' : '');
-  document.getElementById('bbText').textContent = bbRoot ? 'Ansluten' : 'Ingen mapp ansluten';
+  const arEnhetsmapp = bbRoot && ARESTRAND_KATALOG.some(x => x.bildmapp === bbRoot.name);
+  document.getElementById('bbText').textContent = !bbRoot ? 'Ingen mapp ansluten' : arEnhetsmapp ? 'Ansluten till EN enhetsmapp — anslut huvudmappen ÅreStrand i stället' : 'Ansluten';
   document.getElementById('bbPath').textContent = bbRoot ? bbRoot.name : '';
 }
 async function bbVisaEnhet() {
@@ -502,7 +503,21 @@ async function bbVisaEnhet() {
   if (!bbRoot || !k) { grid.innerHTML = `<div class="results-empty">${!bbRoot ? 'Anslut mappen först.' : 'Välj en enhet.'}</div>`; return; }
   try {
     if ((await bbRoot.queryPermission({ mode: 'read' })) !== 'granted') { grid.innerHTML = '<div class="results-empty">Klicka Återanslut för att ge läsrättighet igen.</div>'; document.getElementById('bbReconnect').style.display = ''; return; }
-    let dir; try { dir = await bbRoot.getDirectoryHandle(k.bildmapp); } catch (e) { grid.innerHTML = `<div class="results-empty">Ingen mapp "${esc(k.bildmapp)}" i ${esc(bbRoot.name)}.</div>`; return; }
+    /* Väntat: huvudmappen ÅreStrand med en undermapp per enhet. Har man i stället
+       anslutit själva enhetsmappen (t.ex. 22_2) fungerar den för just den enheten
+       — och för alla andra får man en tydlig uppmaning att ansluta huvudmappen. */
+    let dir;
+    try { dir = await bbRoot.getDirectoryHandle(k.bildmapp); }
+    catch (e) {
+      if (bbRoot.name === k.bildmapp) dir = bbRoot;
+      else {
+        const arEnhetsmapp = ARESTRAND_KATALOG.some(x => x.bildmapp === bbRoot.name);
+        grid.innerHTML = `<div class="results-empty">${arEnhetsmapp
+          ? `Du har anslutit enhetsmappen "${esc(bbRoot.name)}". Anslut i stället huvudmappen <span class="mono">ÅreStrand</span>, som innehåller alla enheter — då byter bilderna automatiskt när du byter enhet.`
+          : `Ingen undermapp "${esc(k.bildmapp)}" i "${esc(bbRoot.name)}". Anslut huvudmappen <span class="mono">ÅreStrand</span> (i OneDrive under PeakFast verktyg).`}</div>`;
+        return;
+      }
+    }
     const filer = [];
     for await (const [namn, h] of dir.entries()) if (h.kind === 'file' && /\.(jpe?g|png|webp)$/i.test(namn)) filer.push({ namn, h });
     filer.sort((a, b) => a.namn.localeCompare(b.namn, 'sv'));
