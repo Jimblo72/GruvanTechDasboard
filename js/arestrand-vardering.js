@@ -1,49 +1,61 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    arestrand-vardering.js — riktvärde för en andelsvecka på Åre Strand.
 
-   Modellen är samma som i analys/are-strand/analys_strand.py:
-     pris = bas(typ) × veckofaktor(veckoklass) × årsfaktor^(år − 2023)
+   Modellen: pris = bas(storlek) × säsongsfaktor × årsfaktor^(år − 2023),
    skattad med minsta kvadrat på log(pris) över enveckasaffärerna i
    ARESTRAND_AFFARER (+ det som sparats lokalt). Räknas om i webbläsaren vid
    varje sidladdning, så nya affärer slår igenom direkt.
 
+   Storleksklasserna går tvärs över huslängorna — Jimmys erfarenhet är att en
+   lägenhet av samma storlek är mer eller mindre samma produkt oavsett hus
+   (2026-09-15). Fyra klasser i stället för sex: liten (53–66 kvm, 2–3 rok),
+   mellan (74–81 kvm, 3 rok), stor (90–112 kvm, 3–4 rok), strandvilla (118+).
+
+   Säsongerna följer prisbilden över året, inte kalendern: jul/nyår, vinter,
+   sportlov, vårvinter (skidsäsongens slut, påsken), vår, sommar, höst.
+
    Tre lager visas var för sig: direkta jämförelser, modellvärde med
    intervall, rekommenderat utgångspris. Aldrig en siffra utan intervall och
    jämförelselista — det är ett riktvärde inför prissättning, inte ett
-   värderingsintyg (se texten i verktyget).
+   värderingsintyg.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const AV = (function () {
   'use strict';
 
-  const TYPER = ['lgh_53_59', 'lgh_63', 'lgh_74_81', 'lgh_90_95', 'lgh_111', 'villa_118'];
-  const KLASSER = ['jul_nyar', 'sportlov', 'vinter', 'senvinter', 'var', 'sommar', 'lag'];
-  const KLASS_NAMN = { jul_nyar: 'Jul/nyår (v.51, 52, 1)', sportlov: 'Sportlov (v.7–10)', vinter: 'Vinter (v.2–6)', senvinter: 'Senvinter (v.11–13)', var: 'Vår (v.14–18)', sommar: 'Sommar (v.26–32)', lag: 'Lågsäsong (v.19–25, 33–50)' };
-  const INTERVALL = 0.25;   // ±25 % fångar två tredjedelar av affärerna (analysen 2026-09-15)
+  const TYPER = ['liten', 'mellan', 'stor', 'villa'];
+  const TYP_NAMN = { liten: 'Liten · 53–66 kvm · 2–3 rok', mellan: 'Mellan · 74–81 kvm · 3 rok', stor: 'Stor · 90–112 kvm · 3–4 rok', villa: 'Strandvilla · 118 kvm · 4 rok', paket_1_6: 'Paket var sjätte vecka (hus 6)' };
+  const GRANNE = { liten: ['mellan'], mellan: ['liten', 'stor'], stor: ['mellan', 'villa'], villa: ['stor'] };
+  const KLASSER = ['jul_nyar', 'vinter', 'sportlov', 'varvinter', 'var', 'sommar', 'host'];
+  const KLASS_NAMN = { jul_nyar: 'Jul/nyår (v.51–1)', vinter: 'Vinter (v.2–6)', sportlov: 'Sportlov (v.7–10)', varvinter: 'Vårvinter (v.11–17)', var: 'Vår (v.18–25)', sommar: 'Sommar (v.26–33)', host: 'Höst (v.34–50)' };
+  const INTERVALL = 0.25;      // ±25 % fångar två tredjedelar av affärerna (analysen 2026-09-15)
+  const UTGANGSPASLAG = 1.07;  // slutpriserna i underlaget ligger i median ~7 % under utgångspriset
 
   function veckoklass(v) {
     if (v === 51 || v === 52 || v === 1) return 'jul_nyar';
-    if (v >= 7 && v <= 10) return 'sportlov';
     if (v >= 2 && v <= 6) return 'vinter';
-    if (v >= 11 && v <= 13) return 'senvinter';
-    if (v >= 14 && v <= 18) return 'var';
-    if (v >= 26 && v <= 32) return 'sommar';
-    return 'lag';
+    if (v >= 7 && v <= 10) return 'sportlov';
+    if (v >= 11 && v <= 17) return 'varvinter';
+    if (v >= 18 && v <= 25) return 'var';
+    if (v >= 26 && v <= 33) return 'sommar';
+    return 'host';
   }
 
   function typAvBoarea(boarea, avgift) {
     if (avgift && avgift >= 800) return 'paket_1_6';
     if (boarea == null) return null;
-    if (boarea <= 60) return 'lgh_53_59';
-    if (boarea <= 66) return 'lgh_63';
-    if (boarea <= 82) return 'lgh_74_81';
-    if (boarea <= 96) return 'lgh_90_95';
-    if (boarea <= 112) return 'lgh_111';
-    return 'villa_118';
+    if (boarea <= 66) return 'liten';
+    if (boarea <= 85) return 'mellan';
+    if (boarea <= 114) return 'stor';
+    return 'villa';
   }
 
-  /* Löser A·x = b med Gauss-elimination (partiell pivotering). Systemet är
-     litet (≈13 okända), så ingen numerik utöver detta behövs. */
+  /* Äldre datafiler och lokalt sparade rader kan bära de gamla, smalare
+     klassnamnen. Översätts här så inget behöver rensas. */
+  const GAMMAL = { lgh_53_59: 'liten', lgh_63: 'liten', lgh_74_81: 'mellan', lgh_90_95: 'stor', lgh_111: 'stor', villa_118: 'villa' };
+  function normTyp(r) { const t = r.typ; if (GAMMAL[t]) return GAMMAL[t]; if (TYPER.includes(t) || t === 'paket_1_6') return t; return typAvBoarea(r.boarea, r.avgift); }
+
+  /* Löser A·x = b med Gauss-elimination (partiell pivotering). */
   function los(A, b) {
     const n = b.length;
     const M = A.map((rad, i) => rad.concat([b[i]]));
@@ -60,44 +72,47 @@ const AV = (function () {
     }
     return M.map((rad, i) => (Math.abs(rad[i]) < 1e-12 ? 0 : rad[n] / rad[i]));
   }
-
-  /* Minsta kvadrat: x = (XᵀX)⁻¹ Xᵀy */
   function ols(X, y) {
     const p = X[0].length;
     const XtX = Array.from({ length: p }, () => new Array(p).fill(0));
     const Xty = new Array(p).fill(0);
-    for (let i = 0; i < X.length; i++) {
-      for (let a = 0; a < p; a++) {
-        Xty[a] += X[i][a] * y[i];
-        for (let b = 0; b < p; b++) XtX[a][b] += X[i][a] * X[i][b];
-      }
-    }
+    for (let i = 0; i < X.length; i++) for (let a = 0; a < p; a++) { Xty[a] += X[i][a] * y[i]; for (let b = 0; b < p; b++) XtX[a][b] += X[i][a] * X[i][b]; }
     return los(XtX, Xty);
   }
-
-  function rad(r) {
+  function rad(typ, vecka, ar) {
     const x = new Array(TYPER.length + KLASSER.length - 1 + 1).fill(0);
-    x[TYPER.indexOf(r.typ)] = 1;
-    const k = KLASSER.indexOf(veckoklass(r.veckor[0]));
+    x[TYPER.indexOf(typ)] = 1;
+    const k = KLASSER.indexOf(veckoklass(vecka));
     if (k > 0) x[TYPER.length + k - 1] = 1;
-    x[x.length - 1] = parseInt(r.datum.slice(0, 4), 10) - 2023;
+    x[x.length - 1] = ar - 2023;
     return x;
   }
 
   let modell = null;
 
-  /* Skattar modellen ur affärslistan. Returnerar parametrarna + felmått så de
-     kan visas i verktyget. */
   function skatta(affarer) {
-    const enkla = affarer.filter(r => r.veckor && r.veckor.length === 1 && TYPER.includes(r.typ) && r.pris > 0 && r.datum);
-    const X = enkla.map(rad), y = enkla.map(r => Math.log(r.pris));
+    const enkla = affarer.map(r => ({ ...r, typ: normTyp(r) })).filter(r => r.veckor && r.veckor.length === 1 && TYPER.includes(r.typ) && r.pris > 0 && r.datum);
+    const X = enkla.map(r => rad(r.typ, r.veckor[0], parseInt(r.datum.slice(0, 4), 10))), y = enkla.map(r => Math.log(r.pris));
     const beta = ols(X, y);
     const res = enkla.map((r, i) => Math.exp(y[i] - X[i].reduce((s, v, j) => s + v * beta[j], 0)) - 1);
     const abs = res.map(Math.abs).sort((a, b) => a - b);
+    const vecko = Object.fromEntries(KLASSER.map((k, i) => [k, i === 0 ? 1 : Math.exp(beta[TYPER.length + i - 1])]));
+    /* En säsong med färre än tre affärer får inte sätta sin egen faktor —
+       minsta kvadrat passar då de få punkterna exakt och faktorn blir slump.
+       Den lånar i stället det geometriska snittet av grannsäsongerna. */
+    const antal = Object.fromEntries(KLASSER.map(k => [k, 0]));
+    for (const r of enkla) antal[veckoklass(r.veckor[0])]++;
+    const tunna = [];
+    KLASSER.forEach((k, i) => {
+      if (antal[k] >= 3) return;
+      const fore = KLASSER[(i - 1 + KLASSER.length) % KLASSER.length], efter = KLASSER[(i + 1) % KLASSER.length];
+      vecko[k] = Math.sqrt(vecko[fore] * vecko[efter]);
+      tunna.push(k);
+    });
     modell = {
       n: enkla.length,
       bas: Object.fromEntries(TYPER.map((t, i) => [t, Math.exp(beta[i])])),
-      vecko: Object.fromEntries(KLASSER.map((k, i) => [k, i === 0 ? 1 : Math.exp(beta[TYPER.length + i - 1])])),
+      vecko, antalPerSasong: antal, lanadeSasonger: tunna,
       arsfaktor: Math.exp(beta[beta.length - 1]),
       medianfel: abs.length ? abs[Math.floor(abs.length / 2)] : null,
       inom25: abs.length ? abs.filter(a => a < 0.25).length / abs.length : null,
@@ -111,29 +126,34 @@ const AV = (function () {
     return modell.bas[typ] * modell.vecko[veckoklass(vecka)] * Math.pow(modell.arsfaktor, ar - 2023);
   }
 
-  /* Jämförelser i tre nivåer. Varje rad får en vikt: nivå × färskhet
-     (halveras vart tredje år). */
+  /* Jämförelser i fyra vägda nivåer, plus de övriga affärerna i samma enhet
+     som ren information (nivå 5, väger inget — annan säsong är en annan
+     prisbild). Vikten är nivå × färskhet (halveras vart tredje år). */
   function jamforelser(affarer, enhet, typ, vecka) {
     const nu = new Date().getFullYear();
     const klass = veckoklass(vecka);
     const ut = [];
-    for (const r of affarer) {
-      if (!r.veckor || !r.veckor.length || !r.pris) continue;
-      const sammaEnhet = r.enhet === enhet;
-      const sammaVecka = r.veckor.includes(vecka);
-      const sammaTyp = r.typ === typ;
+    for (const r0 of affarer) {
+      if (!r0.veckor || !r0.veckor.length || !r0.pris) continue;
+      const r = { ...r0, typ: normTyp(r0) };
+      if (r.typ === 'paket_1_6') continue;
+      const sammaEnhet = r.enhet === enhet, sammaVecka = r.veckor.includes(vecka), sammaTyp = r.typ === typ;
+      const sammaSasong = r.veckor.every(v => veckoklass(v) === klass);
+      const grannTyp = (GRANNE[typ] || []).includes(r.typ);
       let niva = null;
       if (sammaEnhet && sammaVecka) niva = 1;
       else if (sammaTyp && sammaVecka) niva = 2;
-      else if (sammaTyp && r.veckor.every(v => veckoklass(v) === klass)) niva = 3;
-      else if (sammaEnhet) niva = 4;
+      else if (sammaTyp && sammaSasong) niva = 3;
+      else if (grannTyp && sammaVecka) niva = 4;
+      else if (sammaEnhet) niva = 5;
       if (!niva) continue;
       const ar = parseInt(r.datum.slice(0, 4), 10);
       const farskhet = Math.pow(0.5, Math.max(0, nu - ar) / 3);
-      const nivavikt = { 1: 3, 2: 2, 3: 1, 4: 0.5 }[niva];
-      // Två veckor i samma affär: priset per vecka som en grov delning.
+      const nivavikt = { 1: 3, 2: 2.5, 3: 1, 4: 0.6, 5: 0 }[niva];
       const perVecka = r.veckor.length > 1 ? r.pris / r.veckor.length : r.pris;
-      ut.push({ ...r, niva, vikt: nivavikt * farskhet, perVecka, prisNu: perVecka * Math.pow(modell ? modell.arsfaktor : 1, nu - ar) });
+      // Grannstorlek räknas om med modellens basförhållande så priset blir jämförbart.
+      const storleksjust = niva === 4 && modell && modell.bas[r.typ] ? modell.bas[typ] / modell.bas[r.typ] : 1;
+      ut.push({ ...r, niva, vikt: nivavikt * farskhet, perVecka, prisNu: perVecka * storleksjust * Math.pow(modell ? modell.arsfaktor : 1, nu - ar) });
     }
     ut.sort((a, b) => a.niva - b.niva || b.datum.localeCompare(a.datum));
     return ut;
@@ -141,28 +161,27 @@ const AV = (function () {
 
   function avrunda5000(x) { return Math.round(x / 5000) * 5000; }
 
-  /* Sammanvägt riktvärde. Modellen och jämförelserna vägs mot varandra
-     beroende på hur mycket jämförelserna väger. */
   function vardera(affarer, enhet, typ, vecka) {
     if (!modell) skatta(affarer);
+    const klass = veckoklass(vecka);
     const M = modellvarde(typ, vecka);
     const jf = jamforelser(affarer, enhet, typ, vecka);
-    const direkta = jf.filter(j => j.niva <= 3);
+    const direkta = jf.filter(j => j.niva <= 4);
     const viktsumma = direkta.reduce((s, j) => s + j.vikt, 0);
     const C = viktsumma > 0 ? direkta.reduce((s, j) => s + j.vikt * j.prisNu, 0) / viktsumma : null;
-    let andelJf = 0;
-    if (C != null) andelJf = Math.min(0.7, viktsumma / (viktsumma + 2));   // 2 "modellvikter" som ankare
+    // Jämförelserna får väga upp till 80 %; två "modellvikter" som ankare så en enda gammal affär inte styr.
+    const andelJf = C == null ? 0 : Math.min(0.8, viktsumma / (viktsumma + 2));
     const varde = M == null ? C : C == null ? M : (1 - andelJf) * M + andelJf * C;
-    const nTypKlass = direkta.filter(j => j.niva <= 3).length;
+    const nStarka = jf.filter(j => j.niva <= 3).length;
     return {
-      typ, vecka, klass: veckoklass(vecka), klassNamn: KLASS_NAMN[veckoklass(vecka)],
+      typ, typNamn: TYP_NAMN[typ], vecka, klass, klassNamn: KLASS_NAMN[klass],
       modell: M, jamforelsevarde: C, andelJamforelser: andelJf,
       varde, lag: varde != null ? varde * (1 - INTERVALL) : null, hog: varde != null ? varde * (1 + INTERVALL) : null,
-      utgangspris: varde != null ? avrunda5000(varde) : null,
-      jamforelser: jf, antalDirekta: nTypKlass, tunt: nTypKlass < 3,
+      utgangspris: varde != null ? avrunda5000(varde * UTGANGSPASLAG) : null,
+      jamforelser: jf, antalDirekta: nStarka, tunt: nStarka < 3,
       parametrar: modell,
     };
   }
 
-  return { TYPER, KLASSER, KLASS_NAMN, INTERVALL, veckoklass, typAvBoarea, skatta, modellvarde, jamforelser, vardera, avrunda5000 };
+  return { TYPER, TYP_NAMN, KLASSER, KLASS_NAMN, INTERVALL, UTGANGSPASLAG, veckoklass, typAvBoarea, normTyp, skatta, modellvarde, jamforelser, vardera, avrunda5000 };
 })();

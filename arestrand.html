@@ -159,7 +159,7 @@ tr.n1 td{color:var(--text);}
         <div class="card" id="vardCard">
           <div class="card-title">Riktvärde</div>
           <div id="vardOut"><div class="results-empty">Välj enhet och vecka.</div></div>
-          <div class="note">Riktvärdet är statistiskt: en modell över alla enveckasaffärer (bas per lägenhetstyp × veckofaktor × årstrend) vägd mot de direkta jämförelserna nedan. Intervallet ±25 % fångar två tredjedelar av affärerna i underlaget. Det är ett underlag för prissättning, inte en värdering i fastighetsmäklarlagens mening.</div>
+          <div class="note">Riktvärdet är statistiskt: en modell över alla enveckasaffärer (bas per storleksklass × säsongsfaktor × årstrend) vägd mot jämförelserna nedan. Storleksklasserna går tvärs över huslängorna, eftersom en lägenhet av samma storlek är samma produkt oavsett hus. Intervallet ±25 % fångar två tredjedelar av affärerna i underlaget. Det är ett underlag för prissättning, inte en värdering i fastighetsmäklarlagens mening.</div>
         </div>
         <div class="card">
           <div class="card-title">Jämförelser</div>
@@ -219,9 +219,8 @@ tr.n1 td{color:var(--text);}
     <div class="card">
       <div class="card-title">Underlag</div>
       <div class="btn-row">
-        <button class="btn" id="hemnetBtn" onclick="hamtaHemnet()">Hämta nya slutpriser från Hemnet</button>
+        <button class="btn" id="hemnetBtn" onclick="hamtaHemnet()">Läs in slutpriser från Hemnet</button>
         <button class="btn" onclick="visaEgenForm()">Lägg till egen affär</button>
-        <button class="btn" onclick="visaKlistra()">Klistra in från Hemnet</button>
         <button class="btn" onclick="laddaNerDatafil()">Ladda ner datafil (JS)</button>
         <button class="btn" onclick="rensaLokalt()" title="Tar bort lokalt tillagda rader">Rensa lokala tillägg</button>
       </div>
@@ -238,7 +237,7 @@ tr.n1 td{color:var(--text);}
         </div>
       </div>
       <div id="klistraForm" style="display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
-        <div class="form-help" style="margin-bottom:6px">Reservväg när Hemnet inte går att läsa automatiskt: <a href="https://www.hemnet.se/salda/lagenhet/are-kommun/are-strand" target="_blank" rel="noopener" style="color:var(--accent)">öppna slutprissidan</a>, markera allt (Ctrl+A), kopiera (Ctrl+C) och klistra in här. Sida 2 och 3 på samma sätt om du vill ha allt.</div>
+        <div class="form-help" style="margin-bottom:6px">Hemnet går inte att läsa automatiskt (de blockerar servrar): <a href="https://www.hemnet.se/salda/lagenhet/are-kommun/are-strand" target="_blank" rel="noopener" style="color:var(--accent)">öppna slutprissidan</a>, markera allt (Ctrl+A), kopiera (Ctrl+C) och klistra in här. Sida 2 och 3 på samma sätt om du vill ha allt.</div>
         <textarea class="form-textarea" id="klistraText" placeholder="Klistra in sidtexten från Hemnet här…" style="min-height:120px"></textarea>
         <div class="btn-row" style="margin-top:8px"><button class="btn btn-primary" style="width:auto" onclick="tolkaKlistrat()">Tolka inklistrad text</button></div>
       </div>
@@ -363,28 +362,32 @@ function vardera(k, v, paket) {
   }
   const r = AV.vardera(aff, k.id, k.typ, v);
   senasteVardering = r;
-  const n1 = r.jamforelser.filter(j => j.niva === 1).length, n2 = r.jamforelser.filter(j => j.niva === 2).length, n3 = r.jamforelser.filter(j => j.niva === 3).length;
+  const n1 = r.jamforelser.filter(j => j.niva === 1).length, n2 = r.jamforelser.filter(j => j.niva === 2).length, n3 = r.jamforelser.filter(j => j.niva === 3).length, n4 = r.jamforelser.filter(j => j.niva === 4).length;
   out.innerHTML = `
     <div class="big">${kr(r.varde)} <small>riktvärde ${new Date().getFullYear()}</small></div>
-    <div class="range">intervall ${kr(r.lag)} – ${kr(r.hog)} · rekommenderat utgångspris ${kr(r.utgangspris)}</div>
+    <div class="range">intervall ${kr(r.lag)} – ${kr(r.hog)} · rekommenderat utgångspris ${kr(r.utgangspris)} (riktvärdet plus ${Math.round((AV.UTGANGSPASLAG - 1) * 100)} %, slutpriserna ligger i median under utgångspriset)</div>
     <div class="chips">
       <div class="chip"><div class="k">Modellvärde</div><div class="v">${kr(r.modell)}</div></div>
       <div class="chip"><div class="k">Jämförelsevärde</div><div class="v">${kr(r.jamforelsevarde)}</div></div>
       <div class="chip"><div class="k">Vikt jämförelser</div><div class="v">${Math.round(r.andelJamforelser * 100)} %</div></div>
       <div class="chip"><div class="k">Veckoklass</div><div class="v">${esc(r.klassNamn)}</div></div>
-      <div class="chip"><div class="k">Jämförelser</div><div class="v">${n1} samma enhet+vecka · ${n2} samma typ+vecka · ${n3} samma typ+klass</div></div>
+      <div class="chip"><div class="k">Storlek</div><div class="v">${esc(r.typNamn)}</div></div>
+      <div class="chip"><div class="k">Jämförelser</div><div class="v">${n1} enhet+vecka · ${n2} storlek+vecka · ${n3} storlek+säsong · ${n4} grannstorlek</div></div>
     </div>
-    ${r.tunt ? '<div class="warn">Tunt underlag: färre än tre direkta jämförelser. Riktvärdet vilar mest på modellen — visa intervallet, inte siffran.</div>' : ''}`;
+    ${r.tunt ? '<div class="warn">Tunt underlag: färre än tre affärer i samma storlek och säsong. Riktvärdet vilar mest på modellen och grannstorlekarna — visa intervallet, inte siffran.</div>' : ''}`;
   jf.innerHTML = tabellJf(r.jamforelser);
   if (!prisAndratForHand && r.utgangspris) document.getElementById('utgangspris').value = r.utgangspris.toLocaleString('sv-SE');
 }
 
 function tabellJf(list) {
   if (!list.length) return '<div class="results-empty">Inga jämförbara affärer.</div>';
-  const nivaText = { 1: 'enhet+vecka', 2: 'typ+vecka', 3: 'typ+klass', 4: 'enhet' };
-  return `<table><thead><tr><th>Nivå</th><th>Datum</th><th>Objekt</th><th>Veckor</th><th class="num">Slutpris</th><th>Mäklare</th><th>Källa</th></tr></thead><tbody>` +
-    list.map(j => `<tr class="n${j.niva}"><td><span class="niva n${j.niva}">${nivaText[j.niva]}</span></td><td class="mono">${esc(j.datum)}</td><td>${esc(j.objekt)}</td><td class="mono">${(j.veckor || []).join(', ')}</td><td class="num">${kr(j.pris)}${j.veckor && j.veckor.length > 1 ? ' <span class="pill">' + j.veckor.length + ' veckor</span>' : ''}</td><td>${esc(j.maklare)}</td><td class="mono">${esc(j.kalla)}</td></tr>`).join('') +
-    '</tbody></table>';
+  const nivaText = { 1: 'enhet+vecka', 2: 'storlek+vecka', 3: 'storlek+säsong', 4: 'grannstorlek+vecka', 5: 'enhet, annan säsong' };
+  const rad = j => `<tr class="n${j.niva}"><td><span class="niva n${j.niva}">${nivaText[j.niva]}</span></td><td class="mono">${esc(j.datum)}</td><td>${esc(j.objekt)}</td><td class="mono">${(j.veckor || []).join(', ')}</td><td class="mono">${esc(AV.veckoklass(j.veckor[0]))}</td><td class="num">${kr(j.pris)}${j.veckor && j.veckor.length > 1 ? ' <span class="pill">' + j.veckor.length + ' veckor</span>' : ''}</td><td>${esc(j.maklare)}</td><td class="mono">${esc(j.kalla)}</td></tr>`;
+  const head = '<table><thead><tr><th>Nivå</th><th>Datum</th><th>Objekt</th><th>Veckor</th><th>Säsong</th><th class="num">Slutpris</th><th>Mäklare</th><th>Källa</th></tr></thead><tbody>';
+  const vagda = list.filter(j => j.niva <= 4), ovriga = list.filter(j => j.niva === 5);
+  let html = vagda.length ? head + vagda.map(rad).join('') + '</tbody></table>' : '<div class="results-empty">Inga affärer i samma storlek och säsong.</div>';
+  if (ovriga.length) html += `<div class="card-title" style="margin-top:18px">Samma enhet, andra säsonger <span class="pill">väger inte i riktvärdet</span></div>` + head + ovriga.map(rad).join('') + '</tbody></table>';
+  return html;
 }
 
 // ── Text ─────────────────────────────────────────────────────────────────
@@ -514,40 +517,34 @@ function renderStatistik() {
   const aff = allaAffarer();
   const m = AV.skatta(aff);
   document.getElementById('affCount').textContent = aff.length + ' rader · ' + lasExtra().length + ' lokala';
-  document.getElementById('modellInfo').innerHTML = `Modell skattad på ${m.n} enveckasaffärer: medianfel ${Math.round(m.medianfel * 100)} %, ${Math.round(m.inom25 * 100)} % inom ±25 %, årstrend ${((m.arsfaktor - 1) * 100).toFixed(1)} %/år. Veckofaktor mot jul/nyår: ` +
-    AV.KLASSER.slice(1).map(k => `${k} ${m.vecko[k].toFixed(2)}`).join(' · ') + '.';
+  document.getElementById('modellInfo').innerHTML = `Modell skattad på ${m.n} enveckasaffärer: medianfel ${Math.round(m.medianfel * 100)} %, ${Math.round(m.inom25 * 100)} % inom ±25 %, årstrend ${((m.arsfaktor - 1) * 100).toFixed(1)} %/år. Säsongsfaktor mot jul/nyår: ` +
+    AV.KLASSER.slice(1).map(k => `${AV.KLASS_NAMN[k].split(' (')[0].toLowerCase()} ${m.vecko[k].toFixed(2)}`).join(' · ') + '.';
   // matris
   const cell = {};
-  for (const r of aff) if (r.veckor && r.veckor.length === 1 && AV.TYPER.includes(r.typ)) { const key = r.typ + '|' + AV.veckoklass(r.veckor[0]); (cell[key] = cell[key] || []).push(r.pris); }
+  for (const r of aff) { const t = AV.normTyp(r); if (r.veckor && r.veckor.length === 1 && AV.TYPER.includes(t)) { const key = t + '|' + AV.veckoklass(r.veckor[0]); (cell[key] = cell[key] || []).push(r.pris); } }
   document.getElementById('matris').innerHTML = '<table><thead><tr><th>Typ</th>' + AV.KLASSER.map(k => `<th class="num">${esc(AV.KLASS_NAMN[k].split(' (')[0])}</th>`).join('') + '</tr></thead><tbody>' +
-    AV.TYPER.map(t => `<tr><td>${esc((ARESTRAND_TYPER[t] || {}).namn || t)}</td>` + AV.KLASSER.map(k => { const a = (cell[t + '|' + k] || []).sort((x, y) => x - y); return `<td class="num">${a.length ? Math.round(a[Math.floor(a.length / 2)] / 1000) + ' tkr <span class="pill">' + a.length + '</span>' : '–'}</td>`; }).join('') + '</tr>').join('') + '</tbody></table>';
+    AV.TYPER.map(t => `<tr><td>${esc(AV.TYP_NAMN[t] || t)}</td>` + AV.KLASSER.map(k => { const a = (cell[t + '|' + k] || []).sort((x, y) => x - y); return `<td class="num">${a.length ? Math.round(a[Math.floor(a.length / 2)] / 1000) + ' tkr <span class="pill">' + a.length + '</span>' : '–'}</td>`; }).join('') + '</tr>').join('') + '</tbody></table>';
   // filter
   const fT = document.getElementById('fTyp'), fE = document.getElementById('fEnhet');
-  if (fT.options.length === 1) { for (const t of [...AV.TYPER, 'paket_1_6']) fT.add(new Option((ARESTRAND_TYPER[t] || { namn: 'Paket 1/6' }).namn, t)); }
+  if (fT.options.length === 1) { for (const t of [...AV.TYPER, 'paket_1_6']) fT.add(new Option(AV.TYP_NAMN[t], t)); }
   if (fE.options.length === 1) { for (const e of [...new Set(aff.map(r => r.enhet))].sort()) fE.add(new Option(e, e)); }
   renderAffarer();
 }
 function renderAffarer() {
   const fT = document.getElementById('fTyp').value, fE = document.getElementById('fEnhet').value;
-  const aff = allaAffarer().filter(r => (!fT || r.typ === fT) && (!fE || r.enhet === fE)).sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
+  const aff = allaAffarer().filter(r => (!fT || AV.normTyp(r) === fT) && (!fE || r.enhet === fE)).sort((a, b) => (b.datum || '').localeCompare(a.datum || ''));
   document.getElementById('affTable').innerHTML = '<table><thead><tr><th>Datum</th><th>Objekt</th><th>Enhet</th><th>Veckor</th><th>Typ</th><th class="num">Boarea</th><th class="num">Slutpris</th><th>Mäklare</th><th>Källa</th></tr></thead><tbody>' +
-    aff.map(r => `<tr><td class="mono">${esc(r.datum)}</td><td>${esc(r.objekt)}</td><td class="mono">${esc(r.enhet)}</td><td class="mono">${(r.veckor || []).join(', ')}</td><td class="mono">${esc(r.typ || '')}</td><td class="num">${r.boarea || ''}</td><td class="num">${kr(r.pris)}</td><td>${esc(r.maklare)}</td><td class="mono">${esc(r.kalla)}</td></tr>`).join('') + '</tbody></table>';
+    aff.map(r => `<tr><td class="mono">${esc(r.datum)}</td><td>${esc(r.objekt)}</td><td class="mono">${esc(r.enhet)}</td><td class="mono">${(r.veckor || []).join(', ')}</td><td class="mono">${esc(AV.normTyp(r) || '')}</td><td class="num">${r.boarea || ''}</td><td class="num">${kr(r.pris)}</td><td>${esc(r.maklare)}</td><td class="mono">${esc(r.kalla)}</td></tr>`).join('') + '</tbody></table>';
 }
 
-async function hamtaHemnet() {
-  const btn = document.getElementById('hemnetBtn'), msg = document.getElementById('statMsg');
-  btn.disabled = true; btn.textContent = 'Läser Hemnet…'; msg.textContent = '';
-  try {
-    const r = await fetch('/.netlify/functions/hemnet-slutpriser');
-    const d = await r.json();
-    if (!r.ok || d.error) throw new Error(d.error || ('HTTP ' + r.status));
-    const nya = laggTillRader(d.rader);
-    msg.innerHTML = `Hemnet visar ${d.totalt ?? d.antal} slutpriser, ${d.antal} lästa. <strong>${nya.length} nya</strong> lades till${nya.length ? ': ' + nya.map(n => esc(n.objekt) + ' ' + kr(n.pris)).join(', ') : ''}.`;
-    renderStatistik(); valdVecka();
-  } catch (e) {
-    msg.innerHTML = `<span style="color:var(--danger)">Kunde inte läsa Hemnet automatiskt: ${esc(e.message)}.</span> Använd reservvägen nedan: öppna sidan, kopiera allt och klistra in.`;
-    visaKlistra(true);
-  } finally { btn.disabled = false; btn.textContent = 'Hämta nya slutpriser från Hemnet'; }
+/* Hemnet blockerar servrar (Cloudflare, TLS-avtryck) men inte webbläsare —
+   provat 2026-09-15 både lokalt och från Netlify. Knappen öppnar därför
+   slutprissidan i en ny flik och fäller ut klistra-in-rutan. */
+function hamtaHemnet() {
+  window.open('https://www.hemnet.se/salda/lagenhet/are-kommun/are-strand', '_blank', 'noopener');
+  visaKlistra(true);
+  document.getElementById('statMsg').textContent = 'Hemnet öppnades i en ny flik. Markera allt där (Ctrl+A), kopiera (Ctrl+C) och klistra in i rutan nedan.';
+  document.getElementById('klistraText').focus();
 }
 
 function visaKlistra(oppna) { const f = document.getElementById('klistraForm'); f.style.display = (oppna || f.style.display === 'none') ? '' : 'none'; }
@@ -626,7 +623,7 @@ function sparaEgen() {
   const pris = tal(document.getElementById('egPris').value), utg = tal(document.getElementById('egUtg').value), maklare = document.getElementById('egMaklare').value.trim() || 'PeakFast';
   if (!enhet || !v || !datum || !pris) { alert('Enhet, vecka, datum och slutpris krävs.'); return; }
   const k = enhetAv(enhet);
-  const rad = { datum, enhet, veckor: [v], typ: k.hus === 6 && utg && utg > 400000 ? 'paket_1_6' : k.typ, boarea: k.boarea, avgift: k.avgift, pris, utgangspris: utg, maklare, kalla: 'egen', objekt: `Åre Strand ${enhet} v.${v}` };
+  const rad = { datum, enhet, veckor: [v], typ: k.hus === 6 && pris > 400000 ? 'paket_1_6' : k.typ, boarea: k.boarea, avgift: k.avgift, pris, utgangspris: utg, maklare, kalla: 'egen', objekt: `Åre Strand ${enhet} v.${v}` };
   const extra = lasExtra(); extra.push(rad); skrivExtra(extra);
   document.getElementById('statMsg').textContent = `Sparad: ${rad.objekt} ${kr(pris)}. Ladda ner datafilen och lägg den i repot så följer den med till alla webbläsare.`;
   document.getElementById('egPris').value = ''; document.getElementById('egUtg').value = '';
