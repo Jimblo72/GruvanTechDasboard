@@ -153,7 +153,10 @@ const AV = (function () {
       const perVecka = r.veckor.length > 1 ? r.pris / r.veckor.length : r.pris;
       // Grannstorlek räknas om med modellens basförhållande så priset blir jämförbart.
       const storleksjust = niva === 4 && modell && modell.bas[r.typ] ? modell.bas[typ] / modell.bas[r.typ] : 1;
-      ut.push({ ...r, niva, vikt: nivavikt * farskhet, perVecka, prisNu: perVecka * storleksjust * Math.pow(modell ? modell.arsfaktor : 1, nu - ar) });
+      /* Gamla priser räknas INTE ned med årstrenden — de väger bara mindre
+         (färskheten ovan). Jimmys erfarenhet 2026-09-15: en villa vecka 9 för
+         300 000 år 2020 är fortfarande ett giltigt bevis på nivån. */
+      ut.push({ ...r, niva, vikt: nivavikt * farskhet, perVecka, prisNu: perVecka * storleksjust });
     }
     ut.sort((a, b) => a.niva - b.niva || b.datum.localeCompare(a.datum));
     return ut;
@@ -166,11 +169,16 @@ const AV = (function () {
     const klass = veckoklass(vecka);
     const M = modellvarde(typ, vecka);
     const jf = jamforelser(affarer, enhet, typ, vecka);
-    const direkta = jf.filter(j => j.niva <= 4);
+    /* Finns affärer i samma storlek OCH samma vecka med rimlig vikt får de tala
+       ensamma — samma säsong och grannstorlek är svagare bevis och skulle bara
+       dra riktvärdet mot mitten. Utan sådana används alla fyra nivåerna. */
+    const starka = jf.filter(j => j.niva <= 2);
+    const starkVikt = starka.reduce((s, j) => s + j.vikt, 0);
+    const direkta = starkVikt >= 1.5 ? starka : jf.filter(j => j.niva <= 4);
     const viktsumma = direkta.reduce((s, j) => s + j.vikt, 0);
     const C = viktsumma > 0 ? direkta.reduce((s, j) => s + j.vikt * j.prisNu, 0) / viktsumma : null;
-    // Jämförelserna får väga upp till 80 %; två "modellvikter" som ankare så en enda gammal affär inte styr.
-    const andelJf = C == null ? 0 : Math.min(0.8, viktsumma / (viktsumma + 2));
+    // Jämförelserna får väga upp till 90 %; en "modellvikt" som ankare så en enda gammal affär inte styr ensam.
+    const andelJf = C == null ? 0 : Math.min(0.9, viktsumma / (viktsumma + 1));
     const varde = M == null ? C : C == null ? M : (1 - andelJf) * M + andelJf * C;
     const nStarka = jf.filter(j => j.niva <= 3).length;
     return {
