@@ -337,7 +337,7 @@ function valdVecka() {
   info.innerHTML = [
     ['Förening', k.brf], ['Typ', k.typnamn], ['Boarea', k.boarea + ' kvm'], ['Rum', `${k.rum} rok · ${k.sovrum} sovrum · ${k.baddar} bäddar`],
     ['Byggår', k.byggar], ['Avgift', paket ? 'ca 1 100–1 200 kr/mån (paket)' : (k.avgift ? k.avgift + ' kr/mån' : 'okänd — kontrollera')],
-    ['Bildmapp', k.bildmapp], ['Faktakälla', k.kalla === 'pdf' ? 'objektsbeskrivning' : 'Hemnet']
+    ['Bildmapp', k.bildmapp], ['Faktakälla', k.kalla === 'pdf' ? 'objektsbeskrivning' : k.kalla === 'harledd' ? 'härledd ur grannlägenhet — kontrollera' : 'Hemnet']
   ].map(([a, b]) => `<div class="info-row"><span class="info-label">${esc(a)}</span><span class="info-val">${esc(b)}</span></div>`).join('');
   vardera(k, v, paket);
   renderTextInfo();
@@ -408,7 +408,7 @@ function faktaFor(k, v) {
     boarea: k.boarea, rum: k.rum, sovrum: k.sovrum, baddar: k.baddar, byggar: k.byggar,
     planlosning: k.planlosning, hustext: k.hustext,
     vecka: v, veckolabel: veckolabel(v), veckousp: veckousp(v),
-    avgift: paket ? null : k.avgift, paket, usp,
+    avgift: paket ? null : k.avgift, paket, usp, husdjur: k.husdjur !== false,
   };
 }
 
@@ -430,7 +430,7 @@ const SASONG_KARAKTAR = {
   jul_nyar: 'jul- och nyårsvecka i fjällen, snösäkert, ljus och eldar i byn, den vecka flest vill åt',
   vinter: 'lugn vintervecka med stabilt skidföre och korta liftköer, före sportlovsruschen',
   sportlov: 'sportlovsvecka med fullt pistsystem, liv i byn och årets högsta tryck på boende',
-  varvinter: 'härlig vårvintervecka med bra skidåkning i vårsolen, säsongens sista snöveckor och vårens första värme, långa ljusa dagar — vissa år infaller påsken här',
+  varvinter: 'en härlig vårvintervecka i vårsolen när det fortfarande finns snö i backarna — säsongens skidveckor i vårvärmen, och vissa år infaller påsken under den här veckan',
   var: 'vårvecka när snön släpper och Åre blir stilla, vandring och cykel börjar, sjön öppnar sig',
   sommar: 'sommarvecka vid Åresjön med bad, bike park, vandring och fjället i grönt',
   host: 'höstvecka med klar luft, färgerna på fjället och ett Åre i lugnt tempo',
@@ -464,10 +464,13 @@ Huset: ${f.hustext}
 ${ram}
 Vecka: ${f.veckolabel}${f.veckousp ? ' — ' + f.veckousp : ''}
 Veckans karaktär: ${SASONG_KARAKTAR[AV.veckoklass(f.vecka)] || ''}
+Husdjur: ${f.husdjur ? 'tillåtna' : 'inte tillåtna i den här lägenheten'}
 ${f.usp ? 'Säljpunkter för just detta objekt: ' + f.usp + '\n' : ''}Läge och service: intill Åresjöns strand, några minuters promenad till hotellet Holiday Club med restaurang, spa, bad, gym och shopping; medlemmar har rabatt på hotellets aktiviteter. Via gångbron från hotellet når man tågstationen och Åre by med butiker och restauranger; från torget tar bergbanan dig upp i skidsystemet. Fullt möblerad och utrustad, bäddat och rena handdukar vid ankomst.
 RCI-STYCKET (ordagrant): ${RCI_TEXT}
 
-Nämn ALDRIG utgångspris eller pris i texten. Bytesdag och husdjur nämns bara om det står ovan.
+Nämn ALDRIG utgångspris eller pris i texten. Bytesdag nämns bara om det står ovan. Husdjur: skriv att de är välkomna när de är tillåtna, och att boendet är husdjursfritt när de inte är det — hitta aldrig på det ena eller andra.
+SPRÅKET SKA VARA DIREKT, inte poetiskt. Skriv "en härlig vårvintervecka i vårsolen när det fortfarande finns snö i backarna" — inte "vårvinterveckan när solen värmer och backarna bär snö". Naturen och årstiden "möter" inte, "bär" inte och "öppnar sig" inte. Säg veckonumret rakt ut när du skriver om veckan: "vissa år infaller påsken under vecka 16", inte "påsken infaller just här".
+Räkna upp rum enkelt. Skriv inte "utöver X finns Y" och inte "totalt två badrum (…)" — nämn badrummen var för sig där de hör hemma, studions i samma mening som studion.
 ORDVAL: skriv "badrum", aldrig "duschrum". Antal badrum och toaletter EXAKT som i planlösningen ovan — hitta inte på fler. Skriv inte "mjuk snö" (det betyder slaskföre) — vårvinterns snö beskrivs med sol och bra skidåkning.
 
 EXEMPEL PÅ ÖNSKAT TONLÄGE (påhittat objekt — hämta ALDRIG fakta härifrån, bara rytmen):
@@ -504,6 +507,7 @@ function genereraMall() {
     ? `Känn dig som hemma i Åre. Med den här andelen disponerar du lägenheten var sjätte vecka, 8–9 veckor om året fördelade över alla årstider enligt ett rullande schema.`
     : `Tillbringa vecka ${f.vecka} i Åre, år efter år. ${f.veckousp ? f.veckousp + '.' : ''} Andelen ger dig en fast vecka i ${k.slag === 'villa' ? 'en strandvilla' : 'en lägenhet'} vid Åresjöns strand, fullt möblerad och utrustad.`);
   stycken.push(`Bostaden är på ${f.boarea} kvm med ${f.rum} rum och kök, ${f.sovrum} sovrum och ${f.baddar} bäddar: ${f.planlosning}. ${f.hustext.charAt(0).toUpperCase() + f.hustext.slice(1)}.`);
+  stycken.push(f.husdjur ? `Husdjur är välkomna.` : `Boendet är husdjursfritt.`);
   if (f.usp) stycken.push(f.usp.charAt(0).toUpperCase() + f.usp.slice(1) + '.');
   stycken.push(`Några minuters promenad bort ligger hotellet Holiday Club med restaurang, spa, bad, gym och shopping, och som medlem i föreningen har du rabatt på hotellets aktiviteter. Via gångbron från hotellet når du tågstationen och Åre by, och från torget tar bergbanan dig upp i skidsystemet.`);
   stycken.push(`Du anländer till bäddade sängar och rena handdukar, och som medlem i föreningen har du rabatt på hotellets aktiviteter.`);
