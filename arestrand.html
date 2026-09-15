@@ -412,14 +412,32 @@ function faktaFor(k, v) {
   };
 }
 
+/* Säsongens karaktär i ord — råmaterial för inledningen, som ska handla om
+   veckan och läget innan bostaden beskrivs (Jimmys granskning 2026-09-15). */
+const SASONG_KARAKTAR = {
+  jul_nyar: 'jul- och nyårsvecka i fjällen, snösäkert, ljus och eldar i byn, den vecka flest vill åt',
+  vinter: 'lugn vintervecka med stabilt skidföre och korta liftköer, före sportlovsruschen',
+  sportlov: 'sportlovsvecka med fullt pistsystem, liv i byn och årets högsta tryck på boende',
+  varvinter: 'härlig vårvintervecka med långa ljusa dagar, solskidning och mjuk snö — vissa år infaller påsken här',
+  var: 'vårvecka när snön släpper och Åre blir stilla, vandring och cykel börjar, sjön öppnar sig',
+  sommar: 'sommarvecka vid Åresjön med bad, bike park, vandring och fjället i grönt',
+  host: 'höstvecka med klar luft, färgerna på fjället och ett Åre i lugnt tempo',
+};
+
 function byggStrandPrompt(f) {
   const ram = f.paket
     ? `Andelsform: paket om var sjätte vecka, 8–9 veckor per år fördelade över alla årstider enligt rullande schema (HC Villas, hus 6). Avgift ca 1 100–1 200 kr/mån.`
     : `Andelsform: en fast vecka per år, vecka ${f.vecka} (${f.veckolabel}). Avgift ${f.avgift ? f.avgift + ' kr/mån' : 'enligt förening'} som täcker drift, städning, byte av sänglinne och handdukar.`;
   return `Du skriver säljtexter för andelsveckor på Åre Strand Holiday Club i Åre. Direkt konkret svenska, inga högtravande fraser. Förbjudna ord: erbjuder, inbjuder, unikt, fantastisk, exklusivt. Inled INTE med Välkommen.${SPRAKREGLER}
 
+DISPOSITION för den långa texten — följ den:
+(1) INLEDNINGEN säljer. Två till fyra meningar om VECKAN och LÄGET innan bostaden nämns: vad den här veckan i Åre är för slags vecka (se "Veckans karaktär"), strandläget vid Åresjön, närheten till hotellet Holiday Club och till centrala Åre. Konkret och varmt, som en mäklare som vill att läsaren ska se sig själv där. Inga siffror i inledningen.
+(2) BOSTADEN som ett flöde, inte en uppräkning: led läsaren genom lägenheten från entrén, ge ett eller två rum en scen (kvällen vid braskaminen, morgonen på altanen mot sjön). Skriv inte listor med kommatecken i rad — högst tre led i en uppräkning, hellre två meningar än en lång.
+(3) SERVICEN OCH ÄGANDET: bäddat och klart vid ankomst, Holiday Clubs restaurang, spa och bad, RCI-byte — kort, som en fördel, inte som en produktbeskrivning.
+(4) AVGIFTEN allra sist, en mening.
+
 Skriv exakt två texter ÅTSKILDA med texten ---KORT---:
-1. LÅNG text (300-430 ord) — informativ, beskrivande, faktabaserad. Avsluta med avgiften.
+1. LÅNG text (300-430 ord) — säljande men sann, flytande prosa med varierad meningsbyggnad. Avsluta med avgiften.
 2. KORT text (260-300 tecken EXAKT) — SÄLJANDE krok. Måste väcka intresse på 2 sekunder. Använd:
    - Kort konkret öppning (vilken vecka + Åre Strand, max 5 ord, gärna utropstecken)
    - Lägenhetens nyckelfakta (storlek, rum, bäddar)
@@ -433,8 +451,15 @@ Planlösning: ${f.planlosning}
 Huset: ${f.hustext}
 ${ram}
 Vecka: ${f.veckolabel}${f.veckousp ? ' — ' + f.veckousp : ''}
+Veckans karaktär: ${SASONG_KARAKTAR[AV.veckoklass(f.vecka)] || ''}
 ${f.usp ? 'Säljpunkter för just detta objekt: ' + f.usp + '\n' : ''}Läge och service: intill Åresjöns strand, några minuters promenad till hotellet Holiday Club med restaurang, spa, bad, gym och shopping; medlemmar har rabatt på hotellets aktiviteter. Via gångbron från hotellet når man tågstationen och Åre by med butiker och restauranger; från torget tar bergbanan dig upp i skidsystemet. Fullt möblerad och utrustad, bäddat och rena handdukar vid ankomst. Andelen kan nyttjas själv, hyras ut eller anslutas till RCI för byte till boende på andra orter.
 Nämn ALDRIG utgångspris eller pris i texten. Bytesdag och husdjur nämns bara om det står ovan.
+
+EXEMPEL PÅ ÖNSKAT TONLÄGE (påhittat objekt — hämta ALDRIG fakta härifrån, bara rytmen):
+"Vecka 8 är den vecka Åre lever som mest: sportlov, fulla backar och kvällar när hela byn är ute. Från Åre Strand går du längs sjön till hotellet Holiday Club på några minuter, och via gångbron är du inne i centrala Åre med butiker, restauranger och bergbanan upp i systemet. Här är veckan din, år efter år.
+Från hallen öppnar sig allrummet med braskaminen som samlingspunkt efter en dag i backarna, och köket ligger i öppen planlösning så att middagen lagas mitt i sällskapet. Utgången till altanen vetter mot sjön och kvällssolen. Två sovrum ger plats för familjen eller vännerna som åker tillsammans …"
+— slut på exempel.
+
 SKRIV BARA TEXTERNA, inga rubriker eller förklaringar.`;
 }
 
