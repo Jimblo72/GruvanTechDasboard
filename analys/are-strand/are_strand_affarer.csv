@@ -1,0 +1,133 @@
+datum;enhet;veckor;typ;boarea;avgift;pris;maklare;kalla;objekt
+2026-09-04;20:2;29;villa_118;119;396;90000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 20:2 V29
+2026-07-08;1A2;14;lgh_74_81;76;330;70000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 1A2 vecka 14
+2026-07-03;3A4;17;lgh_74_81;81;329;60000;Fastighetsbyrån Åre;hemnet;Åre Strand 3A4 Vecka 17
+2026-06-03;6A4;;paket_1_6;81;1168;500000;PeakFast;hemnet;Åre strand 6A4
+2026-05-26;5B4;52;lgh_53_59;57;296;100000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 5B4 v52
+2026-05-15;5B3;;lgh_53_59;58;305;5000;Hometown Fastighetsmäkleri;hemnet;Åre Strand, 5B3
+2026-05-14;19:1;29;villa_118;118;395;75000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 19:1 vecka 29
+2026-05-05;22:2;26;lgh_53_59;58;390;44000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 22:2 vecka 26
+2026-04-29;22:2;33;villa_118;118;390;50000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 22:2 vecka 33
+2026-03-27;4B1;8;lgh_111;111;383;200000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 4B1 V8
+2026-03-20;1A2;16;lgh_74_81;76;321;120000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 1A2 vecka 16
+2026-03-14;14:1;12;lgh_90_95;95;385;125000;Hometown Fastighetsmäkleri;hemnet;Åre strand 14:1 vecka 12
+2026-03-13;6B3;11;lgh_74_81;78;346;125000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 6B3 V11
+2026-03-05;7A1;15;lgh_74_81;74;308;50000;Fastighetsbyrån Åre;hemnet;Åre Strand 7A1, Vecka 15
+2026-03-04;19:1;39;villa_118;118;390;50000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 19:1 vecka 39
+2026-03-02;20:1;14;villa_118;119;388;250000;PeakFast;hemnet;Åre strand 20:1 vecka 14
+2026-03-02;1B3;52;lgh_74_81;76;329;150000;Fastighetsbyrån Åre;hemnet;Åre Strand 1B3, vecka 52
+2026-02-27;21:2;15;villa_118;118;400;160000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 21:2 vecka 15
+2026-02-27;7B4;8;lgh_53_59;53;261;115000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 7B4 V8
+2026-02-12;7A3;7;lgh_53_59;53;261;125000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 7A3 V7
+2026-02-09;5A2;7;lgh_53_59;59;304;80000;Fastighetsbyrån Åre;hemnet;Åre strand 5A2 v7
+2026-01-23;19:1;31;villa_118;118;;125000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 19:1 V31
+2026-01-21;1B4;1;lgh_63;63;305;130000;Hometown Fastighetsmäkleri;hemnet;Åre Strand 1B4 vecka 1
+2026-01-02;2A3;;lgh_74_81;76;355;130000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 2A3
+2025-11-14;14:2;6;lgh_90_95;95;;150000;HusmanHagberg Åre;hh;Åre strand 14:2 v.6
+2025-10-23;2B4;1;lgh_63;63;;125000;HusmanHagberg Åre;hh;Åre strand 2B4 v.1
+2025-10-21;5B6;17;lgh_53_59;58;279;45000;Fastighetsbyrån Åre;hemnet;Åre Strand 5B6 vecka 17
+2025-09-20;17:1;;villa_118;119;388;150000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 17:1
+2025-08-27;18:2;2;villa_118;118;388;160000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 18:2 vecka 2
+2025-08-26;23:2;32;villa_118;119;388;100000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 23:2 V.32
+2025-08-21;4B2;52;lgh_74_81;78;321;175000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 4B2 v52
+2025-08-18;6A3;16;lgh_74_81;78;326;65000;Fastighetsbyrån Åre;hemnet;Åre Strand 6A3 vecka 16
+2025-08-13;6A2;8;lgh_74_81;77;339;125000;Fastighetsbyrån Åre;hemnet;Åre Strand 6A2, vecka 8
+2025-07-16;22:1;27;villa_118;119;;140000;HusmanHagberg Åre;hh;Åre strand 22:1 v.27
+2025-07-02;1A1;6;lgh_111;111;375;157500;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 1A1 Vecka 6
+2025-04-16;2A1;9;lgh_111;111;456;225000;Fastighetsbyrån Åre;hemnet;Åre Strand 2A1 (&2A1B), Vecka 9
+2025-03-05;19:2;12;villa_118;118;388;225000;HusmanHagberg Åre;hemnet;Åre strand 19:2 v.12
+2025-02-27;13:1;3;lgh_111;105;;70000;HusmanHagberg Åre;hh;Åre strand 13:1 v.3
+2025-02-21;14:2;10;lgh_90_95;95;375;180000;Fastighetsbyrån Åre;hemnet;Åre Strand 14:2, vecka 10
+2025-02-14;6A4;;paket_1_6;81;1168;610000;HusmanHagberg Åre;hemnet;Åre strand 6A4 (5)
+2025-02-14;3B1;11;lgh_111;111;375;165000;HusmanHagberg Åre;hemnet;Åre Strand 3B1 v.11
+2025-02-14;6A1;;paket_1_6;112;1196;700000;HusmanHagberg Åre;hemnet;Åre Strand 6A1, 1
+2025-02-10;7A4;52;lgh_53_59;53;279;130000;HusmanHagberg Åre;hemnet;Åre strand 7A4 v.52
+2025-02-10;22:2;5;villa_118;118;371;165000;HusmanHagberg Åre;hemnet;Åre strand 22:2 V.5
+2025-02-07;3B3;29;lgh_74_81;78;321;75000;Fastighetsbyrån Åre;hemnet;Åre Strand 3B3, vecka 29
+2025-01-20;6B3;4;lgh_74_81;78;330;60000;HusmanHagberg Åre;hemnet;Åre Strand 6B3 v.4
+2025-01-17;6B3;8;lgh_74_81;78;333;125000;Svensk Fastighetsförmedling Åre;hemnet;Åre strand 6B3 v.8
+2025-01-14;3B4;52;lgh_74_81;81;321;160000;Fastighetsbyrån Åre;hemnet;Åre Strand 3B4, vecka 52
+2025-01-14;7A1;2+3;lgh_74_81;74;608;170000;Fastighetsbyrån Åre;hemnet;Åre Strand 7A1, vecka 2&3
+2025-01-13;4A4;52;lgh_74_81;81;321;160000;Fastighetsbyrån Åre;hemnet;Åre Strand 4A4, vecka 52
+2025-01-10;14:1;8;lgh_90_95;95;367;180000;HusmanHagberg Åre;hemnet;Åre strand 14:1 v.8
+2025-01-02;4B4;14;lgh_74_81;76;300;185000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 4B4 vecka 14
+2024-11-21;23:1;3;villa_118;118;;120000;HusmanHagberg Åre;hh;Åre strand 23:1 vecka 3
+2024-09-18;21:1;9;villa_118;119;379;260000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 21:1 v9
+2024-09-05;7A5;52;lgh_53_59;53;279;120000;HusmanHagberg Åre;hemnet;Åre strand 7A5 v.52
+2024-09-04;2A1;8;lgh_111;111;463;190000;Fastighetsbyrån Åre;hemnet;Åre Strand 2A1 (&2A1B), V.8
+2024-09-03;1A2;52;lgh_74_81;76;305;160000;HusmanHagberg Åre;hemnet;Åre strand 1A2, v.52
+2024-08-30;19:1;33;villa_118;118;371;100000;HusmanHagberg Åre;hemnet;Åre strand 19:1 v.33
+2024-07-30;7B4;9;lgh_53_59;53;254;160000;HusmanHagberg Åre;hemnet;Åre strand 7B4 v.9
+2024-07-30;19:1;15;villa_118;118;;250000;HusmanHagberg Åre;hh;Åre strand 19:1 v.15
+2024-04-10;4A1;;lgh_111;111;;100000;SkandiaMäklarna Saltsjöbaden;hemnet;Åre strand 4A1
+2024-04-08;20:2;28;villa_118;119;379;90000;Fastighetsbyrån Åre;hemnet;Åre Strand 20:2 V.28
+2024-02-09;21:2;45;villa_118;118;;45000;HusmanHagberg Åre;hemnet;Åre strand 21:2 V.45
+2024-01-31;4B3;52;lgh_74_81;76;313;150000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 4B3 v52
+2024-01-11;17:1;6;villa_118;118;371;180000;HusmanHagberg Åre;hemnet;Åre strand 17:1 V.6
+2024-01-08;3B3;7;lgh_74_81;76;304;145000;HusmanHagberg Åre;hemnet;Åre strand 3B3 v.7
+2023-12-08;23:2;30;villa_118;118;;80000;HusmanHagberg Åre;hh;Åre strand 23:2 v.30
+2023-12-04;5B1;52;lgh_90_95;90;305;265000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 5:B1 v 52
+2023-11-30;6A2;16;lgh_74_81;78;308;130000;Fastighetsbyrån Åre;hemnet;Åre Strand 6A2 V.16
+2023-11-11;18:2;1;villa_118;125;375;290000;Svensk Fastighetsförmedling Kundvård Helsingborg;hemnet;Åre Strand 18:2 vecka 1
+2023-11-10;3B3;10;lgh_74_81;76;308;150000;Fastighetsbyrån Åre;hemnet;Åre Strand 3B3 V.10
+2023-08-16;5B2;52;lgh_53_59;59;280;150000;Svensk Fastighetsförmedling Åre;hemnet;Åre strand 5B:2 v 52
+2023-04-12;3A1;13;lgh_111;111;358;200000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 3A1, vecka 13
+2022-12-02;5A1;52;lgh_90_95;91;;240000;HusmanHagberg Åre;hh;Åre strand 5A1 v.52
+2022-11-28;14:2;52;lgh_90_95;95;;260000;HusmanHagberg Åre;hh;Åre strand 14:2 v.52
+2022-11-08;5A1;14;lgh_90_95;91;;135000;HusmanHagberg Åre;hh;Åre strand 5A1 v.14
+2022-10-31;6A1;;paket_1_6;112;1150;800000;HusmanHagberg Åre;hemnet;Åre Strand 6 A1 3
+2022-10-21;22:1;50;villa_118;118;371;50000;Fastighetsmäklarna;hemnet;Åre strand 22:1 vecka 50
+2022-03-31;22:1;31;villa_118;119;;125000;HusmanHagberg Åre;hh;Åre strand 22:1 v.31
+2022-03-08;6?;;paket_1_6;78;1090;625000;Hemverket AB;hemnet;Åre Strand 6
+2022-02-21;6A4;;paket_1_6;81;883;500000;HusmanHagberg Åre;hemnet;Åre strand 6A4 (4)
+2022-02-17;1B2;11;lgh_74_81;76;;140000;HusmanHagberg Åre;hh;Åre strand 1B2, v.11
+2022-02-14;3A1;2;lgh_111;111;;150000;HusmanHagberg Åre;hemnet;Åre strand 3A1, v.2
+2022-01-07;6A4;;paket_1_6;78;1090;555000;Hemverket AB;hemnet;Åre Strand 6A4
+2021-12-30;18:2;31;villa_118;118;371;99000;Hemverket AB;hemnet;Åre strand 18:02, v31
+2021-12-06;2B1;6;lgh_111;111;;125000;HusmanHagberg Åre;hemnet;Åre strand 2B1 AB v.6
+2021-12-06;7B6;52;lgh_74_81;74;;180000;HusmanHagberg Åre;hemnet;Åre strand 7B6 v.52
+2021-11-30;2A4;52;lgh_63;63;;120000;HusmanHagberg Åre;hemnet;Åre strand 2A4 v.52
+2021-11-25;3A2;52;lgh_74_81;76;300;180000;Fastighetsbyrån Åre;hemnet;Åre Strand 3A2 v.52
+2021-11-15;4B4;9;lgh_74_81;76;;250000;HusmanHagberg Åre;hh;Åre Strand 4B4 v.9
+2021-10-12;7B2;10;lgh_53_59;53;;199000;HusmanHagberg Åre;hemnet;Åre strand 7B2 v.10
+2021-10-12;23:1;1;villa_118;118;;230000;HusmanHagberg Åre;hh;Åre strand 23:1 v.1
+2021-09-10;6B3;52;lgh_74_81;78;308;215000;Svensk Fastighetsförmedling Åre;hemnet;Åre Strand 6B3 vecka 52
+2021-08-27;6B3;4;lgh_74_81;78;308;60000;HusmanHagberg Åre;hemnet;Åre Strand 6B3 v.4
+2021-08-11;14:1;13;lgh_90_95;95;;240000;HusmanHagberg Åre;hh;Åre strand 14:1 v.13
+2021-08-03;19:1;12+37;villa_118;118;;360000;HusmanHagberg Åre;hemnet;Åre Strand 19:1 v 12 & 37
+2021-08-03;21:1;50;villa_118;119;;70000;Magnusson Mäkleri Täby AB;hemnet;Åre strand 21:1 - V.50
+2021-07-20;18:2;;villa_118;118;371;120000;Hemverket AB;hemnet;Åre Strand 18:2
+2021-07-07;21:1;7;villa_118;119;;200000;Magnusson Mäkleri Täby AB;hemnet;Åre strand 21:1 - V.7
+2021-05-26;4A2;1;lgh_74_81;76;;160000;HusmanHagberg Åre;hemnet;Åre strand 4A2 v.1
+2021-05-19;23:2;8;villa_118;118;;295000;HusmanHagberg Åre;hemnet;Åre strand 23:2 v.8
+2021-05-11;20:2;15+24;villa_118;118;;290000;Fastighetsbyrån Åre;hemnet;Åre Strand 20:2 v.15 & v.24
+2021-05-08;5B5;7;lgh_53_59;59;;110000;HusmanHagberg Åre;hemnet;Åre Strand 5B5 v.7
+2021-05-04;14:1;14+40;lgh_90_95;95;638;250000;HusmanHagberg Åre;hemnet;Åre strand 14:1 v.14 & 2B4 v.40
+2021-04-27;23:1;11;villa_118;118;;250000;HusmanHagberg Åre;hh;Åre strand 23:1 v.11
+2021-04-02;3A3;5;lgh_74_81;78;;60000;HusmanHagberg Åre;hh;Åre strand 3A3 v.5
+2021-03-18;15:2;4;villa_118;118;375;125000;HusmanHagberg Åre;hemnet;Åre strand 15:2 v.4
+2021-01-14;5A6;12;lgh_53_59;58;;115000;HusmanHagberg Åre;hemnet;Åre strand 5A6, v.12
+2021-01-05;18:1;52;villa_118;118;;335000;HusmanHagberg Åre;hh;Åre strand 18:1 v.52
+2020-12-18;2B3;51;lgh_74_81;76;;70000;HusmanHagberg Åre;hemnet;Åre Strand 2B3 v.51
+2020-12-11;5A5;7;lgh_53_59;59;279;80000;HusmanHagberg Åre;hemnet;Åre strand 5A5 v.7
+2020-12-02;17:2;10;villa_118;118;;265000;HusmanHagberg Åre;hh;Åre strand 17:2 AB v.10
+2020-11-05;18:1;1+9;villa_118;118;;600000;HusmanHagberg Åre;hh;Åre strand 18:1 v.1 & v.9
+2020-10-13;3A3;48;lgh_74_81;78;300;50000;HusmanHagberg Åre;hemnet;Åre Strand 3 A3, v48
+2020-08-19;4A1;;lgh_111;111;358;85000;HusmanHagberg Åre;hemnet;Åre Strand 4A1
+2020-08-18;3A4;;lgh_74_81;76;304;62000;Hemverket AB;hemnet;Åre Strand 3 A 4
+2020-07-26;21A;;villa_118;119;371;105000;HusmanHagberg Åre;hemnet;Åre Strand 21A
+2020-07-21;23:2;1;villa_118;118;371;225000;HusmanHagberg Åre;hemnet;Åre strand 23:2 v.1
+2020-07-04;22:2;;villa_118;118;371;115000;HusmanHagberg Åre;hemnet;Åre strand 22:2
+2020-03-08;23:1;14+29;villa_118;118;729;300000;HusmanHagberg Åre;hemnet;Åre Strand 23:1 v.14 & 14:2 v.29
+2020-02-21;1B2;11;lgh_74_81;76;300;170000;HusmanHagberg Åre;hemnet;Åre strand 1B2, v.11
+2020-02-19;17:2;;villa_118;118;375;220000;HusmanHagberg Åre;hemnet;Åre strand 17:2 AB
+2019-12-23;23:2;6;villa_118;118;371;135000;HusmanHagberg Åre;hemnet;Åre strand 23:2 AB, v.6
+2019-10-19;19:1;;villa_118;118;371;240000;HusmanHagberg Åre;hemnet;Åre strand 19:1
+2019-10-14;23:1;;villa_118;119;371;69000;HusmanHagberg Åre;hemnet;Åre strand 23:1
+2019-10-07;17?;;villa_118;118;371;220000;SkandiaMäklarna Saltsjöbaden;hemnet;Åre Strand 17
+2019-07-15;15:2;;villa_118;118;375;95000;HusmanHagberg Åre;hemnet;Åre strand 15:2
+2019-04-12;14:1;15;lgh_90_95;95;358;220000;HusmanHagberg Åre;hemnet;Åre strand 14:1 v.15
+2019-03-14;1B3;;lgh_74_81;78;300;120000;HusmanHagberg Åre;hemnet;Åre strand 1B3
+2019-02-10;6A1;;paket_1_6;111;1075;775000;Hemverket AB;hemnet;Åre Strand 6A1
+2019-01-30;22:1;;villa_118;119;371;115000;Hemverket AB;hemnet;Åre Strand 22:1 A B
+2017-11-05;6?;;paket_1_6;81;928;695000;Hemverket AB;hemnet;Åre Strand 6
