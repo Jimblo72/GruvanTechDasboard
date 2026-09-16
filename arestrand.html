@@ -577,7 +577,9 @@ function renderStatistik() {
   const aff = allaAffarer();
   const m = AV.skatta(aff);
   document.getElementById('affCount').textContent = aff.length + ' rader · ' + lasExtra().length + ' lokala';
-  document.getElementById('modellInfo').innerHTML = `Modell skattad på ${m.n} enveckasaffärer: medianfel ${Math.round(m.medianfel * 100)} %, ${Math.round(m.inom25 * 100)} % inom ±25 %, årstrend ${((m.arsfaktor - 1) * 100).toFixed(1)} %/år. Säsongsfaktor mot jul/nyår: ` +
+  document.getElementById('modellInfo').innerHTML = `Modell skattad på ${m.n} enveckasaffärer, färskhetsviktade (halveringstid ${m.halveringstid} år): medianfel ${Math.round(m.medianfel * 100)} %` +
+    (m.medianfelSenaste != null ? ` totalt och ${Math.round(m.medianfelSenaste * 100)} % på de senaste tre årens ${m.nSenaste} affärer` : '') +
+    `, ${Math.round(m.inom25 * 100)} % inom ±25 %, årstrend ${((m.arsfaktor - 1) * 100).toFixed(1)} %/år. Säsongsfaktor mot jul/nyår: ` +
     AV.KLASSER.slice(1).map(k => `${AV.KLASS_NAMN[k].split(' (')[0].toLowerCase()} ${m.vecko[k].toFixed(2)}`).join(' · ') + '.';
   // matris
   const cell = {};

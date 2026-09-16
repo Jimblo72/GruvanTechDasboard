@@ -6,10 +6,30 @@
    ARESTRAND_AFFARER (+ det som sparats lokalt). Räknas om i webbläsaren vid
    varje sidladdning, så nya affärer slår igenom direkt.
 
+   Skattningen är FÄRSKHETSVIKTAD (2026-09-16): varje affär väger
+   0,5^(år sedan / HALVERINGSTID_AR). Utan vikt skattades årstrenden på hela
+   historiken sedan 2017 och blev för flack — −3,2 %/år mot −5,9 %/år om man
+   skattar enbart på 2022–2026 — vilket gjorde att gamla affärer räknades fram
+   för högt. Prövat med out-of-time-validering (träna på ≤ T, testa på T+1):
+   andelen träffar inom ±25 % steg från 70 % till 75 %. Halveringstiden är
+   samma tre år som färskhetsvikten i jamforelser(), så begreppet är ett.
+
    Storleksklasserna går tvärs över huslängorna — Jimmys erfarenhet är att en
    lägenhet av samma storlek är mer eller mindre samma produkt oavsett hus
    (2026-09-15). Fyra klasser i stället för sex: liten (53–66 kvm, 2–3 rok),
    mellan (74–81 kvm, 3 rok), stor (90–112 kvm, 3–4 rok), strandvilla (118+).
+
+   EN FAKTOR PER HUSLÄNGA ÄR PRÖVAD OCH FÖRKASTAD (2026-09-16). Längorna har
+   olika ålder (hus 1–2: 2004, 3–4: 2005, hus 5: 2009, hus 6: 2015, hus 7: 2018)
+   och avvikelserna mot modellen ser stora ut i materialet — för storleken liten
+   låg hus 7 på +22 % och hus 5 på −16 %. Det höll inte utanför stickprovet: med
+   6–11 affärer per länga är siffrorna till största delen brus. Leave-one-out
+   gav medianfel 20,1 % med egen faktor per länga mot 18,5 % utan, och andelen
+   inom ±25 % föll från 65 % till 60 %. Inte heller krympt (partial pooling)
+   blev det bättre än 18,3 % — inom bruset. Bygg alltså INTE in det igen förrän
+   underlaget är väsentligt större. Skillnaden syns ändå: jamforelser() lyfter
+   affärer i samma enhet och samma storlek högst, och de kommer i praktiken från
+   samma länga.
 
    Säsongerna följer prisbilden över året, inte kalendern: jul/nyår, vinter,
    sportlov, vårvinter (skidsäsongens slut, påsken), vår, sommar, höst.
@@ -30,6 +50,7 @@ const AV = (function () {
   const KLASS_NAMN = { jul_nyar: 'Jul/nyår (v.51–1)', vinter: 'Vinter (v.2–6)', sportlov: 'Sportlov (v.7–10)', varvinter: 'Vårvinter (v.11–17)', var: 'Vår (v.18–25)', sommar: 'Sommar (v.26–33)', host: 'Höst (v.34–50)' };
   const INTERVALL = 0.25;      // ±25 % fångar två tredjedelar av affärerna (analysen 2026-09-15)
   const UTGANGSPASLAG = 1.07;  // slutpriserna i underlaget ligger i median ~7 % under utgångspriset
+  const HALVERINGSTID_AR = 3;  // färskhetsvikt i skattningen; se filhuvudet
 
   function veckoklass(v) {
     if (v === 51 || v === 52 || v === 1) return 'jul_nyar';
@@ -72,11 +93,15 @@ const AV = (function () {
     }
     return M.map((rad, i) => (Math.abs(rad[i]) < 1e-12 ? 0 : rad[n] / rad[i]));
   }
-  function ols(X, y) {
+  /* Minsta kvadrat, valfritt med en vikt per observation (w). */
+  function ols(X, y, w) {
     const p = X[0].length;
     const XtX = Array.from({ length: p }, () => new Array(p).fill(0));
     const Xty = new Array(p).fill(0);
-    for (let i = 0; i < X.length; i++) for (let a = 0; a < p; a++) { Xty[a] += X[i][a] * y[i]; for (let b = 0; b < p; b++) XtX[a][b] += X[i][a] * X[i][b]; }
+    for (let i = 0; i < X.length; i++) {
+      const wi = w ? w[i] : 1;
+      for (let a = 0; a < p; a++) { Xty[a] += wi * X[i][a] * y[i]; for (let b = 0; b < p; b++) XtX[a][b] += wi * X[i][a] * X[i][b]; }
+    }
     return los(XtX, Xty);
   }
   function rad(typ, vecka, ar) {
@@ -92,10 +117,17 @@ const AV = (function () {
 
   function skatta(affarer) {
     const enkla = affarer.map(r => ({ ...r, typ: normTyp(r) })).filter(r => r.veckor && r.veckor.length === 1 && TYPER.includes(r.typ) && r.pris > 0 && r.datum);
-    const X = enkla.map(r => rad(r.typ, r.veckor[0], parseInt(r.datum.slice(0, 4), 10))), y = enkla.map(r => Math.log(r.pris));
-    const beta = ols(X, y);
+    const nu = new Date().getFullYear();
+    const arAv = r => parseInt(r.datum.slice(0, 4), 10);
+    const X = enkla.map(r => rad(r.typ, r.veckor[0], arAv(r))), y = enkla.map(r => Math.log(r.pris));
+    /* Färskhetsvikt: en affär från i år väger 1, en tre år gammal 0,5. */
+    const vikt = enkla.map(r => Math.pow(0.5, Math.max(0, nu - arAv(r)) / HALVERINGSTID_AR));
+    const beta = ols(X, y, vikt);
     const res = enkla.map((r, i) => Math.exp(y[i] - X[i].reduce((s, v, j) => s + v * beta[j], 0)) - 1);
     const abs = res.map(Math.abs).sort((a, b) => a - b);
+    /* Träffsäkerheten på de senaste årens affärer säger mer om hur modellen
+       värderar i dag än snittet över hela historiken. */
+    const absNy = enkla.map((r, i) => Math.abs(res[i])).filter((_, i) => nu - arAv(enkla[i]) <= 2).sort((a, b) => a - b);
     const vecko = Object.fromEntries(KLASSER.map((k, i) => [k, i === 0 ? 1 : Math.exp(beta[TYPER.length + i - 1])]));
     /* En säsong med färre än tre affärer får inte sätta sin egen faktor —
        minsta kvadrat passar då de få punkterna exakt och faktorn blir slump.
@@ -114,7 +146,10 @@ const AV = (function () {
       bas: Object.fromEntries(TYPER.map((t, i) => [t, Math.exp(beta[i])])),
       vecko, antalPerSasong: antal, lanadeSasonger: tunna,
       arsfaktor: Math.exp(beta[beta.length - 1]),
+      halveringstid: HALVERINGSTID_AR,
+      nSenaste: absNy.length,
       medianfel: abs.length ? abs[Math.floor(abs.length / 2)] : null,
+      medianfelSenaste: absNy.length ? absNy[Math.floor(absNy.length / 2)] : null,
       inom25: abs.length ? abs.filter(a => a < 0.25).length / abs.length : null,
     };
     return modell;
@@ -191,5 +226,5 @@ const AV = (function () {
     };
   }
 
-  return { TYPER, TYP_NAMN, KLASSER, KLASS_NAMN, INTERVALL, UTGANGSPASLAG, veckoklass, typAvBoarea, normTyp, skatta, modellvarde, jamforelser, vardera, avrunda5000 };
+  return { TYPER, TYP_NAMN, KLASSER, KLASS_NAMN, INTERVALL, UTGANGSPASLAG, HALVERINGSTID_AR, veckoklass, typAvBoarea, normTyp, skatta, modellvarde, jamforelser, vardera, avrunda5000 };
 })();
