@@ -402,8 +402,9 @@ function renderTextInfo() {
 
 /* Avgiften som text. Årsavgiften (avgift_ar) är föreningens egen siffra och går
    före månadsbeloppet, som är avläst ur Hemnet-annonser och varierar mellan
-   enheterna. Strandvillorna: 4 750 kr/år (Jimmy 2026-09-23); övriga typer
-   kommer. */
+   enheterna. Brf Åre Sjö 1 från 2026 (Holiday Club via Jimmy 2026-09-23):
+   radhus 1/2/3 sovrum 3 650/3 950/4 600, strandhus 2/3 sovrum 4 600/4 750.
+   Åre Sjö 7 och 10 (hus 6–7) saknar ännu årsavgift. */
 function avgiftText(k) {
   if (k.avgift_ar) return k.avgift_ar.toLocaleString('sv-SE') + ' kr/år';
   return k.avgift ? k.avgift + ' kr/mån' : null;
