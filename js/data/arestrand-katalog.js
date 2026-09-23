@@ -984,11 +984,11 @@ const ARESTRAND_KATALOG = [
   "avgift_ar": 4600,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två plan med kök, vardagsrum med braskamin och ett sovrum med dubbelsäng på nedre plan och stor altan ut mot Åresjön, på övervåningen ett litet allrum med inomhusbalkong mot vardagsrummet och bäddsoffa samt ett sovrum med två våningssängar, bastu och tvättmaskin",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering med motorvärmare intill huset",
   "husdjur": true,
   "bildmapp": "13_1",
-  "kalla": "pdf"
+  "kalla": "holidayclub"
  },
  {
   "id": "14:1",
@@ -1004,11 +1004,11 @@ const ARESTRAND_KATALOG = [
   "avgift_ar": 4600,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två plan med kök, vardagsrum med braskamin och ett sovrum med dubbelsäng på nedre plan och stor altan ut mot Åresjön, på övervåningen ett litet allrum med inomhusbalkong mot vardagsrummet och bäddsoffa samt ett sovrum med två våningssängar, bastu och tvättmaskin",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering med motorvärmare intill huset",
   "husdjur": true,
   "bildmapp": "14_1",
-  "kalla": "pdf"
+  "kalla": "holidayclub"
  },
  {
   "id": "14:2",
@@ -1024,11 +1024,11 @@ const ARESTRAND_KATALOG = [
   "avgift_ar": 4600,
   "typ": "stor",
   "typnamn": "Stor · 90–112 kvm · 3–4 rok",
-  "planlosning": "två sovrum, allrum med braskamin och kök i öppen planlösning, badrum med bastu och tvättmaskin, gästtoalett",
+  "planlosning": "två plan med kök, vardagsrum med braskamin och ett sovrum med dubbelsäng på nedre plan och stor altan ut mot Åresjön, på övervåningen ett litet allrum med inomhusbalkong mot vardagsrummet och bäddsoffa samt ett sovrum med två våningssängar, bastu och tvättmaskin",
   "hustext": "strandvilla i parhus, några meter till stranden, egen altan, parkering med motorvärmare intill huset",
   "husdjur": true,
   "bildmapp": "14_2",
-  "kalla": "pdf"
+  "kalla": "holidayclub"
  },
  {
   "id": "15:1",

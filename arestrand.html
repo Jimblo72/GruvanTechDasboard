@@ -337,7 +337,7 @@ function valdVecka() {
   info.innerHTML = [
     ['Förening', k.brf], ['Typ', k.typnamn], ['Boarea', k.boarea + ' kvm'], ['Rum', `${k.rum} rok · ${k.sovrum} sovrum · ${k.baddar} bäddar`],
     ['Byggår', k.byggar], ['Avgift', paket ? 'ca 1 100–1 200 kr/mån (paket)' : (avgiftText(k) || 'okänd — kontrollera')],
-    ['Bildmapp', k.bildmapp], ['Faktakälla', k.kalla === 'pdf' ? 'objektsbeskrivning' : k.kalla === 'harledd' ? 'härledd ur grannlägenhet — kontrollera' : 'Hemnet']
+    ['Bildmapp', k.bildmapp], ['Faktakälla', k.kalla === 'pdf' ? 'objektsbeskrivning' : k.kalla === 'holidayclub' ? 'Holiday Clubs webbplats' : k.kalla === 'harledd' ? 'härledd ur grannlägenhet — kontrollera' : 'Hemnet']
   ].map(([a, b]) => `<div class="info-row"><span class="info-label">${esc(a)}</span><span class="info-val">${esc(b)}</span></div>`).join('');
   vardera(k, v, paket);
   renderTextInfo();
