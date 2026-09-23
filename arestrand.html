@@ -336,7 +336,7 @@ function valdVecka() {
   const paket = document.getElementById('paket').value === 'paket';
   info.innerHTML = [
     ['Förening', k.brf], ['Typ', k.typnamn], ['Boarea', k.boarea + ' kvm'], ['Rum', `${k.rum} rok · ${k.sovrum} sovrum · ${k.baddar} bäddar`],
-    ['Byggår', k.byggar], ['Avgift', paket ? 'ca 1 100–1 200 kr/mån (paket)' : (k.avgift ? k.avgift + ' kr/mån' : 'okänd — kontrollera')],
+    ['Byggår', k.byggar], ['Avgift', paket ? 'ca 1 100–1 200 kr/mån (paket)' : (avgiftText(k) || 'okänd — kontrollera')],
     ['Bildmapp', k.bildmapp], ['Faktakälla', k.kalla === 'pdf' ? 'objektsbeskrivning' : k.kalla === 'harledd' ? 'härledd ur grannlägenhet — kontrollera' : 'Hemnet']
   ].map(([a, b]) => `<div class="info-row"><span class="info-label">${esc(a)}</span><span class="info-val">${esc(b)}</span></div>`).join('');
   vardera(k, v, paket);
@@ -400,6 +400,15 @@ function renderTextInfo() {
     .map(([a, b]) => `<div class="info-row"><span class="info-label">${esc(a)}</span><span class="info-val">${esc(b)}</span></div>`).join('');
 }
 
+/* Avgiften som text. Årsavgiften (avgift_ar) är föreningens egen siffra och går
+   före månadsbeloppet, som är avläst ur Hemnet-annonser och varierar mellan
+   enheterna. Strandvillorna: 4 750 kr/år (Jimmy 2026-09-23); övriga typer
+   kommer. */
+function avgiftText(k) {
+  if (k.avgift_ar) return k.avgift_ar.toLocaleString('sv-SE') + ' kr/år';
+  return k.avgift ? k.avgift + ' kr/mån' : null;
+}
+
 function faktaFor(k, v) {
   const paket = document.getElementById('paket').value === 'paket';
   const usp = document.getElementById('usp').value.trim();
@@ -408,7 +417,7 @@ function faktaFor(k, v) {
     boarea: k.boarea, rum: k.rum, sovrum: k.sovrum, baddar: k.baddar, byggar: k.byggar,
     planlosning: k.planlosning, hustext: k.hustext,
     vecka: v, veckolabel: veckolabel(v), veckousp: veckousp(v),
-    avgift: paket ? null : k.avgift, paket, usp, husdjur: k.husdjur !== false,
+    avgift: paket ? null : avgiftText(k), paket, usp, husdjur: k.husdjur !== false,
   };
 }
 
@@ -439,7 +448,7 @@ const SASONG_KARAKTAR = {
 function byggStrandPrompt(f) {
   const ram = f.paket
     ? `Andelsform: paket om var sjätte vecka, 8–9 veckor per år fördelade över alla årstider enligt rullande schema (HC Villas, hus 6). Avgift ca 1 100–1 200 kr/mån.`
-    : `Andelsform: en fast vecka per år, vecka ${f.vecka} (${f.veckolabel}). Avgift ${f.avgift ? f.avgift + ' kr/mån' : 'enligt förening'} som täcker drift, städning, byte av sänglinne och handdukar.`;
+    : `Andelsform: en fast vecka per år, vecka ${f.vecka} (${f.veckolabel}). Avgift ${f.avgift || 'enligt förening'} som täcker drift, städning, byte av sänglinne och handdukar.`;
   return `Du skriver säljtexter för andelsveckor på Åre Strand Holiday Club i Åre. Direkt konkret svenska, inga högtravande fraser. Förbjudna ord: erbjuder, inbjuder, unikt, fantastisk, exklusivt. Inled INTE med Välkommen.${SPRAKREGLER}
 
 DISPOSITION för den långa texten — följ den:
@@ -512,7 +521,7 @@ function genereraMall() {
   stycken.push(`Några minuters promenad bort ligger hotellet Holiday Club med restaurang, spa, bad, gym och shopping, och som medlem i föreningen har du rabatt på hotellets aktiviteter. Via gångbron från hotellet når du tågstationen och Åre by, och från torget tar bergbanan dig upp i skidsystemet.`);
   stycken.push(`Du anländer till bäddade sängar och rena handdukar, och som medlem i föreningen har du rabatt på hotellets aktiviteter.`);
   stycken.push(RCI_TEXT);
-  stycken.push(f.paket ? `Avgift: ca 1 100–1 200 kr/mån.` : `Avgift: ${f.avgift ? f.avgift + ' kr/mån' : 'enligt föreningen'}, vilket täcker drift, städning och byte av sänglinne och handdukar.`);
+  stycken.push(f.paket ? `Avgift: ca 1 100–1 200 kr/mån.` : `Avgift: ${f.avgift || 'enligt föreningen'}, vilket täcker drift, städning och byte av sänglinne och handdukar.`);
   const longText = stycken.join('\n\n');
   let shortText = `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år, bäddat och klart vid ankomst, Holiday Clubs spa och restaurang intill. ${f.usp ? f.usp.split(',')[0] + '.' : 'Byt via RCI till över 4 000 anläggningar världen över.'}`;
   if (shortText.length > 300) shortText = shortText.slice(0, 297) + '...';
