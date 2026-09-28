@@ -462,6 +462,7 @@ function faktaFor(k, v) {
     planlosning: k.planlosning, hustext: k.hustext,
     vecka: v, veckolabel: veckolabel(v), veckousp: veckousp(v),
     avgift: paket ? null : avgiftText(k), paket, usp, husdjur: k.husdjur !== false,
+    rciPoang: rciFor(k, v, paket).poang,
   };
 }
 
@@ -476,6 +477,14 @@ function faktaFor(k, v) {
    innan detaljerna. INGA belopp på avgifterna — varken årsavgiften eller vad det
    kostar att ansluta veckan (den senare siffran är dessutom obekräftad). */
 const RCI_TEXT = 'Anslut till RCI och res ut i världen. Kopplar du din andel till RCI byter du din vecka i Åre mot boende på mer än 4 000 anläggningar i över 100 länder, från Alperna och Medelhavet till Karibien och Asien. Åre värderas högt i systemet, så en vecka här räcker ofta till två eller tre veckor utomlands. Du kan också byta till en annan vecka i Åre eller till Holiday Clubs egna anläggningar i Finland och på Kanarieöarna. Din egen vecka har du alltid förtur på och bokar upp till 13 månader i förväg utan att poäng förbrukas, och poäng du inte använder sparas till nästa år. Anslutningen är frivillig och kostar en årlig medlemsavgift. Vill du hellre använda veckan själv eller hyra ut den gör du det.';
+
+/* RCI-stycket med andelens poäng som andra mening, när poängen är kända (rciFor).
+   Jimmy 2026-09-28: tryck mer på RCI — stycket ligger direkt efter inledningen. */
+function rciStycke(poang) {
+  if (!poang) return RCI_TEXT;
+  const [forsta, ...resten] = RCI_TEXT.split('. ');
+  return `${forsta}. Den här andelen ger ${poang.toLocaleString('sv-SE')} RCI-poäng varje år. ${resten.join('. ')}`;
+}
 
 /* Säsongens karaktär i ord — råmaterial för inledningen, som ska handla om
    veckan och läget innan bostaden beskrivs (Jimmys granskning 2026-09-15). */
@@ -497,15 +506,17 @@ function byggStrandPrompt(f) {
 
 DISPOSITION för den långa texten — följ den:
 (1) INLEDNINGEN säljer. Börja den långa texten med en kort ingressrad i formen "<Bostadstyp> vecka <nr> – " (t.ex. "Strandvilla vecka 16 – ") och fortsätt direkt i samma stycke. Två till fyra meningar om VECKAN och LÄGET innan bostaden nämns: vad den här veckan i Åre är för slags vecka (se "Veckans karaktär"), strandläget vid Åresjön, närheten till hotellet Holiday Club och till centrala Åre. Konkret och varmt, som en mäklare som vill att läsaren ska se sig själv där. Inga siffror i inledningen.
-(2) BOSTADEN som ett flöde, inte en uppräkning: led läsaren genom lägenheten från entrén, ge ett eller två rum en scen (kvällen vid braskaminen, morgonen på altanen mot sjön). Skriv inte listor med kommatecken i rad — högst tre led i en uppräkning, hellre två meningar än en lång.
-(3) SERVICEN: bäddat och klart vid ankomst, Holiday Clubs restaurang, spa och bad, medlemsrabatten — kort, som en fördel. Därefter RCI-STYCKET nedan ORDAGRANT som ett eget stycke (ändra inte ett ord, skriv ingen egen RCI-text).
-(4) AVGIFTEN allra sist, en mening.
+(2) RCI-STYCKET nedan ORDAGRANT som ett eget stycke direkt efter inledningen (ändra inte ett ord, skriv ingen egen RCI-text). Det är en av andelens största fördelar och ska synas tidigt.
+(3) BOSTADEN som ett flöde, inte en uppräkning: led läsaren genom lägenheten från entrén, ge ett eller två rum en scen (kvällen vid braskaminen, morgonen på altanen mot sjön). Skriv inte listor med kommatecken i rad — högst tre led i en uppräkning, hellre två meningar än en lång.
+(4) SERVICEN: bäddat och klart vid ankomst, Holiday Clubs restaurang, spa och bad, medlemsrabatten — kort, som en fördel. Nämn inte RCI igen här.
+(5) AVGIFTEN allra sist, en mening.
 
 Skriv exakt två texter ÅTSKILDA med texten ---KORT---:
 1. LÅNG text (300-430 ord) — säljande men sann, flytande prosa med varierad meningsbyggnad. Avsluta med avgiften.
 2. KORT text (260-300 tecken EXAKT) — SÄLJANDE krok. Måste väcka intresse på 2 sekunder. Använd:
    - Kort konkret öppning (vilken vecka + Åre Strand, max 5 ord, gärna utropstecken)
    - Lägenhetens nyckelfakta (storlek, rum, bäddar)
+   - RCI: ${f.rciPoang ? `andelens ${f.rciPoang.toLocaleString('sv-SE')} RCI-poäng per år, skrivet exakt så` : 'att veckan kan bytas via RCI mot resor världen över (inga poängsiffror)'}
    - Veckan med nummer
    - En specifik säljpunkt som gör att läsaren vill veta mer
    Skriv som en rubrik som lockar — inte som en bostadsbeskrivning.
@@ -519,7 +530,7 @@ Vecka: ${f.veckolabel}${f.veckousp ? ' — ' + f.veckousp : ''}
 Veckans karaktär: ${SASONG_KARAKTAR[AV.veckoklass(f.vecka)] || ''}
 Husdjur: ${f.husdjur ? 'tillåtna' : 'inte tillåtna i den här lägenheten'}
 ${f.usp ? 'Säljpunkter för just detta objekt: ' + f.usp + '\n' : ''}Läge och service: intill Åresjöns strand, några minuters promenad till hotellet Holiday Club med restaurang, spa, bad, gym och shopping; medlemmar har rabatt på hotellets aktiviteter. Via gångbron från hotellet når man tågstationen och Åre by med butiker och restauranger; från torget tar bergbanan dig upp i skidsystemet. Fullt möblerad och utrustad, bäddat och rena handdukar vid ankomst.
-RCI-STYCKET (ordagrant): ${RCI_TEXT}
+RCI-STYCKET (ordagrant): ${rciStycke(f.rciPoang)}
 
 Nämn ALDRIG utgångspris eller pris i texten. Bytesdag nämns bara om det står ovan. Husdjur: skriv att de är välkomna när de är tillåtna, och att boendet är husdjursfritt när de inte är det — hitta aldrig på det ena eller andra.
 SPRÅKET SKA VARA DIREKT, inte poetiskt. Skriv "en härlig vårvintervecka i vårsolen när det fortfarande finns snö i backarna" — inte "vårvinterveckan när solen värmer och backarna bär snö". Naturen och årstiden "möter" inte, "bär" inte och "öppnar sig" inte. Säg veckonumret rakt ut när du skriver om veckan: "vissa år infaller påsken under vecka 16", inte "påsken infaller just här".
@@ -559,15 +570,17 @@ function genereraMall() {
   stycken.push(f.paket
     ? `Känn dig som hemma i Åre. Med den här andelen disponerar du lägenheten var sjätte vecka, 8–9 veckor om året fördelade över alla årstider enligt ett rullande schema.`
     : `Tillbringa vecka ${f.vecka} i Åre, år efter år. ${f.veckousp ? f.veckousp + '.' : ''} Andelen ger dig en fast vecka i ${k.slag === 'villa' ? 'en strandvilla' : 'en lägenhet'} vid Åresjöns strand, fullt möblerad och utrustad.`);
+  stycken.push(rciStycke(f.rciPoang));   // tidigt — Jimmy 2026-09-28: tryck mer på RCI
   stycken.push(`Bostaden är på ${f.boarea} kvm med ${f.rum} rum och kök, ${f.sovrum} sovrum och ${f.baddar} bäddar: ${f.planlosning}. ${f.hustext.charAt(0).toUpperCase() + f.hustext.slice(1)}.`);
   stycken.push(f.husdjur ? `Husdjur är välkomna.` : `Boendet är husdjursfritt.`);
   if (f.usp) stycken.push(f.usp.charAt(0).toUpperCase() + f.usp.slice(1) + '.');
   stycken.push(`Några minuters promenad bort ligger hotellet Holiday Club med restaurang, spa, bad, gym och shopping, och som medlem i föreningen har du rabatt på hotellets aktiviteter. Via gångbron från hotellet når du tågstationen och Åre by, och från torget tar bergbanan dig upp i skidsystemet.`);
   stycken.push(`Du anländer till bäddade sängar och rena handdukar, och som medlem i föreningen har du rabatt på hotellets aktiviteter.`);
-  stycken.push(RCI_TEXT);
   stycken.push(f.paket ? `Avgift: ca 1 100–1 200 kr/mån.` : `Avgift: ${f.avgift || 'enligt föreningen'}, vilket täcker drift, städning och byte av sänglinne och handdukar.`);
   const longText = stycken.join('\n\n');
-  let shortText = `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år, bäddat och klart vid ankomst, Holiday Clubs spa och restaurang intill. ${f.usp ? f.usp.split(',')[0] + '.' : 'Byt via RCI till över 4 000 anläggningar världen över.'}`;
+  let shortText = f.rciPoang
+    ? `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år och ${f.rciPoang.toLocaleString('sv-SE')} RCI-poäng att resa för i hela världen. ${f.usp ? f.usp.split(',')[0] + '.' : 'Bäddat och klart vid ankomst.'}`
+    : `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år, bäddat och klart vid ankomst, Holiday Clubs spa och restaurang intill. ${f.usp ? f.usp.split(',')[0] + '.' : 'Byt via RCI till över 4 000 anläggningar världen över.'}`;
   if (shortText.length > 300) shortText = shortText.slice(0, 297) + '...';
   renderResult({ longText, shortText, charsShort: shortText.length });
 }
