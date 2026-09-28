@@ -135,6 +135,21 @@ exports.handler = async (event) => {
     resultat = { jobId, status: 'error', error: e.message, startedAt, finishedAt: new Date().toISOString() };
   }
 
+  // Har en nyare granskning av samma roll startat medan vi arbetade ligger dess
+  // jobId i statusfilen nu. Då ska vårt svar inte skriva över den — ingen
+  // väntar på det längre, och den nya klienten skulle förlora sin
+  // "running"-markör eller, värre, sitt färdiga svar. Går läsningen inte
+  // igenom skriver vi ändå: hellre ett levererat svar än ett tappat.
+  try {
+    const { data: nu } = await readJsonFileRaw(path, null);
+    if (nu && nu.jobId && nu.jobId !== jobId) {
+      console.log(`[ai-review-background] ${agentId}: ${jobId} ersatt av ${nu.jobId} — resultatet skrivs inte`);
+      return { statusCode: 200, body: 'ersatt' };
+    }
+  } catch (e) {
+    console.error(`[ai-review-background] kunde inte läsa jobbstatus för ${agentId}:`, e.message);
+  }
+
   try {
     await writeJsonFile(path, resultat, `Granskning: ${agentId} ${resultat.status} (${jobId})`);
   } catch (e) {
