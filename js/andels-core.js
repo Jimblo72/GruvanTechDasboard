@@ -91,9 +91,10 @@ const WEEK_INFO = {
 };
 
 
-function renderResult({ shortText, longText, charsShort }) {
-  const lengthClass = charsShort >= 260 && charsShort <= 300 ? 'length-ok' : 'length-warn';
-  const lengthLabel = charsShort >= 260 && charsShort <= 300 ? 'OK' : 'JUSTERA';
+// minShort: nedre gräns för korta texten. Åre Strand vill 280–300 (Jimmy 2026-09-28).
+function renderResult({ shortText, longText, charsShort, minShort = 260 }) {
+  const lengthClass = charsShort >= minShort && charsShort <= 300 ? 'length-ok' : 'length-warn';
+  const lengthLabel = charsShort >= minShort && charsShort <= 300 ? 'OK' : 'JUSTERA';
 
   document.getElementById('results').innerHTML = `
     <div class="result-tabs">

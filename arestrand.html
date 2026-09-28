@@ -513,13 +513,15 @@ Skriv INTE ut avgiften någonstans — den har ett eget fält i Mspecs (Jimmy 20
 
 Skriv exakt två texter ÅTSKILDA med texten ---KORT---:
 1. LÅNG text (300-430 ord) — säljande men sann, flytande prosa med varierad meningsbyggnad. Avsluta med servicestycket.
-2. KORT text (260-300 tecken EXAKT) — SÄLJANDE krok. Måste väcka intresse på 2 sekunder. Använd:
+2. KORT text, 280–300 tecken inklusive mellanslag — FYLL utrymmet, men aldrig över 300. Räkna innan du svarar. SÄLJANDE krok som väcker intresse på 2 sekunder. Ta med:
    - Kort konkret öppning (vilken vecka + Åre Strand, max 5 ord, gärna utropstecken)
-   - Lägenhetens nyckelfakta (storlek, rum, bäddar)
+   - Bostadens nyckelfakta (storlek, rum och kök, bäddar) och läget vid Åresjön
+   - En eller två konkreta säljpunkter ur underlaget
    - RCI: ${f.rciPoang ? `andelens ${f.rciPoang.toLocaleString('sv-SE')} RCI-poäng per år, skrivet exakt så` : 'att veckan kan bytas via RCI mot resor världen över (inga poängsiffror)'}
-   - Veckan med nummer
-   - En specifik säljpunkt som gör att läsaren vill veta mer
-   Skriv som en rubrik som lockar — inte som en bostadsbeskrivning.
+   - Veckans karaktär i några ord, gärna som avslutning
+   FLYT, inte stolpighet (Jimmy 2026-09-28): hela meningar som hänger ihop, bundna med "med", "och", "plus" eller tankstreck — inte en rad faktafragment åtskilda av punkter. Skriv inte "118 kvm, fyra rum och kök" med kommatecken mellan fakta, utan "på 118 kvm med fyra rum och kök".
+   RYTM-EXEMPEL för den korta texten (påhittad lägenhet — hämta INGA fakta härifrån, bara flytet och längden, 284 tecken):
+   "Sportlovsvecka vid Åresjön! Här bor du i en lägenhet på 76 kvm med tre rum och kök och sex bäddar, bara några minuter från hotellet Holiday Club. Braskamin i allrummet och bastu efter skidåkningen. Andelen ger 107 500 RCI-poäng per år – och vecka 8 är den vecka då Åre lever som mest."
 
 Objekt: ${f.objekt}, ${f.hus}, ${f.brf}
 Storlek: ${f.boarea} kvm, ${f.rum} rum och kök, ${f.sovrum} sovrum, ${f.baddar} bäddar, byggt ${f.byggar}
@@ -553,7 +555,7 @@ function genereraClaude() {
   const v = parseInt(document.getElementById('vecka').value, 10);
   const btn = document.getElementById('claudeBtn'); btn.disabled = true; btn.textContent = 'Genererar… (30–60 s)';
   anropaClaudeTvaTexter(byggStrandPrompt(faktaFor(k, v)), apiKey).then(res => {
-    renderResult(res);
+    renderResult({ ...res, minShort: 280 });
     document.getElementById('apiKeyStatus').textContent = '✓ Genererad med Claude AI';
     setTimeout(() => document.getElementById('apiKeyStatus').textContent = '', 3000);
   }).catch(e => alert('Claude API-fel: ' + e.message))
@@ -577,11 +579,33 @@ function genereraMall() {
   stycken.push(`Några minuters promenad bort ligger hotellet Holiday Club med restaurang, spa, bad, gym och shopping, och som medlem i föreningen har du rabatt på hotellets aktiviteter. Via gångbron från hotellet når du tågstationen och Åre by, och från torget tar bergbanan dig upp i skidsystemet.`);
   stycken.push(`Du anländer till bäddade sängar och rena handdukar, och som medlem i föreningen har du rabatt på hotellets aktiviteter.`);
   const longText = stycken.join('\n\n');
-  let shortText = f.rciPoang
-    ? `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år och ${f.rciPoang.toLocaleString('sv-SE')} RCI-poäng att resa för i hela världen. ${f.usp ? f.usp.split(',')[0] + '.' : 'Bäddat och klart vid ankomst.'}`
-    : `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år, bäddat och klart vid ankomst, Holiday Clubs spa och restaurang intill. ${f.usp ? f.usp.split(',')[0] + '.' : 'Byt via RCI till över 4 000 anläggningar världen över.'}`;
+  // Kort text: hela meningar med flyt, fylls på med säljpunkter så länge de ryms
+  // inom 300 tecken — målet är 280–300 (Jimmy 2026-09-28).
+  const villa = k.slag === 'villa';
+  const borjan = [
+    `Vecka ${f.vecka} på Åre Strand!`,
+    `Här bor du i ${villa ? 'en strandvilla' : 'en lägenhet'} på ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar, ${villa ? 'några meter från Åresjöns strand' : 'intill Åresjöns strand'}.`,
+  ];
+  const slut = f.rciPoang
+    ? `Andelen ger ${f.rciPoang.toLocaleString('sv-SE')} RCI-poäng per år att resa för i hela världen.`
+    : `Veckan kan bytas via RCI mot resor i hela världen.`;
+  // Varje grupp: första alternativet som ryms tas med, annars hoppas gruppen över.
+  const pl = (f.planlosning || '').toLowerCase();
+  const grupper = [
+    [f.usp ? f.usp.split(',')[0].trim().replace(/^./, c => c.toUpperCase()) + '.' : ''],
+    [f.veckousp ? `${f.veckolabel} – ${f.veckousp.charAt(0).toLowerCase() + f.veckousp.slice(1)}.` : ''],
+    pl.includes('braskamin') && pl.includes('bastu') ? ['Braskamin i allrummet och bastu efter skidåkningen.', 'Braskamin och bastu.'] : pl.includes('braskamin') ? ['Braskamin i allrummet.'] : [''],
+    [`Bäddat och klart vid ankomst, med Holiday Clubs spa och restaurang några minuter bort.`, 'Bäddat och klart vid ankomst.'],
+    [f.husdjur ? `Husdjur är välkomna.` : ''],
+  ];
+  const mitt = [];
+  for (const alt of grupper) {
+    const s = alt.filter(Boolean).find(a => [...borjan, ...mitt, a, slut].join(' ').length <= 300);
+    if (s) mitt.push(s);
+  }
+  let shortText = [...borjan, ...mitt, slut].join(' ');
   if (shortText.length > 300) shortText = shortText.slice(0, 297) + '...';
-  renderResult({ longText, shortText, charsShort: shortText.length });
+  renderResult({ longText, shortText, charsShort: shortText.length, minShort: 280 });
 }
 
 // ── Bilder (File System Access, mappen läses direkt från disk) ───────────
