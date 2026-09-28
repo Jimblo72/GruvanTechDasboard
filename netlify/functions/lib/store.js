@@ -38,6 +38,26 @@ async function readJsonFile(filePath, fallback = null) {
   return { data, sha: d.sha };
 }
 
+// Läser en JSON-fil via raw-mediatypen. readJsonFile ovan får innehållet
+// base64-kodat i svaret, och GitHub lämnar det fältet TOMT för filer över 1 MB
+// — då tolkas filen som saknad. Raw klarar upp till 100 MB. Används för stora
+// filer som granskningens indata (upp till 500k tecken kod + systemprompt).
+// Returnerar { data } — ingen sha, raw-svaret bär den inte. writeJsonFile
+// hämtar sha själv när den behövs.
+async function readJsonFileRaw(filePath, fallback = null) {
+  const { token, user, repo } = ghConf();
+  const apiBase = `https://api.github.com/repos/${user}/${repo}/contents/${filePath}`;
+  const r = await fetch(`${apiBase}?ref=main`, {
+    headers: { ...ghHeaders(token), Accept: 'application/vnd.github.raw+json' },
+  });
+  if (r.status === 404) return { data: fallback };
+  if (!r.ok) throw new Error(`GitHub HTTP ${r.status} vid läsning av ${filePath}`);
+  const content = await r.text();
+  let data;
+  try { data = JSON.parse(content); } catch { data = fallback; }
+  return { data };
+}
+
 // Skriver (commit) en JSON-fil. Hämtar SHA själv om det inte skickas in.
 async function writeJsonFile(filePath, obj, message, sha) {
   const { token, user, repo } = ghConf();
@@ -95,4 +115,4 @@ async function writeBase64File(filePath, base64, message, override) {
   return { user, repo, path: filePath };
 }
 
-module.exports = { readJsonFile, writeJsonFile, writeBase64File };
+module.exports = { readJsonFile, readJsonFileRaw, writeJsonFile, writeBase64File };

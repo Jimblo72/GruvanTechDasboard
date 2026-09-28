@@ -1367,6 +1367,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 // läser nycklar från environment variables serverside.
 const FN = {
   review:    '/.netlify/functions/ai-review',     // Claude- + GPT-granskning
+  reviewEnqueue:'/.netlify/functions/ai-review-enqueue', // lägger koden i datarepot före bakgrundsjobbet
   reviewBg:  '/.netlify/functions/ai-review-background', // asynkron granskning (202, svar via reviewResult)
   reviewResult:'/.netlify/functions/ai-review-result',  // hämtar resultatet bakgrundsjobbet skrev
   githubFile:'/.netlify/functions/github-file',   // hämtar filinnehåll säkert
@@ -1512,15 +1513,34 @@ async function korSynkrongranskning(a, code, context) {
 // alltså kvalitetstaket. Bakgrundsfunktionen svarar 202 direkt utan kropp,
 // skriver resultatet till datarepot, och vi pollar tills VÅRT jobId ligger
 // där som klart. Samma mönster som trigger-knapparna i granskningspanelen.
+//
+// Koden åker INTE till bakgrundsfunktionen. Netlify kapar bakgrundsanrop vid
+// 256 KB (HTTP 413) — en normalstor fil plus systemprompten gick över. Den
+// synkrona ai-review-enqueue (6 MB tak) lägger koden i datarepot, och
+// bakgrundsjobbet får bara { jobId, agentId }. Båda anropen görs härifrån:
+// sajtens lösenordsskydd gäller även funktionsadresserna, så en funktion som
+// anropar en annan får 401 — webbläsaren har kakan, funktionerna har den inte.
 const BG_POLL_MS = 2500;
 const BG_MAX_MS = 5 * 60 * 1000;
 async function korBakgrundsgranskning(a, code, context, bodyEl) {
   const jobId = (self.crypto && crypto.randomUUID) ? crypto.randomUUID()
               : String(Date.now()) + String(Math.random()).slice(2, 10);
 
-  const r = await fetch(FN.reviewBg, {
+  bodyEl.innerHTML = `<em style="color:var(--text4)">Lägger koden i kö…</em>`;
+  const k = await fetch(FN.reviewEnqueue, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ jobId, agentId: a.id, system: a.system, code, context })
+  });
+  if (!k.ok) {
+    const detail = await k.json().catch(() => null);
+    throw new Error(detail?.error || (k.status === 404
+      ? 'Funktionen ai-review-enqueue svarar inte — är den deployad?'
+      : `HTTP ${k.status} när koden skulle köas`));
+  }
+
+  const r = await fetch(FN.reviewBg, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ jobId, agentId: a.id })
   });
   // 202 = mottaget och igång. Bakgrundsfunktioner svarar aldrig med kropp.
   if (r.status !== 202 && !r.ok) {
