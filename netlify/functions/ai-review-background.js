@@ -51,12 +51,19 @@ const LAS_PAUS_MS = 1500;
 
 async function lasIndata(agentId, jobId) {
   let senaste = null;
+  let lasfel = null;
   for (let i = 0; i < LAS_FORSOK; i++) {
     if (i > 0) await new Promise(res => setTimeout(res, LAS_PAUS_MS));
-    const { data } = await readJsonFileRaw(inputPath(agentId), null);
+    // Ett tillfälligt GitHub-fel (5xx, rate limit) ska inte avbryta
+    // omförsöken — det är samma sorts fördröjning som loopen finns för.
+    let data;
+    try { ({ data } = await readJsonFileRaw(inputPath(agentId), null)); lasfel = null; }
+    catch (e) { lasfel = e; continue; }
     senaste = data;
     if (data && data.jobId === jobId && typeof data.code === 'string') return data;
   }
+  // Felade sista läsningen är det felet som säger mest, inte "saknas".
+  if (lasfel) throw new Error(`Kunde inte läsa indata för jobbet: ${lasfel.message}`);
   if (!senaste) throw new Error('Indata för jobbet saknas i datarepot — kördes ai-review-enqueue först?');
   if (senaste.jobId !== jobId) throw new Error('Indatafilen tillhör ett annat jobb — en nyare granskning har troligen startats för samma roll.');
   throw new Error('Indatafilen för jobbet är redan förbrukad eller saknar kod.');
