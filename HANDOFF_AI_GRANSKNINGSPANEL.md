@@ -2,7 +2,7 @@
 
 **Datum:** 2026-08-24
 **Omfattning:** dashboardens granskningspanel — `index.html` + `netlify/functions/ai-review*.js` + `lib/openrouter.js`
-**Status:** 🔴 **BLOCKERAD på ett känt fel med känd lösning.** Läs "Nästa steg" först.
+**Status:** 🟡 **413-fixen byggd 2026-09-28 — väntar på skarp provkörning.** Läs "Nästa steg" först.
 
 > Detta dokument gäller **panelen i dashboarden** (rollerna Arkitekt / Kodgranskare /
 > UI-kritiker / Externt öga / Externt öga 2). CI-motorn i app-repona — ai-review,
@@ -13,41 +13,47 @@
 
 ## Nästa steg (börja här)
 
-Rollen **Externt öga 2** ger `HTTP 413` när en normalstor fil granskas.
+1. Deploya och kör **Externt öga 2** på `planritningar.html`. Läs svaret med skepsis
+   (se "Den obesvarade frågan" nedan).
+2. Titta i `data/review-jobs/` i datarepot: `external2.json` ska ha `status: done`
+   och `external2.input.json` ska vara nollad (`status: förbrukad`).
+3. Enqueue-svaret innehåller `ms` — se i nätverksfliken hur nära Netlifys 10 s en
+   stor fil ligger. Lokalt mot simulerat API är det försumbart; i drift är det en
+   GitHub-commit på upp till ~700 KB.
 
-**Orsak, bekräftad:** bakgrundsfunktioner anropas asynkront och kapar begäran vid
-**256 KB**. Synkrona funktioner får 6 MB. `planritningar.html` är ~250 000 tecken,
-så JSON-kroppen med systemprompten går över taket. Indatataket i koden är satt
-till 500 000 tecken — bakgrundsvägen bär alltså inte ens hälften av vad den
-utlovar.
+## 413-felet och hur det löstes
 
-**Lösning som ska byggas:** koden får inte åka i bakgrundsfunktionens kropp.
+Rollen gav `HTTP 413` när en normalstor fil granskades. Bakgrundsfunktioner anropas
+asynkront och Netlify kapar begäran vid **256 KB** (synkrona får 6 MB).
+`planritningar.html` är ~250 000 tecken, så kroppen med systemprompten gick över.
+
+Koden åker nu inte i bakgrundsfunktionens kropp:
 
 ```
-klient  ──POST hela koden──▶  ai-review-enqueue.js   (SYNKRON, 6 MB tak)
-                                    │
-                                    ├─ skriver koden till data/review-jobs/<roll>.input.json
-                                    └─ anropar bakgrundsfunktionen med BARA { jobId, agentId }
-                                                    │
-                              ai-review-background.js  läser koden ur datarepot
-                                    │
-                                    └─ skriver resultatet till data/review-jobs/<roll>.json
-                                                    │
-klient  ◀──pollar──────────  ai-review-result.js
+klient ──POST { jobId, agentId, system, code, context }──▶ ai-review-enqueue.js  (SYNKRON, 6 MB)
+                                                             └─ skriver data/review-jobs/<roll>.input.json
+klient ──POST { jobId, agentId }──────────────────────────▶ ai-review-background.js
+                                                             ├─ läser indatafilen, kräver att jobId stämmer
+                                                             ├─ skriver data/review-jobs/<roll>.json
+                                                             └─ nollar indatafilen (bara om den fortfarande är vår)
+klient ◀──pollar──────────────────────────────────────────  ai-review-result.js
 ```
 
-Detaljer att tänka på när det byggs:
+**Avvikelse från den ursprungliga ritningen:** den lät enqueue anropa
+bakgrundsfunktionen via `process.env.URL`. Det fungerar inte här — sajten är
+lösenordsskyddad och skyddet gäller även funktionsadresserna, så ett anrop mellan
+funktioner får 401 och dör tyst (samma fälla som SEO-verktyget, se `seo-queue.js`).
+Därför gör **klienten** båda anropen; webbläsaren har lösenordskakan.
 
-- Enqueue-funktionen anropar bakgrundsfunktionen via `process.env.URL` (Netlify
-  sätter den) — `${process.env.URL}/.netlify/functions/ai-review-background`.
-- Enqueue måste svara **innan** Netlifys 10 s. Den gör bara en GitHub-skrivning
-  plus ett eldochglöm-anrop, men en 500 KB-commit tar tid — mät.
-- Indatafilen skrivs över per roll, precis som resultatfilen, så datarepots
-  arbetsträd växer inte. Git-historiken gör det däremot. Överväg att nolla
-  `.input.json` när jobbet är klart.
-- `ai-review-background.js` behöver då `jobId`+`agentId` i kroppen och hämtar
-  resten själv. Validera att `jobId` i indatafilen matchar det som skickades,
-  annars kan ett gammalt jobb granska fel kod.
+Övriga detaljer:
+- Indata läses med `readJsonFileRaw` (`lib/store.js`). Vanliga `readJsonFile` får
+  innehållet base64-kodat, och GitHub lämnar det fältet tomt för filer över 1 MB.
+- GitHubs contents-API kan leverera förra versionen strax efter en skrivning.
+  Bakgrundsjobbet läser därför om upp till 4 gånger (1,5 s paus) innan ett
+  felaktigt jobId räknas som fel.
+- Startas en ny granskning av samma roll medan en gammal kör, får den gamla
+  felet "Indatafilen tillhör ett annat jobb" om den inte hunnit läsa — den nya
+  jobbets kod skrivs aldrig över.
 
 ---
 
@@ -57,7 +63,8 @@ Detaljer att tänka på när det byggs:
 |---|---|
 | `netlify/functions/lib/openrouter.js` | anropet, modellkedjan, felmeddelandena — **delad** av synkron och asynkron väg. Ändra kedjan HÄR. |
 | `netlify/functions/ai-review.js` | synkrona vägen (Claude / Gemini / OpenRouter). Räknar deadline, delegerar till biblioteket. |
-| `netlify/functions/ai-review-background.js` | asynkron granskning, 15 min, effort `high`. **Blockerad av 413 — se ovan.** |
+| `netlify/functions/ai-review-enqueue.js` | synkron: tar emot koden och lägger den i datarepot före bakgrundsjobbet. |
+| `netlify/functions/ai-review-background.js` | asynkron granskning, 15 min, effort `high`. Får bara `{ jobId, agentId }` och läser koden själv. |
 | `netlify/functions/ai-review-result.js` | läser tillbaka resultatet som bakgrundsjobbet skrev. |
 | `index.html` | rollerna i `AGENTS`, `korSynkrongranskning()`, `korBakgrundsgranskning()`. |
 
@@ -86,7 +93,7 @@ Netlify-variabler slår igenom **först vid ny deploy**.
 have 3 items or fewer`. Kapningen ligger i `lib/openrouter.js` så den inte kan
 glömmas på ett av anropsställena.
 
-**Bakgrundsfunktioner: 256 KB in.** Synkrona: 6 MB. Det är hela 413-felet.
+**Bakgrundsfunktioner: 256 KB in.** Synkrona: 6 MB. Det var hela 413-felet — därför går koden via `ai-review-enqueue.js`.
 
 **Netlifys synkrona tidstak är 10 s** och går **inte** att höja i `netlify.toml`.
 26 s finns på Pro men Netlifys support måste aktivera det per sajt.
@@ -159,12 +166,12 @@ koden gör är förbjudet. Samma sorts spärr som ui-scan fick efter det falska
 
 ## Den obesvarade frågan
 
-Allt tekniskt är löst utom 413. Kvar är det som faktiskt avgör om rollen är värd
+413 är löst (2026-09-28). Kvar är det som faktiskt avgör om rollen är värd
 att ha: **ger 55 miljarder aktiva parametrar med hög tankenivå en granskning värd
 att läsa?**
 
 Det har aldrig kunnat mätas. Varje försök hittills har begränsats av
-plattformen, inte av modellen. När enqueue-vägen är byggd: kör
+plattformen, inte av modellen. Nu när enqueue-vägen finns: kör
 `planritningar.html` och läs med skepsis. Håller den påhittade buggar även då är
 svaret att fri kodgranskning på OpenRouter inte bär — och det är värt att veta i
 stället för att fortsätta justera.
