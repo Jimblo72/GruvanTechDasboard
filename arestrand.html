@@ -194,7 +194,7 @@ tr.n1 td{color:var(--text);}
             <input class="form-input" id="apiKeyInput" type="password" placeholder="sk-ant-…">
             <button class="btn" style="margin-top:8px" onclick="saveApiKey()">Spara</button>
           </div>
-          <div class="note">Samma språkregler som Mäklargruvans textmodul (js/andels-core.js). Ramen är Åre Strands: fast vecka i namngiven enhet, Holiday Clubs service, RCI, strandläget. Avgiften anges i texten, priset aldrig.</div>
+          <div class="note">Samma språkregler som Mäklargruvans textmodul (js/andels-core.js). Ramen är Åre Strands: fast vecka i namngiven enhet, Holiday Clubs service, RCI, strandläget. Avgiften skrivs inte i texten (den har ett eget fält i Mspecs), priset aldrig.</div>
         </div>
       </div>
       <div>
@@ -462,7 +462,7 @@ function faktaFor(k, v) {
     planlosning: k.planlosning, hustext: k.hustext,
     vecka: v, veckolabel: veckolabel(v), veckousp: veckousp(v),
     avgift: paket ? null : avgiftText(k), paket, usp, husdjur: k.husdjur !== false,
-    rciPoang: rciFor(k, v, paket).poang,
+    rciPoang: rciFor(k, v, paket).poang, villa: k.slag === 'villa',
   };
 }
 
@@ -500,19 +500,19 @@ const SASONG_KARAKTAR = {
 
 function byggStrandPrompt(f) {
   const ram = f.paket
-    ? `Andelsform: paket om var sjätte vecka, 8–9 veckor per år fördelade över alla årstider enligt rullande schema (HC Villas, hus 6). Avgift ca 1 100–1 200 kr/mån.`
-    : `Andelsform: en fast vecka per år, vecka ${f.vecka} (${f.veckolabel}). Avgift ${f.avgift || 'enligt förening'} som täcker drift, städning, byte av sänglinne och handdukar.`;
+    ? `Andelsform: paket om var sjätte vecka, 8–9 veckor per år fördelade över alla årstider enligt rullande schema (HC Villas, hus 6). Städning samt byte av sänglinne och handdukar ingår.`
+    : `Andelsform: en fast vecka per år, vecka ${f.vecka} (${f.veckolabel}). Städning samt byte av sänglinne och handdukar ingår.`;
   return `Du skriver säljtexter för andelsveckor på Åre Strand Holiday Club i Åre. Direkt konkret svenska, inga högtravande fraser. Förbjudna ord: erbjuder, inbjuder, unikt, fantastisk, exklusivt. Inled INTE med Välkommen.${SPRAKREGLER}
 
 DISPOSITION för den långa texten — följ den:
 (1) INLEDNINGEN säljer. Börja den långa texten med en kort ingressrad i formen "<Bostadstyp> vecka <nr> – " (t.ex. "Strandvilla vecka 16 – ") och fortsätt direkt i samma stycke. Två till fyra meningar om VECKAN och LÄGET innan bostaden nämns: vad den här veckan i Åre är för slags vecka (se "Veckans karaktär"), strandläget vid Åresjön, närheten till hotellet Holiday Club och till centrala Åre. Konkret och varmt, som en mäklare som vill att läsaren ska se sig själv där. Inga siffror i inledningen.
 (2) RCI-STYCKET nedan ORDAGRANT som ett eget stycke direkt efter inledningen (ändra inte ett ord, skriv ingen egen RCI-text). Det är en av andelens största fördelar och ska synas tidigt.
 (3) BOSTADEN som ett flöde, inte en uppräkning: led läsaren genom lägenheten från entrén, ge ett eller två rum en scen (kvällen vid braskaminen, morgonen på altanen mot sjön). Skriv inte listor med kommatecken i rad — högst tre led i en uppräkning, hellre två meningar än en lång.
-(4) SERVICEN: bäddat och klart vid ankomst, Holiday Clubs restaurang, spa och bad, medlemsrabatten — kort, som en fördel. Nämn inte RCI igen här.
-(5) AVGIFTEN allra sist, en mening.
+(4) SERVICEN sist: bäddat och klart vid ankomst, Holiday Clubs restaurang, spa och bad, medlemsrabatten — kort, som en fördel. Nämn inte RCI igen här.
+Skriv INTE ut avgiften någonstans — den har ett eget fält i Mspecs (Jimmy 2026-09-28).
 
 Skriv exakt två texter ÅTSKILDA med texten ---KORT---:
-1. LÅNG text (300-430 ord) — säljande men sann, flytande prosa med varierad meningsbyggnad. Avsluta med avgiften.
+1. LÅNG text (300-430 ord) — säljande men sann, flytande prosa med varierad meningsbyggnad. Avsluta med servicestycket.
 2. KORT text (260-300 tecken EXAKT) — SÄLJANDE krok. Måste väcka intresse på 2 sekunder. Använd:
    - Kort konkret öppning (vilken vecka + Åre Strand, max 5 ord, gärna utropstecken)
    - Lägenhetens nyckelfakta (storlek, rum, bäddar)
@@ -535,7 +535,7 @@ RCI-STYCKET (ordagrant): ${rciStycke(f.rciPoang)}
 Nämn ALDRIG utgångspris eller pris i texten. Bytesdag nämns bara om det står ovan. Husdjur: skriv att de är välkomna när de är tillåtna, och att boendet är husdjursfritt när de inte är det — hitta aldrig på det ena eller andra.
 SPRÅKET SKA VARA DIREKT, inte poetiskt. Skriv "en härlig vårvintervecka i vårsolen när det fortfarande finns snö i backarna" — inte "vårvinterveckan när solen värmer och backarna bär snö". Naturen och årstiden "möter" inte, "bär" inte och "öppnar sig" inte. Säg veckonumret rakt ut när du skriver om veckan: "vissa år infaller påsken under vecka 16", inte "påsken infaller just här".
 Räkna upp rum enkelt. Skriv inte "utöver X finns Y" och inte "totalt två badrum (…)" — nämn badrummen var för sig där de hör hemma, studions i samma mening som studion.
-ORDVAL: skriv "badrum", aldrig "duschrum". Antal badrum och toaletter EXAKT som i planlösningen ovan — hitta inte på fler. Skriv inte "mjuk snö" (det betyder slaskföre) — vårvinterns snö beskrivs med sol och bra skidåkning.
+${f.villa ? 'STRANDVILLAN: studion skrivs "studio med lock-off" — det är samma sak, skriv det ihop, inte som två saker. Både huvuddelen och studion har uteplats på entréplan: skriv aldrig "balkong".\n' : ''}ORDVAL: skriv "badrum", aldrig "duschrum". Antal badrum och toaletter EXAKT som i planlösningen ovan — hitta inte på fler. Skriv inte "mjuk snö" (det betyder slaskföre) — vårvinterns snö beskrivs med sol och bra skidåkning.
 
 EXEMPEL PÅ ÖNSKAT TONLÄGE (påhittat objekt — hämta ALDRIG fakta härifrån, bara rytmen):
 "Vecka 8 är den vecka Åre lever som mest: sportlov, fulla backar och kvällar när hela byn är ute. Från Åre Strand går du längs sjön till hotellet Holiday Club på några minuter, och via gångbron är du inne i centrala Åre med butiker, restauranger och bergbanan upp i systemet. Här är veckan din, år efter år.
@@ -576,7 +576,6 @@ function genereraMall() {
   if (f.usp) stycken.push(f.usp.charAt(0).toUpperCase() + f.usp.slice(1) + '.');
   stycken.push(`Några minuters promenad bort ligger hotellet Holiday Club med restaurang, spa, bad, gym och shopping, och som medlem i föreningen har du rabatt på hotellets aktiviteter. Via gångbron från hotellet når du tågstationen och Åre by, och från torget tar bergbanan dig upp i skidsystemet.`);
   stycken.push(`Du anländer till bäddade sängar och rena handdukar, och som medlem i föreningen har du rabatt på hotellets aktiviteter.`);
-  stycken.push(f.paket ? `Avgift: ca 1 100–1 200 kr/mån.` : `Avgift: ${f.avgift || 'enligt föreningen'}, vilket täcker drift, städning och byte av sänglinne och handdukar.`);
   const longText = stycken.join('\n\n');
   let shortText = f.rciPoang
     ? `${f.veckolabel} vid Åresjön! ${f.boarea} kvm med ${f.rum} rum och kök och ${f.baddar} bäddar på Åre Strand. Vecka ${f.vecka} varje år och ${f.rciPoang.toLocaleString('sv-SE')} RCI-poäng att resa för i hela världen. ${f.usp ? f.usp.split(',')[0] + '.' : 'Bäddat och klart vid ankomst.'}`
