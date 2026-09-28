@@ -149,6 +149,13 @@ tr.n1 td{color:var(--text);}
             <div class="form-help">Förslaget kommer från värderingen till höger. Skriv över om du vill sätta ett eget.</div>
           </div>
           <div class="form-group">
+            <label class="form-label" for="rciPoang">RCI-poäng (valfritt)</label>
+            <!-- readonly + intetsägande name: webbläsaren autofyller annars fältet med lösenordet.
+                 readonly släpps vid fokus, se Start längst ner. -->
+            <input class="form-input" id="rciPoang" name="as-r7-x" type="text" readonly placeholder="tomt = värdet under Objekt nedan" onchange="sparaRciEgen()">
+            <div class="form-help" id="rciHelp">Skriv in poängen från säljarens RCI-besked. Sparas i den här webbläsaren för just den här enheten och veckan, och går före tabellen.</div>
+          </div>
+          <div class="form-group">
             <label class="form-label" for="usp">Säljpunkter för just detta objekt (valfritt)</label>
             <textarea class="form-textarea" id="usp" placeholder="t.ex. nyrenoverat kök 2024, hörnläge, husdjur tillåtet"></textarea>
           </div>
@@ -261,6 +268,7 @@ tr.n1 td{color:var(--text);}
 <script src="js/andels-core.js"></script>
 <script src="js/data/arestrand-katalog.js"></script>
 <script src="js/data/arestrand-affarer.js"></script>
+<script src="js/data/arestrand-rci.js"></script>
 <script src="js/arestrand-vardering.js"></script>
 <script>
 'use strict';
@@ -332,11 +340,15 @@ function valdVecka() {
   const v = parseInt(document.getElementById('vecka').value, 10);
   document.getElementById('veckaHelp').textContent = veckousp(v);
   const info = document.getElementById('objInfo');
+  if (!k) document.getElementById('rciPoang').value = '';
   if (!k) { info.innerHTML = ''; document.getElementById('vardOut').innerHTML = '<div class="results-empty">Välj enhet och vecka.</div>'; document.getElementById('jfOut').innerHTML = ''; return; }
   const paket = document.getElementById('paket').value === 'paket';
+  const rciEl = document.getElementById('rciPoang'), egen = lasRciEgna()[k.id + '|' + v];
+  rciEl.value = egen ? egen.toLocaleString('sv-SE') : '';
   info.innerHTML = [
     ['Förening', k.brf], ['Typ', k.typnamn], ['Boarea', k.boarea + ' kvm'], ['Rum', `${k.rum} rok · ${k.sovrum} sovrum · ${k.baddar} bäddar`],
     ['Byggår', k.byggar], ['Avgift', paket ? 'ca 1 100–1 200 kr/mån (paket)' : (avgiftText(k) || 'okänd — kontrollera')],
+    ['RCI-poäng', rciText(rciFor(k, v, paket))],
     ['Bildmapp', k.bildmapp], ['Faktakälla', k.kalla === 'pdf' ? 'objektsbeskrivning' : k.kalla === 'holidayclub' ? 'Holiday Clubs webbplats' : k.kalla === 'harledd' ? 'härledd ur grannlägenhet — kontrollera' : 'Hemnet']
   ].map(([a, b]) => `<div class="info-row"><span class="info-label">${esc(a)}</span><span class="info-val">${esc(b)}</span></div>`).join('');
   vardera(k, v, paket);
@@ -408,6 +420,37 @@ function renderTextInfo() {
 function avgiftText(k) {
   if (k.avgift_ar) return k.avgift_ar.toLocaleString('sv-SE') + ' kr/år';
   return k.avgift ? k.avgift + ' kr/mån' : null;
+}
+
+/* RCI-poäng i prioritetsordning: eget inskrivet värde (säljarens RCI-besked) →
+   objektsbeskrivningen för exakt enhet+vecka → RCI:s tabell 2015–17, men bara för
+   villor och mellanlägenheter där stickprovet stämde → okänt. Se js/data/arestrand-rci.js. */
+const LS_RCI = 'as_rci_egna';
+function lasRciEgna() { try { const o = JSON.parse(localStorage.getItem(LS_RCI) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+function rciFor(k, v, paket) {
+  if (paket) return { poang: null, kalla: 'paketandel, ange själv' };
+  const nyck = k.id + '|' + v, egen = lasRciEgna()[nyck];
+  if (egen) return { poang: egen, kalla: 'eget inskrivet värde' };
+  if (ARESTRAND_RCI_KANDA[nyck]) return { poang: ARESTRAND_RCI_KANDA[nyck], kalla: 'objektsbeskrivning' };
+  const kol = k.typ === 'villa' ? 2 : k.typ === 'mellan' ? 1 : 0;
+  if (!kol) return { poang: null, kalla: k.typ === 'stor' ? 'stora lägenheter följer inte tabellen' : 'små lägenheter saknas i tabellen' };
+  const rad = ARESTRAND_RCI_TABELL.find(r => r[0].includes(v));
+  return rad ? { poang: rad[kol], kalla: 'RCI:s tabell 2015–17' } : { poang: null, kalla: 'veckan saknas i tabellen' };
+}
+function rciText(r) { return r.poang ? `${r.poang.toLocaleString('sv-SE')} · ${r.kalla}` : `okänt — ${r.kalla}`; }
+function sparaRciEgen() {
+  const k = enhetAv(document.getElementById('enhet').value);
+  const el = document.getElementById('rciPoang'), help = document.getElementById('rciHelp');
+  if (!k) { el.value = ''; return; }
+  const v = parseInt(document.getElementById('vecka').value, 10), s = el.value.trim();
+  const egna = lasRciEgna(), nyck = k.id + '|' + v;
+  // Validera hela strängen — sålla inte fram siffror ur skräp (autofyll-fällan).
+  if (s === '') delete egna[nyck];
+  else if (/^\d{1,3}([  ]?\d{3})*$/.test(s) && +s.replace(/\D/g, '') >= 1000 && +s.replace(/\D/g, '') <= 500000) egna[nyck] = +s.replace(/\D/g, '');
+  else { help.innerHTML = '<span style="color:var(--warn)">Skriv poängen som ett tal, t.ex. 123 500. Inget sparades.</span>'; return; }
+  localStorage.setItem(LS_RCI, JSON.stringify(egna));
+  help.textContent = 'Skriv in poängen från säljarens RCI-besked. Sparas i den här webbläsaren för just den här enheten och veckan, och går före tabellen.';
+  valdVecka();
 }
 
 function faktaFor(k, v) {
@@ -711,6 +754,10 @@ function rensaLokalt() { if (!confirm('Ta bort alla lokalt tillagda affärer (He
 
 // ── Start ────────────────────────────────────────────────────────────────
 fyllEnheter();
+(() => {
+  const el = document.getElementById('rciPoang'), slapp = () => el.removeAttribute('readonly');
+  el.addEventListener('focus', slapp); el.addEventListener('pointerdown', slapp);
+})();
 AV.skatta(allaAffarer());
 valdVecka();
 bbInit();
