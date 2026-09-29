@@ -300,11 +300,13 @@
         ${u.spar === 'are_strand' ? '<button class="btn btn-solid" onclick="OU.tillVerktyg(\'arestrand\')">Öppna i Åre Strand-verktyget</button>' : ''}
         ${u.spar === 'skistar' ? '<button class="btn btn-solid" onclick="OU.tillVerktyg(\'andel\')">Öppna i andelsverktyget</button>' : ''}
         ${u.spar === 'ovrigt' ? '<button class="btn btn-solid" onclick="OU.tillMaklargruvan()">Kopiera till Mäklargruvan</button>' : ''}
+        <button class="btn btn-accent" onclick="OU.mspecsPaket()" title="Instruktion + data för Claude i Chrome att lägga upp objektet i Mspecs">📦 Mspecs-paket</button>
         <button class="btn" onclick="OU.kopieraAllt()">Kopiera allt (inkl. säljare)</button>
         <button class="btn" onclick="OU.oppna(OU.id(), OU.mb(), true)">↻ Tolka om</button>
         <button class="btn" onclick="OU.rensa()" style="margin-left:auto">Rensa underlaget</button>
       </div>
-      <div class="hint" id="ou-status" style="margin-top:8px"></div>`);
+      <div class="hint" id="ou-status" style="margin-top:8px"></div>
+      <div id="ou-paket"></div>`);
 
     // Redigeringar skrivs tillbaka i underlaget (och sessionStorage).
     document.querySelectorAll('#ou-body input[data-ou]').forEach(inp => {
@@ -377,6 +379,156 @@
     kopiera(textBlock(false), 'Objektfakta kopierade (utan säljare). Klistra in i Mäklargruvans ruta för underlag.');
     window.open('https://app.maklargruvan.se/text.html', '_blank');
   }
+  // ── Steg 2: Mspecs-paket för Claude i Chrome ─────────────────────────────
+  // Ett textpaket som Jimmy klistrar in i Claude i sin inloggade Chrome.
+  // Innehåll: uppdrag + regler, var objektet ska skapas, objektdata som
+  // ng-model → värde (där kartan känner fältet, annars etikett), säljare, och
+  // hela MSPECS-KARTA.md (hämtas live ur datarepot — kartan är den enda
+  // källan; inga ng-models dupliceras här utöver de grundfält kartan anger).
+  // Paketet innehåller personuppgifter: det byggs i webbläsaren, går till
+  // urklipp och sparas ingenstans.
+  const KARTA_URL = '/.netlify/functions/github-file?repo=gruvan-dashboard-data&path=MSPECS-KARTA.md';
+  let kartaCache = null;
+  async function hamtaKarta() {
+    if (kartaCache) return kartaCache;
+    const r = await fetch(KARTA_URL);
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.content) throw new Error(d.error || `HTTP ${r.status}`);
+    kartaCache = d.content;
+    return kartaCache;
+  }
+
+  // Siffror ur fritext: "95 000 kr" → "95000", "45,5 kvm" → "45,5".
+  function tal(s) {
+    const m = String(s || '').replace(/\s(?=\d{3}\b)/g, '').match(/\d+(?:[.,]\d+)?/);
+    return m ? m[0] : '';
+  }
+
+  // Grundfält → ng-model enligt MSPECS-KARTA §4–§5. Fält kartan inte känner
+  // (t.ex. fastighetsbeteckning) skickas med etikett och ngModel null, så att
+  // Claude letar upp dem på etikett och rapporterar var de låg.
+  function mspecsFalt(u) {
+    const o = u.objekt || {}, a = u.andel || {};
+    const andel = u.spar !== 'ovrigt';
+    const enhet = andel ? (u.spar === 'are_strand' ? normEnhet(v(a.enhet)) : v(a.enhet)) : '';
+    const veckor = andel ? v(a.veckor).replace(/vecka|v\.?/gi, '').replace(/\s*(och|&|\+)\s*/g, ', ').replace(/\s+/g, ' ').trim() : '';
+    const lgh = andel && enhet ? `${enhet}${veckor ? ', V.' + veckor : ''}` : v(o.lagenhetsnummer);
+    const namn = andel
+      ? [v(o.gatuadress) || v(a.anlaggning), enhet && `lgh ${enhet}`, veckor && `vecka ${veckor.replace(/,\s*/g, ' & ')}`].filter(Boolean).join(', ')
+      : [v(o.gatuadress), v(o.lagenhetsnummer) && `lgh ${v(o.lagenhetsnummer)}`].filter(Boolean).join(', ');
+    const pris = tal(v(a.insats) || v(o.onskat_pris));
+    const rad = (etikett, ngModel, varde, kallaFalt) => ({
+      etikett, ngModel, varde,
+      osaker: !!(kallaFalt && kallaFalt.osaker),
+      kalla: (kallaFalt && kallaFalt.kalla) || '',
+    });
+    return [
+      rad('Uppdragsnamn', 'dealEstateInfo.displayName', namn, null),
+      rad('Gatuadress', 'object.streetAddress', v(o.gatuadress), o.gatuadress),
+      rad('Postnummer', 'object.postalCode', v(o.postnummer), o.postnummer),
+      rad('Ort', 'object.city', v(o.ort), o.ort),
+      rad('Lägenhetsnummer BRF', 'object.apartmentNumber', lgh, andel ? a.enhet : o.lagenhetsnummer),
+      rad('Våningsplan', 'object.floorNr', tal(v(o.vaningsplan)), o.vaningsplan),
+      rad('Boarea', 'object.livingArea', tal(v(o.boarea) || v(a.kvm)), o.boarea && o.boarea.varde ? o.boarea : a.kvm),
+      rad('Biarea', 'object.otherLivingArea', tal(v(o.biarea)), o.biarea),
+      rad('Antal rum', 'object.numberOfRoom', tal(v(o.antal_rum)), o.antal_rum),
+      rad('Antal sovrum', 'object.numberOfBedrooms', tal(v(o.antal_sovrum)), o.antal_sovrum),
+      rad('Byggår', 'object.buildYear', tal(v(o.byggar)), o.byggar),
+      rad('Namn på Brf (koppling)', 'object.housingAssociationName', v(o.forening) || (andel ? v(a.anlaggning) : ''), o.forening),
+      rad('Månadsavgift', 'selectedProp.monthlyRent', tal(v(o.manadsavgift)), o.manadsavgift),
+      andel ? rad('Insats', 'object.contributionFee', pris, a.insats) : null,
+      rad('Pris (utgångspris)', 'object.startingPrice', pris, a.insats && a.insats.varde ? a.insats : o.onskat_pris),
+      rad('Objektstyp', null, v(o.objektstyp), o.objektstyp),
+      rad('Kommun', null, v(o.kommun), o.kommun),
+      rad('Fastighetsbeteckning', null, v(o.fastighetsbeteckning), o.fastighetsbeteckning),
+      rad('Tomtarea', null, tal(v(o.tomtarea)), o.tomtarea),
+      rad('Föreningens org.nr', null, v(o.forening_orgnr), o.forening_orgnr),
+      rad('Tillträde', null, v(o.tilltrade), o.tilltrade),
+      rad('Övrigt', null, v(o.ovrigt), o.ovrigt),
+    ].filter(r => r && r.varde);
+  }
+
+  function varSkapas(u) {
+    const omr = v(u.andel && u.andel.omrade).toLowerCase();
+    if (u.spar === 'skistar' && (omr === 'åre' || omr === 'sälen')) {
+      return `I projektet **SkiStar ${omr === 'åre' ? 'Åre' : 'Sälen'}** (projekt-ID i kartan §2): projektflödet → NYTT OBJEKT → "FYLL I FORMULÄRET MANUELLT" enligt kartan §4 och batch-receptet §11 (ett objekt). Objektskategori Bostadsrätt, kontor PeakFast.`;
+    }
+    if (u.spar === 'skistar') {
+      return 'SkiStar-andel i ett område som kartan saknar projekt-ID för. **Fråga Jimmy** vilket projekt objektet ska ligga i innan du skapar något.';
+    }
+    if (u.spar === 'are_strand') {
+      return 'Åre Strand-andel. Kartan saknar projekt-ID för Åre Strand. **Fråga Jimmy** om objektet ska ligga i ett projekt (och vilket) eller skapas som eget uppdrag via flödet → Nytt uppdrag → "Fyll i formuläret manuellt". Objektskategori Bostadsrätt, kontor PeakFast.';
+    }
+    return 'Eget uppdrag: flödet (`#/`) → Nytt uppdrag → "FYLL I FORMULÄRET MANUELLT". Välj objektskategori efter objektstypen i OBJEKTDATA (kartan har bara id för Bostadsrätt — välj annars på etikett), kontor PeakFast. Stämmer inte kategorin med något alternativ: fråga Jimmy.';
+  }
+
+  function byggPaket(u, karta) {
+    const falt = mspecsFalt(u);
+    const kanda = falt.filter(f => f.ngModel), okanda = falt.filter(f => !f.ngModel);
+    const osakra = falt.filter(f => f.osaker).map(f => f.etikett);
+    const data = {
+      spar: SPAR_NAMN[u.spar] || u.spar,
+      ngModel: Object.fromEntries(kanda.map(f => [f.ngModel, f.varde])),
+      efterEtikett: Object.fromEntries(okanda.map(f => [f.etikett, f.varde])),
+    };
+    const saljare = (u.saljare || []).map((s, i) => {
+      const r = SALJARE_NYCKLAR.filter(k => v(s[k])).map(k => `- ${ETIKETT[k]}: ${v(s[k])}`);
+      return r.length ? `### Säljare ${i + 1}\n${r.join('\n')}` : '';
+    }).filter(Boolean).join('\n\n') || '_Inga säljare i underlaget._';
+
+    return [
+      '# Uppdrag: lägg upp ett nytt objekt i Mspecs',
+      '',
+      'Du är Claude i Chrome och hjälper fastighetsmäklaren Jimmy (PeakFast) att lägga upp ett nytt uppdrag i Mspecs. Jimmy är inloggad i Mspecs i den här webbläsaren. Följ MSPECS-KARTAN längst ner för anslutning, navigering, fältens ng-model och fyllningsmetod (§9), och fällorna (§10–§11).',
+      '',
+      '## Regler',
+      '1. Skapa EXAKT ett nytt objekt. Ändra eller radera aldrig andra objekt, kontakter eller föreningar.',
+      '2. Fyll bara i värden som står i OBJEKTDATA och SÄLJARE nedan. Hitta inte på något, och lämna fält utan värde orörda.',
+      '3. Stanna och fråga Jimmy om något är oklart: var objektet ska skapas, ett fält du inte hittar, flera träffar på en förening eller kontakt, eller ett värde som inte passar fältet.',
+      '4. Vänta på att autosparet gått klart (PUT 200) innan du navigerar vidare — annars tappas allt (kartan §11). Använd aldrig sleep inne på sidan.',
+      '5. Säljarnas uppgifter är personuppgifter. Skriv in dem bara i Mspecs, ingen annanstans.',
+      '6. Avsluta med en kontrollista till Jimmy: vilka fält som fylldes, vilka som hoppades över och varför, var du hittade fält som saknas i kartan, och länken till objektet.',
+      osakra.length ? `7. Dessa uppgifter var osäkra i underlaget — fyll i dem men lyft dem särskilt i kontrollistan: ${osakra.join(', ')}.` : '',
+      '',
+      '## Var objektet skapas',
+      varSkapas(u),
+      '',
+      '## OBJEKTDATA',
+      '`ngModel` = fält som kartan känner (fyll via §9). `efterEtikett` = fält som kartan inte beskriver — leta upp dem på etikett, och rapportera deras ng-model i kontrollistan så att kartan kan kompletteras.',
+      '```json',
+      JSON.stringify(data, null, 2),
+      '```',
+      '',
+      '## SÄLJARE',
+      'Kartan beskriver inte säljar-/kontaktdelen än. Lägg till varje säljare på uppdraget (säljarfliken/kontakter på uppdraget) med uppgifterna nedan. Finns kontakten redan i Mspecs: koppla den befintliga i stället för att skapa en dubblett — och fråga Jimmy vid minsta tvekan. Visa Jimmy vad du tänker spara innan du sparar säljaren, och rapportera var fälten låg.',
+      '',
+      saljare,
+      '',
+      '---',
+      '',
+      karta ? karta : '_MSPECS-KARTA.md kunde inte hämtas. Be Jimmy om kartan innan du börjar._',
+    ].filter(x => x !== '').join('\n').replace(/\n(#+ )/g, '\n\n$1');
+  }
+
+  async function mspecsPaket() {
+    const u = aktuellt && aktuellt.underlag;
+    if (!u) return;
+    statusRad('Hämtar Mspecs-kartan…');
+    let karta = null;
+    try { karta = await hamtaKarta(); }
+    catch (e) { statusRad('Kunde inte hämta MSPECS-KARTA.md (' + e.message + ') — paketet byggs utan karta.'); }
+    const paket = byggPaket(u, karta);
+    const box = $('ou-paket');
+    box.innerHTML = `<div style="margin-top:12px;padding:12px;border:1px solid var(--accent);border-radius:10px">
+      <div style="font-weight:600;margin-bottom:4px">Mspecs-paket</div>
+      <div class="hint" style="margin-bottom:8px">1. Öppna Mspecs i din inloggade Chrome. 2. Öppna Claude i Chrome och klistra in paketet. 3. Följ med medan Claude fyller i — du sparar och granskar. Paketet innehåller personuppgifter och sparas ingenstans.</div>
+      <textarea class="input" readonly style="width:100%;min-height:180px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px">${escH(paket)}</textarea>
+      <div style="margin-top:8px"><button class="btn btn-solid" id="ou-paket-kopiera">Kopiera paketet</button></div>
+    </div>`;
+    $('ou-paket-kopiera').onclick = () => kopiera(paket, 'Mspecs-paketet är kopierat. Klistra in det i Claude i Chrome.');
+    kopiera(paket, karta ? 'Mspecs-paketet är kopierat. Klistra in det i Claude i Chrome.' : 'Paketet kopierat — men UTAN karta.');
+  }
+
   function kopieraAllt() { kopiera(textBlock(true), 'Allt kopierat, inklusive säljarens personuppgifter — hantera varsamt.'); }
 
   function rensa() {
@@ -387,10 +539,10 @@
   }
 
   window.OU = {
-    oppna, stang, tillVerktyg, tillMaklargruvan, kopieraAllt, rensa,
+    oppna, stang, tillVerktyg, tillMaklargruvan, kopieraAllt, rensa, mspecsPaket,
     id: () => aktuellt && aktuellt.messageId,
     mb: () => aktuellt && aktuellt.mailbox,
     // för test:
-    _schema: SCHEMA, _normEnhet: normEnhet, _byggInnehall: byggInnehall,
+    _schema: SCHEMA, _normEnhet: normEnhet, _byggInnehall: byggInnehall, _byggPaket: byggPaket, _mspecsFalt: mspecsFalt,
   };
 })();
