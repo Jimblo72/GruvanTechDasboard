@@ -4,16 +4,16 @@
 # oberoende av CommonJS/ESM). mail-poll körs var 10:e minut och läser inkorgen,
 # klassificerar och (om MAIL_AUTODRAFT=true) skapar svarsutkast via Graph.
 #
-# ⏸ PAUSAD 2026-08-06 på Jimmys begäran (AI-utkasten behöver justeras).
-# Två spärrar är lagda, båda tillfälliga:
-#   1. MAIL_AUTODRAFT=false i Netlify env → pollaren skulle ändå inte skapa utkast.
-#   2. Schemat nedan är bortkommenterat → pollaren körs inte alls.
-# SLÅ PÅ IGEN: avkommentera blocket nedan + sätt MAIL_AUTODRAFT=true i Netlify,
-# och deploya. On-click-knappen "Analysera & skapa utkast" i dashboarden är
-# opåverkad — den skapar fortfarande utkast när du själv klickar.
-#
-# [functions."mail-poll"]
-#   schedule = "*/10 * * * *"
+# ▶ PÅSLAGEN IGEN 2026-09-29 (pausad 2026-08-06–2026-09-29).
+# Schemat är aktivt, men utkast styrs fortfarande separat:
+#   * MAIL_AUTODRAFT=false i Netlify env (sedan pausen) → TORRLÄGE: pollern
+#     klassificerar och köar i data/mail-queue.json men skapar INGA utkast.
+#   * Sätt MAIL_AUTODRAFT=true i Netlify när utkasttonen är godkänd.
+# Pollern håller sig inom Netlifys 30 s (se tidsbudgeten i mail-poll.js).
+# PAUSA IGEN: kommentera bort blocket nedan och deploya.
+# On-click-knappen "Analysera & skapa utkast" påverkas inte av något av detta.
+[functions."mail-poll"]
+  schedule = "*/10 * * * *"
 
 # Sociala förslag: watchern hämtar nya pressmeddelanden (Svensk Mäklarstatistik
 # m.fl.), Claude skriver utkastvarianter och allt köas i data/social-queue.json
