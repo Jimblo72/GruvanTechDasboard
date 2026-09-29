@@ -375,9 +375,12 @@
 
   // Tar emot texter från verktyget. Hör de till ett annat underlag än det
   // som är öppet ligger de kvar tills det underlaget öppnas.
-  function mottaTexter() {
+  // raw: värdet från storage-eventet (e.newValue). Används det i stället för
+  // en ny läsning ur localStorage kan två flikar med samma underlag båda ta
+  // emot texterna, även om den ena hinner radera nyckeln först.
+  function mottaTexter(raw) {
     let p;
-    try { p = JSON.parse(localStorage.getItem('pf_texter') || 'null'); } catch (e) { return; }
+    try { p = JSON.parse(raw != null ? raw : (localStorage.getItem('pf_texter') || 'null')); } catch (e) { return; }
     if (!p) return;
     if (!p.skapad || Date.now() - p.skapad > 24 * 3600 * 1000) { localStorage.removeItem('pf_texter'); return; }
     if (!aktuellt || !aktuellt.underlag || p.underlagId !== aktuellt.messageId) return;
@@ -393,7 +396,7 @@
       statusRad('Texterna togs emot från verktyget. Lägg till en rubrik om du vill — sedan Mspecs-paket.');
     }
   }
-  window.addEventListener('storage', (e) => { if (e.key === 'pf_texter' && e.newValue) mottaTexter(); });
+  window.addEventListener('storage', (e) => { if (e.key === 'pf_texter' && e.newValue) mottaTexter(e.newValue); });
   const v = (f) => (f && f.varde != null && String(f.varde).trim()) ? String(f.varde).trim() : '';
 
   // ── Till verktygen ──────────────────────────────────────────────────────
