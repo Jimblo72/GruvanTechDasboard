@@ -706,6 +706,13 @@ async function triageMessage(messageId, opts = {}) {
     return result;
   }
 
+  // Avbruten körning (pollerns hårda stopp): skapa inget utkast i efterhand.
+  // Mejlet räknas inte som sett i pollern och tas om nästa körning.
+  if (opts.autodraft && typeof opts.isAborted === 'function' && opts.isAborted()) {
+    result.skipReason = 'avbruten (tidsgräns) — tas om nästa körning';
+    return result;
+  }
+
   if (opts.autodraft) {
     const created = await createOutlookDraft(messageId, draftText, mb);
     result.draftId = created.draftId;
