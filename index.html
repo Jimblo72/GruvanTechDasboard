@@ -500,8 +500,11 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
         </div>
       </div>
       <div class="field">
-        <label class="field-label">Lösenord <span style="color:var(--text3);font-weight:400">— lämna tomt för ett genererat</span></label>
-        <input class="input" id="demo-losen" name="dk-e5-x" readonly placeholder="minst 8 tecken">
+        <label class="field-label">Lösenord <span id="demo-losen-tips" style="color:var(--text3);font-weight:400">— lämna tomt för ett genererat</span></label>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="demo-losen" name="dk-e5-x" readonly placeholder="minst 8 tecken" style="flex:1">
+          <button class="btn" type="button" onclick="genereraDemoLosen()" title="Fyll i ett nytt, läsbart lösenord">Generera</button>
+        </div>
       </div>
       <div class="field">
         <label class="field-label">Moduler</label>
@@ -518,7 +521,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
         <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px">
           <input type="checkbox" id="demo-mail" checked> Skicka välkomstmail med inloggningsuppgifterna
         </label>
-        <div class="hint" style="margin-top:4px">Går bara ut om det finns ett lösenord att skicka — alltså vid nytt konto, eller när du sätter ett nytt här.</div>
+        <div class="hint" style="margin-top:4px">Går bara ut om det finns ett lösenord att skicka — alltså vid nytt konto, eller när du sätter ett nytt via Ändra. Mailet går till den som får lösenordet.</div>
       </div>
       <div id="demo-redigerar" style="display:none;margin-bottom:10px;padding:9px 12px;border-radius:9px;background:var(--accent-glow);border:1px solid var(--accent);font-size:12.5px">
         Redigerar <strong id="demo-redigerar-namn"></strong> — e-postadressen går inte att ändra.
@@ -3940,6 +3943,7 @@ function redigeraDemo(orgId){
   document.getElementById('demo-juridik').checked = !!r.juridik;
   document.getElementById('demo-mail').checked = false;
 
+  document.getElementById('demo-losen-tips').textContent = '— lämna tomt för att behålla nuvarande';
   document.getElementById('demo-redigerar-namn').textContent = r.kontor || r.epost || '';
   document.getElementById('demo-redigerar').style.display = '';
   document.getElementById('demo-save-btn').textContent = 'Spara ändringar';
@@ -3952,6 +3956,7 @@ function avbrytRedigering(){
   doljAnvandarval();          // annars star valet kvar nar man byter post
   doljDelvisSparat();
   document.getElementById('demo-redigerar').style.display = 'none';
+  document.getElementById('demo-losen-tips').textContent = '— lämna tomt för ett genererat';
   document.getElementById('demo-save-btn').textContent = 'Skapa demokonto';
   DEMO_FALT.forEach(id => {
     const el = document.getElementById(id);
@@ -3981,6 +3986,9 @@ async function andraDemokonto(){
   const payload = { handling: 'andra', org_id: demoRedigerar, kontor };
   if (platserRaw) payload.platser = +platserRaw;
   if (losenRaw) payload.losenord = losenRaw;
+  const villMail = document.getElementById('demo-mail').checked;
+  if (villMail && !losenRaw) { demoStatus('Välkomstmailet behöver ett nytt lösenord — fyll i eller tryck Generera.', true); return; }
+  if (villMail) payload.skicka_mail = true;
   payload.broschyr = document.getElementById('demo-broschyr').checked;
   payload.juridik = document.getElementById('demo-juridik').checked;
   // Fylls "dagar" i vid redigering tolkas det som ett NYTT slutdatum raknat
@@ -3999,7 +4007,21 @@ async function skickaAndring(payload){
   doljDelvisSparat();
   try {
     const d = await demoAnrop(payload);
-    demoStatus(d.losenord ? 'Sparat. Nytt lösenord satt — kopiera det nedan.' : 'Sparat.');
+    /* Mailutfallet halls isar fran sjalva andringen, precis som vid skapande:
+       losenordet ar satt aven om utskicket failar, och da ska man inte andra
+       om kontot utan bara skicka uppgifterna pa annat satt. */
+    const mottagareMail = (d.anvandare && d.anvandare.epost) || document.getElementById('demo-epost').value;
+    if (payload.skicka_mail && d.mail && d.mail.skickat) {
+      demoStatus(`Sparat — välkomstmail med nya lösenordet skickat till ${mottagareMail}.`);
+    } else if (payload.skicka_mail && d.mail && !d.mail.skickat) {
+      demoStatus(`Lösenordet är satt, men mailet gick INTE ut: ${d.mail.orsak}. Kopiera uppgifterna nedan.`, true);
+    } else if (payload.skicka_mail && d.losenord) {
+      // Svar utan mail-falt = Maklargruvans API ar en aldre version som inte
+      // kan skicka vid andring an. Sag det rakt ut i stallet for att tiga.
+      demoStatus('Lösenordet är satt, men Mäklargruvans API skickade inget mail (äldre version). Kopiera uppgifterna nedan.', true);
+    } else {
+      demoStatus(d.losenord ? 'Sparat. Nytt lösenord satt — kopiera det nedan.' : 'Sparat.');
+    }
     if (d.losenord) {
       /* Mottagaren kommer fran API:t, inte fran formularet: har kontot flera
          anvandare ar det inte sakert att e-postfaltet ovan ar den som fick
@@ -4083,6 +4105,18 @@ function visaDelvisSparat(utfort){
 function doljDelvisSparat(){
   document.getElementById('demo-delvis').style.display = 'none';
 }
+/* Samma format som Maklargruvans API genererar (Ord-Ord-123): latt att skriva
+   av ur ett mail. crypto.getRandomValues, inte Math.random — det ar ett
+   riktigt losenord. Faltet slapps fran readonly sa man kan justera det. */
+function genereraDemoLosen(){
+  const ord = ['Fjord', 'Brygga', 'Timmer', 'Klippa', 'Vinter', 'Segel',
+    'Norrsken', 'Granit', 'Fjall', 'Bjork', 'Vidd', 'Kaje'];
+  const slump = (n) => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; };
+  const el = document.getElementById('demo-losen');
+  el.removeAttribute('readonly');
+  el.value = `${ord[slump(ord.length)]}-${ord[slump(ord.length)]}-${100 + slump(900)}`;
+}
+
 function closeDemoModal(e){ if (e.target === document.getElementById('demo-modal')) closeDemoModalBtn(); }
 function closeDemoModalBtn(){ document.getElementById('demo-modal').classList.remove('open'); }
 
