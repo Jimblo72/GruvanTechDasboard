@@ -2413,7 +2413,7 @@ async function loadKunder(tvinga) {
   const status = document.getElementById('kunder-status');
   if (status) status.textContent = 'Hämtar från Mäklargruvan…';
   try {
-    const r = await fetch(API.kundlage, { headers: { Accept: 'application/json' } });
+    const r = await fetch(FN.kundlage, { headers: { Accept: 'application/json' } });
     const d = await r.json();
     if (!r.ok) throw new Error(d && d.error ? d.error : 'Fel ' + r.status);
     kunderData = d;
@@ -2524,7 +2524,7 @@ function statKort(etikett, varde, not) {
 /* Hämta tyst vid sidladdning, bara för att kunna sätta pricken. Vyn ritas inte
    förrän du öppnar den. */
 setTimeout(function () {
-  fetch(API.kundlage, { headers: { Accept: 'application/json' } })
+  fetch(FN.kundlage, { headers: { Accept: 'application/json' } })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (d) { if (d) { kunderData = d; uppdateraKunderPrick(); } })
     .catch(function () {});
@@ -2859,7 +2859,8 @@ function renderInboxRow(m) {
         <div style="font-size:11.5px;color:var(--text4);line-height:1.5">${esc((m.preview || '').slice(0, 220))}</div>
       </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+      <button class="btn" onclick="OU.oppna('${esc(m.id)}', selectedMailbox)" style="font-size:11px" title="Sammanställ säljare och objektfakta ur tråden och bilagorna">📋 Objektsunderlag</button>
       <button class="btn btn-solid" onclick="triageMail('${esc(m.id)}', this)" style="font-size:11px">✦ Analysera & skapa utkast</button>
     </div>
     <div class="mail-triage-result" id="triage-${esc(m.id)}" style="margin-top:10px"></div>
@@ -2976,7 +2977,7 @@ function renderQueueItem(it) {
     ${mailAttachmentLine(it)}
     ${warn}
     ${guard}
-    ${link ? `<div style="margin-top:9px">${link}</div>` : ''}
+    <div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">${link || ''}${it.messageId && it.category !== 'brus' && it.category !== 'kalender' ? `<button class="btn" style="font-size:10.5px" onclick="OU.oppna('${esc(it.messageId)}', '${esc(it.mailbox || '')}' || null)">📋 Objektsunderlag</button>` : ''}</div>
   </div>`;
 }
 
@@ -5003,5 +5004,6 @@ renderAgents();
 injectCardActions();
 loadHealth();
 </script>
+<script src="js/objektsunderlag.js"></script>
 </body>
 </html>

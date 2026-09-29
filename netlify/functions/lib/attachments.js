@@ -53,7 +53,10 @@ function fmtSize(bytes) {
 // Delar upp bilagelistan i PDF:er att läsa och resten. Ren funktion (testbar).
 // Returnerar [{ id, name, contentType, size, read, skipped }] där read=true
 // betyder "ska läsas", och skipped anger varför en bilaga INTE läses.
-function planAttachments(list) {
+// opts.maxPdfs: hur många PDF:er som markeras för läsning (default MAX_PDFS,
+// pollerns tak). Objektsunderlaget tar fler och har i stället ett totaltak.
+function planAttachments(list, opts = {}) {
+  const maxPdfs = opts.maxPdfs || MAX_PDFS;
   const plan = [];
   let pdfs = 0;
   for (const a of Array.isArray(list) ? list : []) {
@@ -72,8 +75,8 @@ function planAttachments(list) {
       entry.skipped = 'inte PDF';
     } else if (entry.size > MAX_PDF_BYTES) {
       entry.skipped = `för stor (${fmtSize(entry.size)})`;
-    } else if (pdfs >= MAX_PDFS) {
-      entry.skipped = `max ${MAX_PDFS} PDF:er läses per mejl`;
+    } else if (pdfs >= maxPdfs) {
+      entry.skipped = `max ${maxPdfs} PDF:er läses per mejl`;
     } else {
       entry.read = true;
       pdfs++;
@@ -208,6 +211,7 @@ function buildAttachmentBlock(plan) {
 
 module.exports = {
   fetchAttachmentContext,
+  fetchPdfBytes,            // återanvänds av objekt-underlag-kalla.js
   // exporterade för test:
   planAttachments,
   buildAttachmentBlock,

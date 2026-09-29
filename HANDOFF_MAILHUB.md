@@ -52,3 +52,12 @@ Single tenant. Behörighet **Mail.ReadWrite (Application)** med admin-consent. I
 Tunga synkrona Netlify-funktioner (LLM + flera API-hopp) spränger **10-sekundersgränsen** → HTTP 502 med HTML-body. Håll on-click-vägen snabb (Haiku, minimal retry); lägg tungt arbete i en bakgrundsfunktion eller begränsa det med tidsbudget i pollern.
 ⚠️ Rättelse 2026-09-29: pollern har INTE lång timeout — **schemalagda Netlify-funktioner har 30 s totalt**. Tidigare kunde en körning med flera nya mejl spränga taket, och då skrevs varken kön eller lastSeen. **Löst samma dag** med tidsbudget i `mail-poll.js`: inget nytt mejl påbörjas efter 16 s (resten tas nästa körning, äldst först), lastSeen flyttas per färdigt mejl, och ett hårt stopp vid 24 s skriver det som hunnits även om ett anrop hänger. Loggen visar `deferred`, `hardStop` och `ms`.
 En bakgrundsfunktion (15 min) går INTE att starta från pollern: lösenordsskyddet gäller även funktionsadresserna, så anropet får 401 (samma fälla som SEO och AI-granskning). Bakgrundsfunktion (-background) ger 15 min men returnerar 202 direkt = duger ej för on-click-UI som ska visa resultat.
+
+## Objektsunderlag ur mejl (steg 1, 2026-09-29)
+Knappen **📋 Objektsunderlag** på mejl i inkorgen och kön sammanställer säljare + objektfakta ur hela tråden och PDF-bilagorna.
+- `netlify/functions/objekt-underlag-kalla.js` hämtar tråd + PDF:er (max 4 st, 3,5 MB totalt) och **sparar ingenting**.
+- `js/objektsunderlag.js` tolkar i webbläsaren direkt mot Claude (Opus 5.5, strukturerad JSON) med nyckeln `af_apikey` — samma som Åre Strand-/andelsverktyget. Därför gäller inte 10 s-gränsen, och personuppgifter lagras aldrig på servern.
+- Underlaget ligger i `sessionStorage` (försvinner med fliken) och kan rensas. Varje fält visar källa och markeras om det är osäkert.
+- Spår: **Åre Strand** → "Öppna i Åre Strand-verktyget" (enhet/vecka/pris förifyllt), **SkiStar** → "Öppna i andelsverktyget" (lägenhetstyp matchas på område + kvm + BRF), **övrigt** → "Kopiera till Mäklargruvan" (utan säljare).
+- Överlämning till verktygen via `localStorage.pf_prefill` = `{ verktyg, data, skapad }`: bara objektfakta, raderas vid läsning, ignoreras efter 10 min.
+- **Steg 2 (nästa):** Mspecs-paket för Claude i Chrome enligt `MSPECS-KARTA.md` (ligger i gruvan-dashboard-data).

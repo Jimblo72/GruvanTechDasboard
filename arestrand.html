@@ -797,6 +797,44 @@ fyllEnheter();
 AV.skatta(allaAffarer());
 valdVecka();
 bbInit();
+lasPrefill();
+
+// ── Förifyllning från dashboardens objektsunderlag ──────────────────────
+// Dashboarden (js/objektsunderlag.js) lägger { verktyg:'arestrand', data,
+// skapad } i localStorage 'pf_prefill' och öppnar sidan. Bara objektfakta
+// följer med — aldrig säljarens personuppgifter. Nyckeln tas bort direkt,
+// och en överlämning äldre än 10 min ignoreras (t.ex. en flik som öppnas
+// långt senare ska inte plötsligt fyllas i).
+function lasPrefill() {
+  let p;
+  try { p = JSON.parse(localStorage.getItem('pf_prefill') || 'null'); } catch (e) { return; }
+  if (!p || p.verktyg !== 'arestrand') return;
+  localStorage.removeItem('pf_prefill');
+  if (!p.skapad || Date.now() - p.skapad > 10 * 60 * 1000) return;
+  const d = p.data || {};
+  const ifyllt = [];
+  if (d.enhet && enhetAv(d.enhet)) {
+    document.getElementById('enhet').value = d.enhet;
+    valdEnhet();
+    ifyllt.push('enhet ' + d.enhet);
+  }
+  const v = parseInt(d.vecka, 10);
+  if (v >= 1 && v <= 52) {
+    document.getElementById('vecka').value = String(v);
+    valdVecka();
+    ifyllt.push('vecka ' + v);
+  }
+  if (d.utgangspris) {
+    document.getElementById('utgangspris').value = d.utgangspris;
+    prisAndratForHand = true;
+    ifyllt.push('pris');
+  }
+  if (d.usp) { document.getElementById('usp').value = d.usp; ifyllt.push('säljpunkter'); }
+  const saknas = d.enhet && !enhetAv(d.enhet) ? ` · enheten "${d.enhet}" finns inte i katalogen — välj själv` : '';
+  const meta = document.getElementById('headerMeta');
+  if (meta) meta.insertAdjacentHTML('afterend',
+    `<div style="margin-top:6px;font-size:11px;color:var(--accent)">Ifyllt från objektsunderlaget: ${esc(ifyllt.join(', ') || 'inget')}${esc(saknas)}</div>`);
+}
 document.getElementById('headerMeta').innerHTML = `${ARESTRAND_KATALOG.length} ENHETER · 3 FÖRENINGAR<br>${allaAffarer().length} AFFÄRER I UNDERLAGET`;
 </script>
 </body>
