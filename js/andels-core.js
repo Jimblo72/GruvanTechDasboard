@@ -92,7 +92,35 @@ const WEEK_INFO = {
 
 
 // minShort: nedre gräns för korta texten. Åre Strand vill 280–300 (Jimmy 2026-09-28).
+// ── Tillbaka till dashboardens objektsunderlag ─────────────────────────
+// Öppnades verktyget från ett objektsunderlag (pf_prefill med underlagId)
+// sätter prefill-läsaren window.PF_UNDERLAG_ID. Då får resultatet en knapp som
+// lägger texterna i localStorage 'pf_texter'; dashboardens flik lyssnar på
+// storage-eventet och tar in dem i underlaget (→ Mspecs-paketet). Markdown-
+// betoning (**fet**, *kursiv*) tas bort — Mspecs-fälten är ren text.
+let senasteTexter = null;
+function utanMarkdown(t) {
+  return String(t || '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').trim();
+}
+function skickaTillUnderlag(btn) {
+  if (!window.PF_UNDERLAG_ID || !senasteTexter) return;
+  try {
+    localStorage.setItem('pf_texter', JSON.stringify({
+      underlagId: window.PF_UNDERLAG_ID,
+      kort: utanMarkdown(senasteTexter.shortText),
+      lang: utanMarkdown(senasteTexter.longText),
+      verktyg: document.title || location.pathname,
+      skapad: Date.now(),
+    }));
+    btn.textContent = '✓ Skickat — tillbaka i dashboarden';
+    btn.disabled = true;
+  } catch (e) {
+    alert('Kunde inte skicka texterna: ' + e.message);
+  }
+}
+
 function renderResult({ shortText, longText, charsShort, minShort = 260 }) {
+  senasteTexter = { shortText, longText };
   const lengthClass = charsShort >= minShort && charsShort <= 300 ? 'length-ok' : 'length-warn';
   const lengthLabel = charsShort >= minShort && charsShort <= 300 ? 'OK' : 'JUSTERA';
 
@@ -114,7 +142,8 @@ function renderResult({ shortText, longText, charsShort, minShort = 260 }) {
         <button class="copy-btn" onclick="copyText(\`${shortText.replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">Kopiera</button>
       </div>
       <div class="result-text result-text-short">${shortText}</div>
-    </div>`;
+    </div>
+    ${window.PF_UNDERLAG_ID ? `<div style="margin-top:12px"><button class="copy-btn" style="padding:8px 14px" onclick="skickaTillUnderlag(this)">↩ Skicka texterna till objektsunderlaget</button></div>` : ''}`;
 }
 
 function switchResultTab(variant, btn) {

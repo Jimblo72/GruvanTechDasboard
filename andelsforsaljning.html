@@ -1116,6 +1116,9 @@ document.addEventListener('DOMContentLoaded', function(){
   localStorage.removeItem('pf_prefill');
   if (!p.skapad || Date.now() - p.skapad > 10 * 60 * 1000) return;
   var d = p.data || {};
+  // Koppling tillbaka till underlaget (mejlets id, inga personuppgifter) —
+  // ger resultatet knappen "Skicka texterna till objektsunderlaget".
+  if (d.underlagId) window.PF_UNDERLAG_ID = String(d.underlagId);
   var ifyllt = [];
   var key = matchaAptForPrefill(d);
   if (key) { document.getElementById('apt-type').value = key; ifyllt.push(APT_DATA[key].name); }

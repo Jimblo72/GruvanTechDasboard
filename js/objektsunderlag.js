@@ -141,13 +141,15 @@
     if (!nyTolkning) {
       try {
         const sparat = JSON.parse(sessionStorage.getItem(SS_PREFIX + messageId) || 'null');
-        if (sparat && sparat.underlag) { aktuellt = sparat; return rendera(); }
+        if (sparat && sparat.underlag) { aktuellt = sparat; rendera(); return mottaTexter(); }
       } catch (e) { /* ignorera */ }
     }
 
     const key = localStorage.getItem('af_apikey') || '';
     if (!key) return visaNyckelruta(messageId, mailbox);
 
+    // Omtolkning av samma mejl ska inte tappa texter som redan tagits emot.
+    const tidigareTexter = aktuellt && aktuellt.messageId === messageId && aktuellt.underlag && aktuellt.underlag.texter;
     aktuellt = { messageId, mailbox: mailbox || null, underlag: null, kallaInfo: null };
     status('Läser mejltråden och bilagorna…');
     let kalla;
@@ -173,6 +175,7 @@
 
     try {
       aktuellt.underlag = await tolka(kalla, key);
+      if (tidigareTexter) aktuellt.underlag.texter = tidigareTexter;
     } catch (e) {
       return status('Tolkningen misslyckades: ' + e.message, true);
     }
@@ -296,6 +299,7 @@
       ${saljare}
       ${grupp('Objekt', 'objekt', u.objekt, OBJEKT_NYCKLAR)}
       ${u.spar !== 'ovrigt' ? grupp('Andel', 'andel', u.andel, ANDEL_NYCKLAR) : ''}
+      ${textSektion(u)}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
         ${u.spar === 'are_strand' ? '<button class="btn btn-solid" onclick="OU.tillVerktyg(\'arestrand\')">Öppna i Åre Strand-verktyget</button>' : ''}
         ${u.spar === 'skistar' ? '<button class="btn btn-solid" onclick="OU.tillVerktyg(\'andel\')">Öppna i andelsverktyget</button>' : ''}
@@ -307,6 +311,17 @@
       </div>
       <div class="hint" id="ou-status" style="margin-top:8px"></div>
       <div id="ou-paket"></div>`);
+
+    // Texterna: redigerbara, med teckenräknare mot Mspecs gränser.
+    document.querySelectorAll('#ou-body [data-ou-text]').forEach(el => {
+      el.addEventListener('input', () => {
+        const t = aktuellt.underlag.texter = aktuellt.underlag.texter || {};
+        t[el.dataset.ouText] = el.value;
+        uppdateraRaknare();
+        sparaSession();
+      });
+    });
+    uppdateraRaknare();
 
     // Redigeringar skrivs tillbaka i underlaget (och sessionStorage).
     document.querySelectorAll('#ou-body input[data-ou]').forEach(inp => {
@@ -322,6 +337,63 @@
   }
 
   function statusRad(t) { const el = $('ou-status'); if (el) el.textContent = t; }
+
+  // ── Steg 3: säljtexter ───────────────────────────────────────────────────
+  // Texterna skrivs i de befintliga textmotorerna (Åre Strand-/andelsverktyget)
+  // och skickas tillbaka hit via localStorage 'pf_texter' (samma origin). För
+  // övriga objekt klistras de in från Mäklargruvan (annan domän — ingen
+  // automatisk väg). Gränser enligt MSPECS-KARTA §5: kort ≤ 300, lång ≤ 4000.
+  const TEXT_GRANS = { kort: 300, lang: 4000 };
+  function textSektion(u) {
+    const t = u.texter || {};
+    const hint = u.spar === 'ovrigt'
+      ? 'Skriv texterna i Mäklargruvan och klistra in dem här — de följer med i Mspecs-paketet.'
+      : 'Öppna verktyget ovan, skapa texterna där och tryck "↩ Skicka texterna till objektsunderlaget" — de dyker upp här automatiskt och följer med i Mspecs-paketet.';
+    const ta = (nyckel, etikett, rader) => `<div class="field" style="margin-bottom:8px">
+      <label class="field-label">${escH(etikett)} <span id="ou-rakna-${nyckel}" style="font-weight:400;color:var(--text4)"></span></label>
+      <textarea class="input" data-ou-text="${nyckel}" rows="${rader}" style="width:100%;font-size:12.5px;line-height:1.5">${escH(t[nyckel] || '')}</textarea>
+    </div>`;
+    return `<div style="margin:16px 0 4px;font-weight:600">Texter till Mspecs</div>
+      <div class="hint" style="margin-bottom:8px">${escH(hint)}${t.kalla ? ` <span style="color:var(--green)">· ${escH(t.kalla)}</span>` : ''}</div>
+      <div class="field" style="margin-bottom:8px">
+        <label class="field-label">Rubrik</label>
+        <input class="input" data-ou-text="rubrik" value="${escH(t.rubrik || '')}" placeholder="t.ex. Ditt eget fjällboende i Lindvallen – andelsrätt med två veckor per år" autocomplete="off">
+      </div>
+      ${ta('kort', 'Kort text', 3)}
+      ${ta('lang', 'Lång text', 8)}`;
+  }
+  function uppdateraRaknare() {
+    const t = (aktuellt && aktuellt.underlag && aktuellt.underlag.texter) || {};
+    for (const k of Object.keys(TEXT_GRANS)) {
+      const el = $('ou-rakna-' + k);
+      if (!el) continue;
+      const n = (t[k] || '').length;
+      el.textContent = n ? `${n}/${TEXT_GRANS[k]}` : '';
+      el.style.color = n > TEXT_GRANS[k] ? 'var(--red-bright)' : 'var(--text4)';
+    }
+  }
+
+  // Tar emot texter från verktyget. Hör de till ett annat underlag än det
+  // som är öppet ligger de kvar tills det underlaget öppnas.
+  function mottaTexter() {
+    let p;
+    try { p = JSON.parse(localStorage.getItem('pf_texter') || 'null'); } catch (e) { return; }
+    if (!p) return;
+    if (!p.skapad || Date.now() - p.skapad > 24 * 3600 * 1000) { localStorage.removeItem('pf_texter'); return; }
+    if (!aktuellt || !aktuellt.underlag || p.underlagId !== aktuellt.messageId) return;
+    localStorage.removeItem('pf_texter');
+    const t = aktuellt.underlag.texter = aktuellt.underlag.texter || {};
+    t.kort = p.kort || '';
+    t.lang = p.lang || '';
+    t.kalla = 'mottagna ' + new Date(p.skapad).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    sparaSession();
+    const modal = $('ou-modal');
+    if (modal && modal.classList.contains('open')) {
+      rendera();
+      statusRad('Texterna togs emot från verktyget. Lägg till en rubrik om du vill — sedan Mspecs-paket.');
+    }
+  }
+  window.addEventListener('storage', (e) => { if (e.key === 'pf_texter' && e.newValue) mottaTexter(); });
   const v = (f) => (f && f.varde != null && String(f.varde).trim()) ? String(f.varde).trim() : '';
 
   // ── Till verktygen ──────────────────────────────────────────────────────
@@ -352,11 +424,14 @@
         saljartyp: u.saljartyp === 'skistar' ? 'skistar' : (u.saljartyp === 'privat' ? 'privat' : ''),
       };
     }
+    // Mejlets id följer med så att verktyget kan skicka tillbaka texterna hit
+    // (steg 3). Id:t är inte en personuppgift.
+    data.underlagId = aktuellt.messageId;
     try {
       localStorage.setItem('pf_prefill', JSON.stringify({ verktyg, data, skapad: Date.now() }));
     } catch (e) { return statusRad('Kunde inte lämna över till verktyget: ' + e.message); }
     window.open(verktyg === 'arestrand' ? 'arestrand.html' : 'andelsforsaljning.html', '_blank');
-    statusRad('Verktyget öppnat i ny flik med objektfakta ifyllda (inga personuppgifter skickades dit).');
+    statusRad('Verktyget öppnat i ny flik med objektfakta ifyllda (inga personuppgifter skickades dit). Skapa texterna där och tryck "↩ Skicka texterna till objektsunderlaget".');
   }
 
   function textBlock(inklSaljare) {
@@ -466,9 +541,18 @@
     const falt = mspecsFalt(u);
     const kanda = falt.filter(f => f.ngModel), okanda = falt.filter(f => !f.ngModel);
     const osakra = falt.filter(f => f.osaker).map(f => f.etikett);
+    const t = u.texter || {};
+    const texter = [
+      ['object.sellingTextSubject', (t.rubrik || '').trim()],
+      ['object.sellingTextShort', (t.kort || '').trim()],
+      ['object.sellingText', (t.lang || '').trim()],
+    ].filter(([, x]) => x);
+    const forLanga = [['kort', 'Kort text'], ['lang', 'Lång text']]
+      .filter(([k]) => (t[k] || '').trim().length > TEXT_GRANS[k])
+      .map(([k, n]) => `${n} (${t[k].trim().length}/${TEXT_GRANS[k]} tecken)`);
     const data = {
       spar: SPAR_NAMN[u.spar] || u.spar,
-      ngModel: Object.fromEntries(kanda.map(f => [f.ngModel, f.varde])),
+      ngModel: Object.fromEntries(kanda.map(f => [f.ngModel, f.varde]).concat(texter)),
       efterEtikett: Object.fromEntries(okanda.map(f => [f.etikett, f.varde])),
     };
     const saljare = (u.saljare || []).map((s, i) => {
@@ -489,6 +573,9 @@
       '5. Säljarnas uppgifter är personuppgifter. Skriv in dem bara i Mspecs, ingen annanstans.',
       '6. Avsluta med en kontrollista till Jimmy: vilka fält som fylldes, vilka som hoppades över och varför, var du hittade fält som saknas i kartan, och länken till objektet.',
       osakra.length ? `7. Dessa uppgifter var osäkra i underlaget — fyll i dem men lyft dem särskilt i kontrollistan: ${osakra.join(', ')}.` : '',
+      texter.length
+        ? `${osakra.length ? 8 : 7}. SÄLJANDE BESKRIVNING (rubrik/kort/lång) finns i OBJEKTDATA — klistra in texterna exakt som de står, skriv inte om dem.${forLanga.length ? ' OBS: ' + forLanga.join(', ') + ' är över Mspecs gräns — fyll INTE i dem, fråga Jimmy.' : ''}`
+        : `${osakra.length ? 8 : 7}. Inga säljtexter i underlaget — lämna SÄLJANDE BESKRIVNING tom.`,
       '',
       '## Var objektet skapas',
       varSkapas(u),
@@ -543,6 +630,7 @@
     id: () => aktuellt && aktuellt.messageId,
     mb: () => aktuellt && aktuellt.mailbox,
     // för test:
+    _mottaTexter: mottaTexter,
     _schema: SCHEMA, _normEnhet: normEnhet, _byggInnehall: byggInnehall, _byggPaket: byggPaket, _mspecsFalt: mspecsFalt,
   };
 })();
