@@ -738,9 +738,14 @@ const MSPECS_PROJECTS = {
 // - Gallery-slot: bevarar original (1400×934, 1920×1358 etc.)
 // Säljarnamn per säljartyp (visas i Mspecs som säljarbolag).
 // Ändra här om en annan juridisk part står som säljare för andelarna.
+// Nyckeln MÅSTE matcha data-seller på knapparna (setSeller): 'skistar' och
+// 'privat'. Tidigare fanns bara 'privatperson', så en privat säljare föll
+// tyst tillbaka på 'Fjällinvest' i Mspecs-exporten. 'privatperson' behålls
+// som alias för ev. äldre sparade exporter/anrop.
 const SALJARE_DEFAULTS = {
   skistar:      'Fjällinvest',                  // SkiStar-projekt säljs av Fjällinvest
   peakfast:     'Peak Fast',
+  privat:       'Privatperson',
   privatperson: 'Privatperson'
 };
 
@@ -1076,6 +1081,59 @@ function showTab(id, btn) {
   if (id === 'gallery') renderGallery();
   if (id === 'reference') renderReference();
 }
+
+// ── Förifyllning från dashboardens objektsunderlag ──────────────────────
+// Dashboarden (js/objektsunderlag.js) lägger { verktyg:'andel', data, skapad }
+// i localStorage 'pf_prefill' och öppnar sidan. Bara objektfakta följer med —
+// aldrig säljarens personuppgifter. Nyckeln tas bort direkt; äldre än 10 min
+// ignoreras. Lägenhetstypen matchas mot APT_DATA på område + kvm (+ BRF-namn
+// när flera typer har samma storlek), aldrig på gissning: blir det inte exakt
+// en träff lämnas valet åt dig.
+function matchaAptForPrefill(d) {
+  var omr = String(d.omrade || '').toLowerCase();
+  var kvm = parseInt(String(d.kvm || '').replace(/[^0-9]/g, ''), 10);
+  var brf = String(d.brf || '').toLowerCase().replace(/\s+/g, ' ');
+  var kand = Object.keys(APT_DATA).filter(function(k){
+    var a = APT_DATA[k];
+    if (omr && a.area.toLowerCase() !== omr) return false;
+    if (kvm && a.size_sqm !== kvm) return false;
+    return !!(omr || kvm);
+  });
+  if (kand.length > 1 && brf) {
+    var smal = kand.filter(function(k){
+      var b = APT_DATA[k].brf.toLowerCase().replace(/^brf\s+/, '');
+      return brf.indexOf(b) !== -1;
+    });
+    if (smal.length) kand = smal;
+  }
+  return kand.length === 1 ? kand[0] : null;
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var p;
+  try { p = JSON.parse(localStorage.getItem('pf_prefill') || 'null'); } catch (e) { return; }
+  if (!p || p.verktyg !== 'andel') return;
+  localStorage.removeItem('pf_prefill');
+  if (!p.skapad || Date.now() - p.skapad > 10 * 60 * 1000) return;
+  var d = p.data || {};
+  var ifyllt = [];
+  var key = matchaAptForPrefill(d);
+  if (key) { document.getElementById('apt-type').value = key; ifyllt.push(APT_DATA[key].name); }
+  if (d.veckor) { document.getElementById('weeks').value = d.veckor; ifyllt.push('veckor ' + d.veckor); }
+  if (d.pris) { document.getElementById('listPrice').value = d.pris; ifyllt.push('pris'); }
+  if (d.usp) { document.getElementById('usp').value = d.usp; ifyllt.push('säljpunkter'); }
+  if (d.saljartyp === 'privat' || d.saljartyp === 'skistar') {
+    var btn = document.querySelector('.toggle-btn[data-seller="' + d.saljartyp + '"]');
+    if (btn) { setSeller(d.saljartyp, btn); ifyllt.push(d.saljartyp === 'privat' ? 'säljare privatperson' : 'säljare SkiStar'); }
+  }
+  updateAutoInfo();
+  var info = document.createElement('div');
+  info.style.cssText = 'margin:8px 0;padding:8px 12px;border:1px solid var(--accent,#c8854a);border-radius:6px;font-size:12px';
+  info.textContent = 'Ifyllt från objektsunderlaget: ' + (ifyllt.join(', ') || 'inget') +
+    (key ? '' : ' · lägenhetstypen kunde inte avgöras säkert — välj själv');
+  var at = document.getElementById('apt-type');
+  if (at && at.parentNode) at.parentNode.insertBefore(info, at);
+});
 
 // Uppdatera BRF-beräkning och listpris live när veckor eller pris ändras
 document.addEventListener('DOMContentLoaded', function(){
