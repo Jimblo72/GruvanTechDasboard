@@ -252,17 +252,24 @@ function anropaClaudeTvaTexter(prompt, apiKey) {
   function skicka() {
     return fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: headers, body: JSON.stringify(body) });
   }
-  return skicka().then(function (r) {
-    if (r.status !== 400) return r.json();
+  /* Svaret läses som TEXT och tolkas här: en gateway eller proxy kan svara
+     med en HTML-felsida (t.ex. vid 5xx), och r.json() hade då kastat ett
+     obegripligt SyntaxError i stället för att säga vilket HTTP-fel det var. */
+  function las(r) {
     return r.text().then(function (t) {
-      if (/fallback|anthropic-beta/i.test(t)) {
-        delete body.fallbacks;
-        delete headers['anthropic-beta'];
-        return skicka().then(function (r2) { return r2.json(); });
-      }
-      try { return JSON.parse(t); } catch (_) { return { error: { message: 'HTTP 400: ' + t.slice(0, 200) } }; }
+      try { return { status: r.status, t: t, data: JSON.parse(t) }; }
+      catch (_) { return { status: r.status, t: t, data: { error: { message: 'HTTP ' + r.status + ': ' + t.slice(0, 200) } } }; }
     });
-  }).then(function (data) {
+  }
+  return skicka().then(las).then(function (s) {
+    if (s.status === 400 && /fallback|anthropic-beta/i.test(s.t)) {
+      delete body.fallbacks;
+      delete headers['anthropic-beta'];
+      return skicka().then(las);
+    }
+    return s;
+  }).then(function (s) {
+    var data = s.data;
     if (data.error) throw new Error(data.error.message || 'okänt fel');
     if (data.stop_reason === 'refusal') throw new Error('Claude avböjde att skriva texten — justera underlaget och försök igen.');
     if (data.stop_reason === 'max_tokens') throw new Error('Svaret blev för långt och kapades — försök igen.');
