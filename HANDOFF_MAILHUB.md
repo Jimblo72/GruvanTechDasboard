@@ -45,8 +45,9 @@ Single tenant. Behörighet **Mail.ReadWrite (Application)** med admin-consent. I
    - Nästa kodpass: skärp `draftSystemFor` i `lib/triage.js` — lägg till ett steg som avgör om mejlet faktiskt ställer en fråga; om inte → bara bekräftelse. Stilprofilen är redan bra; det som saknas är **återhållsamhet i innehållet**.
 2. **Slå på `MAIL_AUTODRAFT=true`** när Jimmy litar på tonen.
 3. **Säkerhetshärda:** Exchange Application Access Policy → begränsa Azure-appen till bara Jimmys brevlåda (kräver mailaktiverad grupp med bara Jimmy).
-4. **Bilagemedvetenhet:** läs PDF-bilagor (t.ex. signerat gåvobrev) så utkast inte föreslår redan gjorda steg. Lägg i **pollaren** (lång timeout), inte on-click (10s-gräns). Finns som task-chip.
+4. ~~**Bilagemedvetenhet**~~ — byggd 2026-09-29 (`lib/attachments.js`). Pollern läser upp till 2 PDF-bilagor (≤ 5 MB) per mejl med Claude och lägger en kort sammanfattning i kontexten för klassning + utkast, märkt som data. Kön visar vilka bilagor som lästes. Bara i pollern, inte on-click. Tidsbudget: bilagor läses bara under körningens första 12 s. Modell via `MAIL_ATTACHMENT_MODEL` (default Haiku 4.5). **Verkar först när pollern slås på igen.**
 5. Ev. tillbaka till Gemini-klassificering (`MAIL_CLASSIFY_PROVIDER=gemini`) när Googles kapacitet återhämtat sig.
 
 ## Driftlärdom
-Tunga synkrona Netlify-funktioner (LLM + flera API-hopp) spränger **10-sekundersgränsen** → HTTP 502 med HTML-body. Håll on-click-vägen snabb (Haiku, minimal retry); lägg tungt arbete i pollaren (-lång timeout) eller separat på-begäran-funktion. Bakgrundsfunktion (-background) ger 15 min men returnerar 202 direkt = duger ej för on-click-UI som ska visa resultat.
+Tunga synkrona Netlify-funktioner (LLM + flera API-hopp) spränger **10-sekundersgränsen** → HTTP 502 med HTML-body. Håll on-click-vägen snabb (Haiku, minimal retry); lägg tungt arbete i en bakgrundsfunktion eller begränsa det med tidsbudget i pollern.
+⚠️ Rättelse 2026-09-29: pollern har INTE lång timeout — **schemalagda Netlify-funktioner har 30 s totalt**. Med flera nya mejl (2 LLM-anrop styck) kan en körning spränga taket; då skrivs varken kön eller lastSeen, och samma mejl tas om nästa körning. Bakgrundsfunktion (-background) ger 15 min men returnerar 202 direkt = duger ej för on-click-UI som ska visa resultat.
