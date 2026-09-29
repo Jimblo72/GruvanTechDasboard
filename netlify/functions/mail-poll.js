@@ -19,6 +19,11 @@
 //   * Max 10 nya meddelanden per brevlåda och körning; max 100 poster i kön.
 //
 // Schemaläggning: registrerad i netlify.toml → [functions."mail-poll"].
+//
+// Tidsbudget: schemalagda Netlify-funktioner har 30 s TOTALT (inte "lång
+// timeout"). PDF-bilagor läses därför bara under de första
+// ATTACHMENT_BUDGET_MS av körningen; senare mejl i samma körning triageras
+// utan bilagor och flaggas attachmentsSkipped i kön.
 
 const { graphJson } = require('./lib/graph');
 const { triageMessage, POLL_RETRY_DELAYS } = require('./lib/triage');
@@ -28,6 +33,7 @@ const { getMailboxes, defaultMailbox } = require('./lib/mailboxes');
 const FILE_PATH = 'data/mail-queue.json';
 const MAX_PER_RUN = 10;
 const MAX_QUEUE = 100;
+const ATTACHMENT_BUDGET_MS = 12000;
 
 // Migrerar det lästa tillståndet till den nya per-brevlåde-formen. Returnerar
 // { lastSeenMap, items, migrated } där migrated=true om något gammalt format
@@ -60,7 +66,8 @@ exports.migrateState = migrateState;
 
 exports.handler = async () => {
   const autodraft = process.env.MAIL_AUTODRAFT === 'true';
-  const log = { ran: new Date().toISOString(), autodraft, mailboxes: 0, considered: 0, triaged: 0, drafts: 0, errors: [] };
+  const log = { ran: new Date().toISOString(), autodraft, mailboxes: 0, considered: 0, triaged: 0, drafts: 0, attachmentsRead: 0, errors: [] };
+  const attachmentDeadline = Date.now() + ATTACHMENT_BUDGET_MS;
 
   try {
     const defAddr = defaultMailbox().address;
@@ -69,7 +76,7 @@ exports.handler = async () => {
     const { data } = await readJsonFile(FILE_PATH, { lastSeen: {}, items: [] });
     const { lastSeenMap, items: existingItems, migrated } = migrateState(data || {}, defAddr);
 
-    const select = 'id,subject,from,receivedDateTime,bodyPreview,conversationId,isRead';
+    const select = 'id,subject,from,receivedDateTime,bodyPreview,conversationId,isRead,hasAttachments';
     const mailboxes = await getMailboxes();
     log.mailboxes = mailboxes.length;
 
@@ -119,6 +126,7 @@ exports.handler = async () => {
             odataType: m['@odata.type'] || '',
             meetingMessageType: m.meetingMessageType || '',
             text: m.bodyPreview || '',
+            hasAttachments: !!m.hasAttachments,
           };
           // Pollern har lång timeout → större retry-budget + full kontext
           // (inkl. tvärtråds-sökning) än den synkrona on-click-vägen.
@@ -127,9 +135,12 @@ exports.handler = async () => {
             autodraft,
             retryDelays: POLL_RETRY_DELAYS,
             includeCrossThread: true,
+            includeAttachments: true,
+            attachmentDeadline,
             mailbox: address,
           });
           log.triaged++;
+          log.attachmentsRead += (result.attachments || []).filter(a => a.read).length;
           if (result.draftId) log.drafts++;
           newItems.push({
             messageId: result.messageId,
@@ -148,6 +159,8 @@ exports.handler = async () => {
             alreadyReplied: result.alreadyReplied,
             duplicateDraft: result.duplicateDraft,
             skipReason: result.skipReason,
+            attachments: result.attachments || [],
+            attachmentsSkipped: !!result.attachmentsSkipped,
             received: m.receivedDateTime || '',
             timestamp: result.timestamp,
           });

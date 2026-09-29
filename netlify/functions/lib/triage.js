@@ -30,6 +30,7 @@ const {
   buildThreadContextBlock,
 } = require('./thread');
 const { getMailbox, defaultMailbox } = require('./mailboxes');
+const { fetchAttachmentContext } = require('./attachments');
 
 const MAILBOX = () => process.env.MAILBOX_USER || 'jimmy@peakfast.se';
 
@@ -588,9 +589,22 @@ async function triageMessage(messageId, opts = {}) {
       alreadyReplied: false,
       duplicateDraft: false,
       skipReason: 'mötesinbjudan/kalender — inget mejlsvar',
+      attachments: [],
       timestamp: new Date().toISOString(),
     };
   }
+
+  // BILAGOR (bara pollern: opts.includeAttachments). Läser PDF-bilagor så att
+  // t.ex. ett inskickat signerat gåvobrev syns för klassificering och utkast.
+  // Hoppar över när tidsbudgeten är slut: schemalagda Netlify-funktioner har
+  // 30 s totalt, och en PDF-läsning kostar ett extra LLM-anrop. Startas här och
+  // körs PARALLELLT med tråd-hämtningen nedan så den inte staplar latens.
+  const wantsAttachments = !!(opts.includeAttachments && message.hasAttachments);
+  const withinBudget = !opts.attachmentDeadline || Date.now() < opts.attachmentDeadline;
+  const attachmentsP = wantsAttachments && withinBudget
+    ? fetchAttachmentContext(messageId, mb)
+    : Promise.resolve({ attachments: [], contextBlock: '' });
+  const attachmentsSkipped = wantsAttachments && !withinBudget;
 
   // Latens: den synkrona on-click-vägen håller kontexten lätt (ingen tvärtråds-
   // sökning, mindre transkription) så vi ryms under Netlifys 10 s-gräns. Pollern
@@ -617,7 +631,11 @@ async function triageMessage(messageId, opts = {}) {
       otherThreads = others || [];
     } catch (_) { /* degradera tyst */ }
   }
-  const contextBlock = buildThreadContextBlock(thread.transcript, buildOtherThreadsSummary(otherThreads));
+  const att = await attachmentsP;
+  const contextBlock = [
+    buildThreadContextBlock(thread.transcript, buildOtherThreadsSummary(otherThreads)),
+    att.contextBlock,
+  ].filter(Boolean).join('\n\n');
 
   // Brevlådans konfig (redan startad ovan, parallellt med Graph). Faller tillbaka
   // på defaultMailbox() om adressen inte var konfigurerad (säkerhet).
@@ -648,6 +666,10 @@ async function triageMessage(messageId, opts = {}) {
     alreadyReplied: false,
     duplicateDraft: false,
     skipReason: null,
+    // Bilagor som listades/lästes (namn + om de lästes) — för kön. Inget
+    // bilageinnehåll sparas här; sammanfattningen går bara till LLM-kontexten.
+    attachments: att.attachments,
+    attachmentsSkipped,
     timestamp: new Date().toISOString(),
   };
 

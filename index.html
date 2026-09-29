@@ -2943,6 +2943,17 @@ async function loadMailQueue(force) {
     el.innerHTML = `<div class="loading">Kunde inte läsa kön (${esc(e.message)}) — kräver mail-queue-funktionen och att pollern har kört.</div>`;
   }
 }
+// Bilagerad i kön: vilka bilagor pollern såg och om PDF:erna lästes in i
+// underlaget för klassning och utkast. Tom sträng när mejlet saknade bilagor.
+function mailAttachmentLine(it) {
+  const list = Array.isArray(it && it.attachments) ? it.attachments : [];
+  if (!list.length && !(it && it.attachmentsSkipped)) return '';
+  const parts = list.map(a => a.read
+    ? `<span style="color:var(--text2)">${esc(a.name)} <span style="color:var(--green)">· läst</span></span>`
+    : `<span title="${esc(a.skipped || '')}">${esc(a.name)} <span style="color:var(--text4)">· ej läst</span></span>`);
+  if (it.attachmentsSkipped) parts.push('<span style="color:var(--text4)">bilagor ej lästa (tidsbudget slut i körningen)</span>');
+  return `<div style="margin-top:6px;font-size:11px;color:var(--text3);line-height:1.5">📎 ${parts.join(' · ')}</div>`;
+}
 function renderQueueItem(it) {
   const conf = Math.round((it.confidence || 0) * 100);
   const warn = it.needsManualConfirm
@@ -2962,6 +2973,7 @@ function renderQueueItem(it) {
     <div style="font-size:11px;color:var(--text3);margin:2px 0 7px">${esc(it.fromName || it.fromAddress || '')}</div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${mailCatBadge(it.category)}<span style="font-size:10px;color:var(--text4)">Säkerhet: ${conf}%</span></div>
     <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">${esc(it.reason || '')}</div>
+    ${mailAttachmentLine(it)}
     ${warn}
     ${guard}
     ${link ? `<div style="margin-top:9px">${link}</div>` : ''}
