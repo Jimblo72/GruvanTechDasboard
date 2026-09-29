@@ -225,14 +225,54 @@ var SPRAKREGLER = `\n\nVIKTIGT – språk och trohet mot underlaget:
 /* Anropar Claude direkt från webbläsaren med mäklarens egen nyckel och delar
    svaret i lång + kort text på ---KORT---. Nyare modeller lägger ett
    tänkeblock först i content, därför plockas textblocken uttryckligen.
-   max_tokens 8000: tänkandet räknas in i taket, 4000 kapade den korta texten. */
+   max_tokens 8000: tänkandet räknas in i taket, 4000 kapade den korta texten.
+
+   MODELL: Opus 5.5 sedan 2026-09-29 (var Opus 5). Samma tokenizer, 20 %
+   lägre pris ($4/$20 mot $5/$25 per Mtok). Tänkandet går inte att stänga av
+   på 5.5 och dess effort-standard är 'medium' (Opus 5 körde 'high' utan att
+   det stod någonstans) — därför sätts effort UTTRYCKLIGEN. Blir texterna
+   tunnare än förr: höj ANDELS_EFFORT till 'high', inget annat behöver ändras.
+   fallbacks:'default' = ett klassificerarstopp faller tillbaka till en annan
+   modell i stället för att ge tomt svar; saknar kontot betan görs ett nytt
+   försök utan den (samma mönster som objektsunderlag.js). */
+var ANDELS_MODELL = 'claude-opus-5-5';
+var ANDELS_EFFORT = 'medium';
 function anropaClaudeTvaTexter(prompt, apiKey) {
-  return fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-    body: JSON.stringify({ model: 'claude-opus-5', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] })
-  }).then(function (r) { return r.json(); }).then(function (data) {
+  var body = {
+    model: ANDELS_MODELL, max_tokens: 8000,
+    output_config: { effort: ANDELS_EFFORT },
+    fallbacks: 'default',
+    messages: [{ role: 'user', content: prompt }]
+  };
+  var headers = {
+    'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true',
+    'anthropic-beta': 'server-side-fallback-2026-07-01'
+  };
+  function skicka() {
+    return fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: headers, body: JSON.stringify(body) });
+  }
+  /* Svaret läses som TEXT och tolkas här: en gateway eller proxy kan svara
+     med en HTML-felsida (t.ex. vid 5xx), och r.json() hade då kastat ett
+     obegripligt SyntaxError i stället för att säga vilket HTTP-fel det var. */
+  function las(r) {
+    return r.text().then(function (t) {
+      try { return { status: r.status, t: t, data: JSON.parse(t) }; }
+      catch (_) { return { status: r.status, t: t, data: { error: { message: 'HTTP ' + r.status + ': ' + t.slice(0, 200) } } }; }
+    });
+  }
+  return skicka().then(las).then(function (s) {
+    if (s.status === 400 && /fallback|anthropic-beta/i.test(s.t)) {
+      delete body.fallbacks;
+      delete headers['anthropic-beta'];
+      return skicka().then(las);
+    }
+    return s;
+  }).then(function (s) {
+    var data = s.data;
     if (data.error) throw new Error(data.error.message || 'okänt fel');
+    if (data.stop_reason === 'refusal') throw new Error('Claude avböjde att skriva texten — justera underlaget och försök igen.');
+    if (data.stop_reason === 'max_tokens') throw new Error('Svaret blev för långt och kapades — försök igen.');
     var txt = (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('');
     var parts = txt.split('---KORT---');
     var longTxt = parts[0].trim(), shortTxt = parts[1] ? parts[1].trim() : '';
