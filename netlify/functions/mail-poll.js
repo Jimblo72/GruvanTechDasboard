@@ -34,6 +34,9 @@
 //   * PDF-bilagor läses bara under de första BUDGET.attachmentsMs; senare mejl
 //     triageras utan bilagor och flaggas attachmentsSkipped i kön.
 //
+// Brevlådor som står på tur när startbudgeten tagit slut hämtas inte alls; deras
+// mejl ligger kvar till nästa körning.
+//
 // Varför inte en bakgrundsfunktion (15 min): sajten är lösenordsskyddad och
 // skyddet gäller även funktionsadresserna. Ett anrop från den här funktionen
 // till en -background-funktion får 401 och dör tyst — samma fälla som
@@ -132,6 +135,7 @@ async function runPoll(budget = BUDGET) {
     const newItems = [];       // nya poster över ALLA brevlådor (för denna körning)
     let lastSeenChanged = false;
     let stop = false;          // sätts av det hårda stoppet → loopen avbryter
+    let budgetHit = false;     // startbudgeten slut → inga fler brevlådor hämtas
 
     const work = async () => {
       const select = 'id,subject,from,receivedDateTime,bodyPreview,conversationId,isRead,hasAttachments';
@@ -141,7 +145,9 @@ async function runPoll(budget = BUDGET) {
 
       // 2. Iterera brevlåda för brevlåda.
       for (const mbCfg of mailboxes) {
-        if (stop) return;
+        // Är startbudgeten slut läses inga fler inkorgar — de mejlen skulle
+        // ändå bara skjutas upp, och varje hämtning kostar ett Graph-anrop.
+        if (stop || budgetHit) return;
         const address = mbCfg.address;
         const prevSeen = lastSeenMap[address] || null;
         const lastSeen = prevSeen ? new Date(prevSeen).getTime() : 0;
@@ -174,6 +180,7 @@ async function runPoll(budget = BUDGET) {
           // fortfarande olästa och nyare än lastSeen → nästa körning tar dem.
           if (stop || elapsed() > budget.startMs) {
             log.deferred += fresh.length - i;
+            budgetHit = true;
             break;
           }
           try {
@@ -201,6 +208,10 @@ async function runPoll(budget = BUDGET) {
               includeAttachments: true,
               attachmentDeadline,
               mailbox: address,
+              // Efter ett hårt stopp kan det här anropet bli klart senare
+              // (Netlify återanvänder frusna containrar). Triage kollar detta
+              // precis innan utkastet skapas — den enda effekten utåt.
+              isAborted: () => stop,
             });
             // Blev körningen hårt stoppad medan det här mejlet pågick är
             // ögonblicksbilden redan tagen utan det — rör inget mer.
