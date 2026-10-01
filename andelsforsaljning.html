@@ -331,6 +331,12 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
         </div>
 
         <div class="form-row">
+          <label class="form-label">Lägenhet (valfritt)</label>
+          <input type="text" class="form-input" id="lgh" placeholder="t.ex. 121B eller 1D" autocomplete="off">
+          <div class="form-help" id="lghHelp">Ger adressen (t.ex. Timmerbyn 121B). Väljer lägenhetstypen åt dig när numret bara finns i en typ.</div>
+        </div>
+
+        <div class="form-row">
           <label class="form-label">Veckor</label>
           <input type="text" class="form-input" id="weeks" placeholder="t.ex. 8, 30, 50 eller 6+30">
           <div class="form-help">Sportlov (v.7-10), jul/nyår och vecka 50 lyfts automatiskt i texten.</div>
@@ -350,6 +356,8 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 
         <div class="auto-info" id="auto-info" style="display:none;">
           <div class="auto-info-row"><span class="auto-info-label">Område</span><span class="auto-info-val" id="ai-area">—</span></div>
+          <div class="auto-info-row"><span class="auto-info-label">Förening</span><span class="auto-info-val" id="ai-forening">—</span></div>
+          <div class="auto-info-row"><span class="auto-info-label">Adress</span><span class="auto-info-val" id="ai-adress">—</span></div>
           <div class="auto-info-row" id="ai-pris-row" style="display:none;"><span class="auto-info-label" id="ai-pris-label">SkiStar listpris</span><span class="auto-info-val" id="ai-pris">—</span></div>
           <div class="auto-info-row"><span class="auto-info-label">BRF-avgift</span><span class="auto-info-val" id="ai-brf">—</span></div>
           <div class="auto-info-row"><span class="auto-info-label">Städavgift (7-11 dgr)</span><span class="auto-info-val" id="ai-stad">—</span></div>
@@ -1022,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var ifyllt = [];
   var key = matchaAptForPrefill(d);
   if (key) { document.getElementById('apt-type').value = key; ifyllt.push(APT_DATA[key].name); }
+  if (d.enhet) { document.getElementById('lgh').value = d.enhet; ifyllt.push('lgh ' + d.enhet); }
   if (d.veckor) { document.getElementById('weeks').value = d.veckor; ifyllt.push('veckor ' + d.veckor); }
   if (d.pris) { document.getElementById('listPrice').value = d.pris; ifyllt.push('pris'); }
   if (d.usp) { document.getElementById('usp').value = d.usp; ifyllt.push('säljpunkter'); }
@@ -1042,6 +1051,19 @@ document.addEventListener('DOMContentLoaded', function(){
 document.addEventListener('DOMContentLoaded', function(){
   var w = document.getElementById('weeks');
   if (w) w.addEventListener('input', updateAutoInfo);
+  // Lägenhetsnumret väljer typen när det bara finns i en (typForLgh), och ger
+  // adressen. Står en annan typ redan vald sägs det, men valet ändras inte.
+  var l = document.getElementById('lgh');
+  if (l) l.addEventListener('input', function(){
+    var at = document.getElementById('apt-type');
+    var typ = typForLgh(l.value, '');
+    var help = document.getElementById('lghHelp');
+    if (typ && !at.value) at.value = typ;
+    if (help) help.textContent = !l.value.trim() ? 'Ger adressen (t.ex. Timmerbyn 121B). Väljer lägenhetstypen åt dig när numret bara finns i en typ.'
+      : typ ? (at.value === typ ? 'Lgh ' + lghKod(l.value) + ' = ' + APT_DATA[typ].name + '.' : 'OBS: lgh ' + lghKod(l.value) + ' hör till ' + APT_DATA[typ].name + ', inte den valda typen.')
+      : 'Numret pekar inte ut en enda lägenhetstyp — välj typen själv.';
+    updateAutoInfo();
+  });
   var p = document.getElementById('listPrice');
   if (p) {
     p.addEventListener('input', updateAutoInfo);
@@ -1093,6 +1115,15 @@ function updateAutoInfo() {
   const weeksStr = document.getElementById('weeks').value.trim();
   const calc = calcBrfMonthly(v, weeksStr);
   document.getElementById('ai-area').textContent = d.area;
+  // Föreningen och adressen ur SKISTAR_FORENINGAR (js/data/skistar-andelar.js).
+  const lghInp = document.getElementById('lgh');
+  const fr = foreningFor(v, lghInp ? lghInp.value : '') || {};
+  document.getElementById('ai-forening').textContent = fr.mspecs_namn
+    ? fr.mspecs_namn + (fr.orgnr ? ' · org.nr ' + fr.orgnr : '') + (fr.bildad ? ' · bildad ' + fr.bildad : '')
+    : d.brf + ' · org.nr saknas i referensdatan';
+  document.getElementById('ai-adress').textContent = fr.adress
+    ? [fr.adress, [fr.postnr, fr.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+    : (fr.gata ? fr.gata + ' {lägenhet} — ange lägenheten ovan (' + d.lgh_nr + ')' : 'saknas i referensdatan');
   let brfTxt;
   if (calc.weeks > 0) {
     brfTxt = calc.total.toLocaleString('sv-SE') + ' kr/år · ' + calc.monthly.toLocaleString('sv-SE') + ' kr/mån';
@@ -3964,11 +3995,19 @@ function buildBulkJSONData() {
       else husdjur = String(p.husdjur);  // okänt → behåll original
     }
 
+    const forening = foreningFor(p.aptKey, p.enhet) || {};
     const obj = {
       // Identifikation
       sektion: p.section,
       enhet: p.enhet,
       lgh_nr: d.lgh_nr,
+      // Föreningen och adressen (SKISTAR_FORENINGAR). brf_mspecs = namnet exakt
+      // som i Mspecs — det är kopplingen (object.housingAssociationName).
+      adress: forening.adress || '',
+      postnummer: forening.postnr || '',
+      ort: forening.ort || '',
+      brf_mspecs: forening.mspecs_namn || '',
+      brf_orgnr: forening.orgnr || '',
       // Bildupload-ordning enligt MSPECS_UPLOAD_ORDER. Cowork använder
       // detta fält för att ladda upp bilderna i exakt rätt ordning så
       // att banner-bug:en undviks (första bild = banner-slot, tvingad
