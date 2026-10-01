@@ -91,7 +91,7 @@
     '- Jimmys egna mejl i tråden kan innehålla uppgifter han redan fått bekräftade — de räknas som källa, men kundens egna uppgifter väger tyngst.\n' +
     '- En post i "saljare" per ägare. Ägarandel om den framgår (t.ex. 50 %).\n' +
     '- saljartyp: "privat" om säljarna är privatpersoner, "skistar" om SkiStar/Fjällinvest säljer, "foretag" för annat bolag, annars "okand".\n' +
-    '- Underlaget kan bestå av FLERA mejltrådar (TRÅD 1, TRÅD 2 …), t.ex. kundens mejl och ett utdrag om andelen från Holiday Club. Holiday Clubs utdrag är den auktoritativa källan för andelens fakta (enhet, vecka/veckor, lägenhetstyp, storlek, avgifter) och för vem som står som ägare. Kundens mejl är källan för kontaktuppgifter och önskemål (pris, tillträde). Skiljer sig uppgifterna åt: välj utdragets värde, sätt osaker = true och skriv avvikelsen i att_notera, t.ex. "Säljaren skriver v.18, Holiday Club anger v.19".\n' +
+    '- Underlaget kan bestå av FLERA mejltrådar (TRÅD 1, TRÅD 2 …), t.ex. kundens mejl och ett utdrag om andelen från Holiday Club (avsändare post@holidayclub.se, "Sales Åre"). Holiday Clubs utdrag är den auktoritativa källan för andelens fakta (enhet, vecka/veckor, lägenhetstyp, storlek, avgifter) och för vem som står som ägare. Kundens mejl är källan för kontaktuppgifter och önskemål (pris, tillträde). Skiljer sig uppgifterna åt: välj utdragets värde, sätt osaker = true och skriv avvikelsen i att_notera, t.ex. "Säljaren skriver v.18, Holiday Club anger v.19".\n' +
     '- Ägarkontroll: finns ett utdrag som anger ägare, jämför med säljaren/säljarna. Stämmer inte namnen (eller saknas en ägare bland säljarna), skriv det som FÖRSTA punkt i att_notera.\n\n' +
     'SPÅR (välj ett):\n' +
     '- "are_strand": andelsrätt i Åre Strand (Holiday Club Åre). Enheter skrivs som t.ex. "1A2" (hus 1, trapphus A, lgh 2) eller "18:2"/"19:1" (strandvilla). Fyll andel.enhet i det formatet och andel.veckor med veckonummer.\n' +
@@ -359,8 +359,11 @@
   // ── Matcha med fler mejl ─────────────────────────────────────────────────
   // Ett underlag kan bygga på flera trådar: kundens mejl + t.ex. Holiday Clubs
   // utdrag om andelen. Sökningen går mot hela brevlådan (mail-fetch ?q=).
+  // Holiday Club Åre skickar utdragen från post@holidayclub.se (avsändarnamn
+  // "Sales Åre") — därför söks på avsändaren i stället för på namnet i texten.
+  const HOLIDAY_CLUB = 'post@holidayclub.se';
   function forslagSok(u) {
-    if (u.spar === 'are_strand') return ['Holiday Club', normEnhet(v(u.andel && u.andel.enhet))].filter(Boolean).join(' ');
+    if (u.spar === 'are_strand') return [`from:${HOLIDAY_CLUB}`, normEnhet(v(u.andel && u.andel.enhet))].filter(Boolean).join(' ');
     if (u.spar === 'skistar') return ['SkiStar', v(u.andel && u.andel.anlaggning)].filter(Boolean).join(' ');
     const namn = v(u.saljare && u.saljare[0] && u.saljare[0].namn);
     return namn ? namn.split(/\s+/).pop() : v(u.objekt && u.objekt.gatuadress);
@@ -374,7 +377,7 @@
       </div>`).join('');
     const kanLagga = extra.length < MAX_EXTRA;
     const tips = u.spar === 'are_strand'
-      ? 'Tips: lägg till Holiday Clubs utdrag om andelen. Andelens fakta och ägaren kontrolleras då mot utdraget.'
+      ? 'Tips: lägg till Holiday Clubs utdrag om andelen (från post@holidayclub.se / "Sales Åre"). Andelens fakta och ägaren kontrolleras då mot utdraget.'
       : 'Lägg till fler mejl som rör samma objekt, så tolkas allt tillsammans.';
     return `<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:9px">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">

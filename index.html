@@ -1183,7 +1183,7 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
         <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('Åre Strand')">Åre Strand</button>
-        <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('Holiday Club')">Holiday Club</button>
+        <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('from:post@holidayclub.se')" title="Mejl från Holiday Club Åre (post@holidayclub.se, &quot;Sales Åre&quot;)">Holiday Club</button>
         <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('SkiStar')">SkiStar</button>
         <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('Andelsrätt')">Andelsrätt</button>
         <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('Gåvobrev')">Gåvobrev</button>
@@ -2867,9 +2867,12 @@ async function loadInbox(force) {
 
 // Ord för ord, utan skillnad på stora/små bokstäver: "åre strand 4a2" hittar
 // mejl där alla tre orden förekommer någonstans i ämne, avsändare eller text.
+// "from:adress" matchar bara avsändaren (samma syntax som brevlådesökningen).
 function matcharSok(m, q) {
   const hay = `${m.subject} ${m.fromName} ${m.fromAddress} ${m.preview}`.toLowerCase();
-  return q.toLowerCase().split(/\s+/).filter(Boolean).every(ord => hay.includes(ord));
+  const fran = `${m.fromName} ${m.fromAddress}`.toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(ord =>
+    ord.startsWith('from:') ? fran.includes(ord.slice(5)) : hay.includes(ord));
 }
 
 function filtreraInkorg() {
