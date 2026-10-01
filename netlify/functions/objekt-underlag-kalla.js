@@ -84,11 +84,16 @@ exports.handler = async (event) => {
 
   try {
     // 1. Trådarna parallellt. Två valda mejl i samma tråd blir en tråd.
-    const rader = await Promise.all(ids.map(id => hamtaTrad(base, id)));
+    // Startmejlets tråd måste finnas; ett matchat mejl som raderats eller
+    // flyttats ska inte fälla hela underlaget — det rapporteras i ej_hittade.
+    const rader = await Promise.all(ids.map((id, i) => i === 0
+      ? hamtaTrad(base, id)
+      : hamtaTrad(base, id).catch(() => ({ saknas: id }))));
+    const ejHittade = rader.filter(r => r.saknas).map(r => r.saknas);
     const sedda = new Set();
     const tradar = [];
     const messages = [];
-    rader.forEach(({ subject, msgs }) => {
+    rader.filter(r => !r.saknas).forEach(({ subject, msgs }) => {
       const nya = msgs.filter(m => m && m.id && !sedda.has(m.id));
       if (!nya.length) return;
       nya.forEach(m => sedda.add(m.id));
@@ -152,7 +157,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ mailbox: mb, subject: (tradar[0] && tradar[0].subject) || '', tradar, messages, attachments }),
+      body: JSON.stringify({ mailbox: mb, subject: (tradar[0] && tradar[0].subject) || '', tradar, ej_hittade: ejHittade, messages, attachments }),
     };
   } catch (e) {
     return { statusCode: 502, headers, body: JSON.stringify({ error: `Kunde inte läsa tråden: ${e.message}` }) };

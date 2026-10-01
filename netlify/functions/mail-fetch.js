@@ -67,8 +67,10 @@ exports.handler = async (event) => {
   const mailboxes = await getMailboxes();
   const mbIn = String(qs.mailbox || '').trim();
   const found = mbIn ? mailboxes.find(m => m.address.toLowerCase() === mbIn.toLowerCase()) : mailboxes[0];
-  if (mbIn && !found) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd brevlåda: ${mbIn}` }) };
+  if (!found) {
+    return mbIn
+      ? { statusCode: 400, headers, body: JSON.stringify({ error: `Okänd brevlåda: ${mbIn}` }) }
+      : { statusCode: 500, headers, body: JSON.stringify({ error: 'Ingen brevlåda är konfigurerad (data/mailboxes.json / MAILBOX_USERS)' }) };
   }
   const mailbox = found.address;
   const bas = `/users/${encodeURIComponent(mailbox)}`;

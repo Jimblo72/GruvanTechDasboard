@@ -172,11 +172,15 @@
       return status('Kunde inte läsa tråden: ' + e.message, true);
     }
 
+    const ejHittade = new Set(kalla.ej_hittade || []);
+    const borttagna = (aktuellt.extra || []).filter(x => ejHittade.has(x.id));
+    if (borttagna.length) aktuellt.extra = aktuellt.extra.filter(x => !ejHittade.has(x.id));
     const lasta = kalla.attachments.filter(a => a.data);
     aktuellt.kallaInfo = {
       subject: kalla.subject,
       antalMejl: kalla.messages.length,
       tradar: kalla.tradar || [],
+      ejHittade: borttagna.map(x => x.subject),
       bilagor: kalla.attachments.map(a => ({ name: a.name, last: !!a.data, skipped: a.skipped })),
     };
     status(`Tolkar ${kalla.messages.length} mejl${lasta.length ? ` och ${lasta.length} PDF-bilaga(or)` : ''} med Claude… (tar oftast 20–60 s)`);
@@ -306,6 +310,7 @@
         <span style="font-size:11.5px;color:var(--text3)">${escH(u.spar_motivering || '')}</span>
       </div>
       ${bil ? `<div style="font-size:11px;color:var(--text3);margin-top:8px">📎 ${bil}</div>` : ''}
+      ${(k.ejHittade || []).length ? `<div class="hint" style="margin-top:8px;color:var(--amber)">Hittades inte längre i brevlådan och togs bort ur underlaget: ${k.ejHittade.map(escH).join(', ')}</div>` : ''}
       ${kallRuta(u)}
       ${u.saknas && u.saknas.length ? `<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--amber);border-radius:9px"><div style="font-weight:600;font-size:12.5px">Saknas</div>${lista(u.saknas, 'var(--text2)')}</div>` : ''}
       ${u.att_notera && u.att_notera.length ? `<div style="margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:9px"><div style="font-weight:600;font-size:12.5px">Att notera</div>${lista(u.att_notera, 'var(--text3)')}</div>` : ''}
@@ -399,6 +404,7 @@
   }
 
   async function matchaSok() {
+    if (!aktuellt || !$('ou-matcha-q')) return;
     const q = ($('ou-matcha-q').value || '').trim();
     const lista = $('ou-matcha-lista');
     if (!q) return;
