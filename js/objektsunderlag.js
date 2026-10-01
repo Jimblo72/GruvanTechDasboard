@@ -218,7 +218,7 @@
       const koder = lghKoder(u.spar, v(a.enhet));
       if (koder.length < 2) { nya.push(a); continue; }
       const alla = v(a.veckor);
-      let delar = koder.map(k => veckorFor(alla, k, koder).replace(/[\s,&+]+$|\s*OCH\s*$/g, '').trim());
+      let delar = koder.map(k => veckorFor(alla, k, koder).replace(/[\s,&+;:–-]+$|\s*OCH\s*$/g, '').trim());
       let osaker = false;
       if (delar.some(x => !x)) {
         const nummer = alla.match(/\b\d{1,2}\b/g) || [];

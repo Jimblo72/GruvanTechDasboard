@@ -242,7 +242,9 @@ function lghPoster(lgh) {
   const grupp = (s.match(/\(([A-Z])\)\s*$/) || [])[1] || null;
   const poster = [];
   s.replace(/\([^)]*\)/g, '').split(',').forEach(function (tok) {
-    const m = tok.match(/(\d+)(?:\s*-\s*(\d+))?\s*([A-Z])?\b/);
+    // Högst fyra siffror: ett felinlagt långt tal (org.nr, telefon) ska aldrig
+    // ge en loop över ett jättespann eller förbi flyttalsprecisionen.
+    const m = tok.match(/(\d{1,4})(?:\s*-\s*(\d{1,4}))?\s*([A-Z])?\b/);
     if (!m) return;
     const fran = +m[1], till = m[2] ? +m[2] : fran;
     if (till < fran || till - fran > 50) return;
