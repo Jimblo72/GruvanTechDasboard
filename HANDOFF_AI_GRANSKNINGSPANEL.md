@@ -109,9 +109,11 @@ aktivt skadliga — de skickar felsökningen åt fel håll.
 
 **`HTTP 429 "rate-limited upstream"` = leverantörens kapacitet, inte din kvot.**
 
-**Funktionsfilerna är CommonJS i ett `"type": "module"`-paket.** De går inte att
-`require()` lokalt — kopiera till `.cjs` för att testa. Netlifys bundler klarar
-det i drift.
+**Funktionsfilerna är CommonJS, roten är `"type": "module"`.** Sedan 2026-10-01
+avbryter Netlify bygget för sådant (`zisi_error_cjs_in_esm_scope`: "is a CommonJS
+module, but the closest 'package.json' declares type module"). Därför finns
+`netlify/functions/package.json` med `"type": "commonjs"` — ta inte bort den.
+Funktionerna går nu också att `require()` direkt lokalt.
 
 ---
 
