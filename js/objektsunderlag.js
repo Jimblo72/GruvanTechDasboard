@@ -153,7 +153,7 @@
       '- "ovrigt": allt annat (villa, bostadsrätt, fritidshus, tomt, andra andelar). andelar = [].\n\n' +
       'ANDELAR: en post i "andelar" per lägenhet. Äger kunden veckor i TVÅ olika lägenheter (t.ex. 111B v.29 och 121B v.8) blir det två poster — de läggs upp som två objekt. Flera veckor i samma lägenhet = en post med alla veckorna.\n' +
       '- typnyckel (bara SkiStar): nyckeln ur förteckningen nedan vars lägenhetslista innehåller enheten, t.ex. "timmerbyn-2-100" för 111B. kalla = vilket lägenhetsnummer du utgick från. null om du inte kan avgöra den säkert. För Åre Strand och övrigt: null.\n\n' +
-      'REFERENSDATA: andelsverktyget och Åre Strand-katalogen har redan, för varje lägenhetstyp/enhet: storlek (kvm), rum, sovrum, bäddar, förening, föreningsavgift och — för SkiStar — SkiStars listpris per vecka samt föreningens gatuadress (t.ex. "Timmerbyn {lgh}", "Experiumtorget {lgh}"), postnummer, org.nr, byggår och våningsplan; för Åre Strand även byggår och planlösning. ' +
+      'REFERENSDATA: andelsverktyget och Åre Strand-katalogen har redan, för varje lägenhetstyp/enhet: storlek (kvm), rum, sovrum, bäddar, förening, föreningsavgift och — för SkiStar — SkiStars listpris per vecka samt föreningens gatuadress (t.ex. "Timmerbyn {lgh}", "Experiumtorget {lgh}"), postnummer, org.nr, fastighetsbeteckning, byggår och våningsplan, och varje förenings lägenhetsförteckning ur den ekonomiska planen; för Åre Strand även byggår och planlösning. ' +
       'Säljtexterna skrivs i verktygen utifrån samma data. Allt detta räknas som KÄNT: skriv det ALDRIG i "saknas" eller "fragor_till_kund", och fyll inte objektfälten med värden ur förteckningen — det görs automatiskt. Fyll objektfälten bara med det som står i mejlen.\n\n' +
       (refText ? refText + '\n\n' : '') +
       'SAKNAS OCH FRÅGOR:\n' +
@@ -362,6 +362,7 @@
         ['Byggår', fr.byggar ? `${fr.byggar}${fr.renovering ? ` · ${fr.renovering}` : ''}` : ''],
         ['Våningsplan', fr.vaningsplan != null ? `${fr.vaningsplan}${fr.vaningar ? ` av ${fr.vaningar}` : ''}${fr.balkong != null ? ` · ${fr.balkong ? 'balkong' : 'ingen balkong'}` : ''}` : ''],
         ['Kommun', [fr.kommun, fr.lan].filter(Boolean).join(' · ')],
+        ['Fastighet', fr.fastighet || ''],
       ].filter(r => r[1]);
       rader.splice(3, 0, ...fRad);
       return {
@@ -372,6 +373,7 @@
           manadsavgift: manad != null ? String(manad) : '',
           gatuadress: fr.adress || '', postnummer: fr.postnr || '', ort: fr.ort || '', kommun: fr.kommun || '',
           byggar: fr.byggar ? String(fr.byggar) : '', vaningsplan: fr.vaningsplan != null ? String(fr.vaningsplan) : '',
+          fastighetsbeteckning: fr.fastighet || '',
           objektstyp: 'Lägenhet',
         },
         andel: { anlaggning: d.brf.replace(/^brf\s+/i, ''), omrade: d.area, kvm: String(d.size_sqm) },
@@ -1121,7 +1123,7 @@
       rad('Renovering', 'object.renovateDescription', fr.renovering || '', fr.renovering ? fbKalla : null),
       rad('Antal våningar i byggnaden', null, fr.vaningar ? String(fr.vaningar) : '', fr.vaningar ? fbKalla : null),
       rad('Balkong', null, fr.balkong == null ? '' : (fr.balkong ? 'Ja' : 'Nej'), fr.balkong == null ? null : fbKalla),
-      rad('Fastighetsbeteckning', null, v(o.fastighetsbeteckning), o.fastighetsbeteckning),
+      rad('Fastighetsbeteckning', null, ...ur(o.fastighetsbeteckning, 'fastighetsbeteckning')),
       rad('Tomtarea', null, tal(v(o.tomtarea)), o.tomtarea),
       rad('Föreningens org.nr', null, ...ur(o.forening_orgnr, 'forening_orgnr')),
       rad('Tillträde', null, v(o.tilltrade), o.tilltrade),
