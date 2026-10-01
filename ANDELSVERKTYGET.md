@@ -27,6 +27,8 @@ använder File System Access API, som saknas i Firefox och Safari.
 > Sedan 2026-10-01 ligger `APT_DATA`, `VECKOPRIS` och veckomodellen (`SPECIAL_WEEK_MAP`, `normalizeWeeksStr`,
 > `summeraVeckopris`, `calcBrfMonthly`) i **`js/data/skistar-andelar.js`**, som delas med dashboardens objektsunderlag.
 > Ändra där — ingen kopia. Generatorn `gen_veckopris.py` ska klistra sitt block dit.
+> Där finns också **`SKISTAR_FORENINGAR`** (adress per förening, org.nr, namnet exakt som i Mspecs) och
+> `foreningFor` / `typForLgh`. Fältet **Lägenhet** i Generera text ger adressen och väljer typen.
 
 - **`APT_DATA`** — enda källan för objektfakta per typnyckel (`av1-50`, `timmerbyn-1-46`…).
   ⚠️ Optionvärdena i dropdownen ÄR `APT_DATA`-nycklarna **och används som bildmappsnamn

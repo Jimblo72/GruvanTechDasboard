@@ -160,3 +160,111 @@ function calcBrfMonthly(aptKey, weeksStr) {
   const total = (normal * d.brf_avgift) + (julNyar * d.brf_avgift * 1.5);
   return { monthly: Math.round(total / 12), total: Math.round(total), weeks: weeks.length, julNyar, normal };
 }
+
+// ═══ Föreningarna: adress, org.nr och Mspecs-namn ══════════════════════════
+// Källa: peakfast-verktyg (HANDOFF.md 2026-06-30, salen/salen_oversikt.csv,
+// salen/timmerbyn_batch.json) — uppgifterna som de 44 Sälen-objekten i Mspecs
+// lades upp med, kontrollerade av Jimmy. Nyckel = APT_DATA[..].brf.
+//
+// mspecs_namn  = föreningens namn EXAKT som det står i Mspecs. Namnet ÄR
+//                kopplingen (object.housingAssociationName) och är inkonsekvent
+//                stavat där ("Bfr Timmerbyn 4") — rätta inte här utan i Mspecs.
+// adress_mall  = gatuadressen, {enhet} = lägenhetsnumret ("Timmerbyn 121B").
+// gata         = gatunamnet utan nummer (uppdragsnamnet: "Timmerbyn, lgh 121B, …").
+// null         = okänt. Hitta inte på — fyll i när uppgiften finns.
+const SALEN_GEO = { postnr: '780 91', ort: 'Sälen', omrade: 'Lindvallen-Sälen', kommun: 'Malung-Sälen', lan: 'Dalarna' };
+const TIMMERBYN = Object.assign({}, SALEN_GEO, {
+  gata: 'Timmerbyn', adress_mall: 'Timmerbyn {enhet}',
+  byggar: 2005, renovering: 'helt renoverat 2019', vaningsplan: 1, vaningar: 1, balkong: false,
+});
+const SKISTAR_FORENINGAR = {
+  'Brf Timmerbyn 1': Object.assign({}, TIMMERBYN, { mspecs_namn: 'Brf Timmerbyn 1', orgnr: '769622-0735', bildad: 2010 }),
+  'Brf Timmerbyn 2': Object.assign({}, TIMMERBYN, { mspecs_namn: 'Brf Timmerbyn 2', orgnr: '769626-9419', bildad: 2013 }),
+  'Brf Timmerbyn 3': Object.assign({}, TIMMERBYN, { mspecs_namn: 'BRF Timmerbyn 3', orgnr: '769629-2817', bildad: 2014 }),
+  'Brf Timmerbyn 4': Object.assign({}, TIMMERBYN, { mspecs_namn: 'Bfr Timmerbyn 4', orgnr: '769632-5989', bildad: 2016 }),
+  'Brf Timmerbyn 5': Object.assign({}, TIMMERBYN, { mspecs_namn: 'BRF Timmerbyn 5', orgnr: '769637-8160', bildad: null }),
+  // BRF = Snötorget, men ADRESSEN är Experiumtorget {enhet}.
+  'Brf Snötorget': Object.assign({}, SALEN_GEO, {
+    mspecs_namn: 'BRF Snötorget', orgnr: '769610-6009', bildad: 2011, fastighet: 'Västra Sälen 3:119',
+    gata: 'Experiumtorget', adress_mall: 'Experiumtorget {enhet}', byggar: 1991, vaningar: 3,
+    // 45 kvm (1B–1D) vån 3 utan balkong; 85 kvm: A+B vån 2, C+D vån 3, med balkong.
+    vaningsplan_per_enhet: { '1B': 3, '1C': 3, '1D': 3, '2A': 2, '2B': 2, '3A': 2, '3B': 2, '2C': 3, '2D': 3, '3C': 3, '3D': 3 },
+    balkong_per_typ: { 'snotorget-45': false, 'snotorget-85': true },
+  }),
+  // Åre Village: gatuadressen enligt Mspecs-projektet. Postnummer, org.nr och
+  // husets nummer per lägenhet saknas än.
+  'Brf Åre Village 1': { mspecs_namn: null, orgnr: null, gata: 'Årevägen', adress_mall: 'Årevägen 150', postnr: null, ort: 'Åre', kommun: 'Åre', lan: 'Jämtland' },
+  'Brf Åre Village 2': { mspecs_namn: null, orgnr: null, gata: 'Årevägen', adress_mall: 'Årevägen 150', postnr: null, ort: 'Åre', kommun: 'Åre', lan: 'Jämtland' },
+  // Vemdalen: adress och org.nr saknas.
+  'Brf Sörgårdarna SAK 2': { mspecs_namn: 'Brf Sörgårdarna SAK 2', orgnr: null, gata: null, adress_mall: null, postnr: null, ort: 'Vemdalen', kommun: 'Härjedalen', lan: 'Jämtland' },
+};
+
+// Lägenhetsnumret ur fritext: "Timmerbyn 121 B" → "121B", "lgh 1d" → "1D".
+// Korta tal utan bokstav ("2" i "Timmerbyn 2") räknas inte.
+function lghKod(enhet) {
+  const s = String(enhet || '').toUpperCase();
+  const re = /(\d{1,4})\s*([A-Z])?(?![A-Z0-9])/g;
+  let m;
+  while ((m = re.exec(s))) {
+    if (m[2] || m[1].length >= 3) return m[1] + (m[2] || '');
+  }
+  return '';
+}
+
+// Föreningens fakta för en lägenhetstyp (+ lägenhet om den är känd), med
+// adressen ifylld. Okända uppgifter utelämnas.
+function foreningFor(aptKey, enhet) {
+  const d = APT_DATA[aptKey];
+  const f = d && SKISTAR_FORENINGAR[d.brf];
+  if (!f) return null;
+  const kod = lghKod(enhet);
+  const ut = {};
+  for (const k of Object.keys(f)) {
+    if (f[k] == null || typeof f[k] === 'object' || k === 'adress_mall') continue;
+    ut[k] = f[k];
+  }
+  if (f.adress_mall) {
+    if (f.adress_mall.indexOf('{enhet}') === -1) ut.adress = f.adress_mall;
+    else if (kod) ut.adress = f.adress_mall.replace('{enhet}', kod);
+  }
+  if (f.vaningsplan_per_enhet && kod && f.vaningsplan_per_enhet[kod] != null) ut.vaningsplan = f.vaningsplan_per_enhet[kod];
+  if (f.balkong_per_typ && f.balkong_per_typ[aptKey] != null) ut.balkong = f.balkong_per_typ[aptKey];
+  if (kod) ut.enhet = kod;
+  return ut;
+}
+
+// Lägenhetsnumren i APT_DATA.lgh_nr ("Lgh 111-114B", "Lgh 115-116A, 120-121B",
+// "Lgh 903, 908, 913 (C)") som poster { nr, bokstav }. Bokstaven på posten går
+// före en gemensam bokstav inom parentes; flera bokstäver ("(A/B/E)") betyder
+// att bara numret kan matchas.
+function lghPoster(lgh) {
+  const s = String(lgh || '');
+  const grupp = (s.match(/\(([A-Z])\)\s*$/) || [])[1] || null;
+  const poster = [];
+  s.replace(/\([^)]*\)/g, '').split(',').forEach(function (tok) {
+    const m = tok.match(/(\d+)(?:\s*-\s*(\d+))?\s*([A-Z])?\b/);
+    if (!m) return;
+    const fran = +m[1], till = m[2] ? +m[2] : fran;
+    if (till < fran || till - fran > 50) return;
+    for (let n = fran; n <= till; n++) poster.push({ nr: n, bokstav: m[3] || grupp });
+  });
+  return poster;
+}
+
+// Lägenhetsnummer ("Timmerbyn 111B", "lgh 121 B") → APT_DATA-nyckel, men bara
+// när EXAKT en typ innehåller lägenheten. Annars '' — då får någon välja.
+// Åre Village 901–912 delas t.ex. av 85- och 87-kvm-typen och avgörs inte här.
+function typForLgh(enhet, omrade) {
+  const kod = lghKod(enhet);
+  if (!kod) return '';
+  const m = kod.match(/^(\d+)([A-Z])?$/);
+  const nr = +m[1], bokstav = m[2] || null;
+  const omr = String(omrade || '').toLowerCase();
+  const traffar = Object.keys(APT_DATA).filter(function (k) {
+    if (omr && APT_DATA[k].area.toLowerCase() !== omr) return false;
+    return lghPoster(APT_DATA[k].lgh_nr).some(function (p) {
+      return p.nr === nr && (!bokstav || !p.bokstav || p.bokstav === bokstav);
+    });
+  });
+  return traffar.length === 1 ? traffar[0] : '';
+}
