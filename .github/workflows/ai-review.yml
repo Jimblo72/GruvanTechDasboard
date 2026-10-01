@@ -9,27 +9,52 @@ name: AI-granskning (Gemini)
 #
 # Kräver ett repo-secret: GEMINI_API_KEY (Settings → Secrets → Actions).
 
+# MANUELL sedan 2026-10-01 (Jimmy): körs inte längre på varje push. Claude
+# eller Jimmy startar den för en PR när en extern granskning gör nytta:
+#   Actions → "AI-granskning (Gemini)" → Run workflow → PR-nummer
+#   (eller API: POST /actions/workflows/ai-review.yml/dispatches med inputs.pr).
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'PR-nummer att granska'
+        required: true
+        type: number
 
 permissions:
   contents: read
   pull-requests: write
 
-# Avbryt en pågående granskning om nya commits pushas till samma PR.
+# En granskning åt gången per PR; en ny start avbryter den pågående.
 concurrency:
-  group: ai-review-${{ github.event.pull_request.number }}
+  group: ai-review-${{ inputs.pr }}
   cancel-in-progress: true
 
 jobs:
   ai-review:
     runs-on: ubuntu-latest
-    # Hoppa över PR:er från forkar — de saknar secrets och skrivrättigheter.
-    if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
+      # PR:ens head och base hämtas här — workflow_dispatch har ingen
+      # pull_request-händelse att läsa dem ur.
+      - name: Hämta PR:en
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ inputs.pr }}
+        run: |
+          data=$(gh api "repos/${{ github.repository }}/pulls/$PR")
+          head_repo=$(echo "$data" | jq -r '.head.repo.full_name')
+          # PR:er från forkar granskas inte (koden lämnar repot till Google).
+          if [ "$head_repo" != "${{ github.repository }}" ]; then
+            echo "PR #$PR kommer från $head_repo — hoppar över." >&2
+            exit 1
+          fi
+          echo "head=$(echo "$data" | jq -r '.head.sha')" >> "$GITHUB_OUTPUT"
+          echo "base=$(echo "$data" | jq -r '.base.sha')" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
+          ref: ${{ steps.pr.outputs.head }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -42,6 +67,6 @@ jobs:
           GEMINI_MODEL: gemini-3.5-flash
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ inputs.pr }}
+          BASE_SHA: ${{ steps.pr.outputs.base }}
         run: node scripts/ai-review.mjs
