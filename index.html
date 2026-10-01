@@ -1172,6 +1172,23 @@ code{font-size:10px;background:var(--bg4);padding:2px 6px;border-radius:3px;bord
 
     <!-- Inkorg -->
     <div id="mail-view-inbox">
+      <!-- Sök: skrivning filtrerar direkt bland de hämtade mejlen (30 dagar);
+           Enter/"Sök i hela brevlådan" söker via Graph i alla mappar och all tid. -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <input id="mail-sok" class="input" type="search" placeholder="Sök i inkorgen — t.ex. Åre Strand, SkiStar, ett namn eller en enhet" autocomplete="off"
+          oninput="filtreraInkorg()" onkeydown="if(event.key==='Enter'){event.preventDefault();sokBrevlada();}"
+          style="flex:1;min-width:240px">
+        <button class="btn" onclick="sokBrevlada()" title="Söker i alla mappar och all tid — ämne, text, avsändare och bilagenamn">🔎 Sök i hela brevlådan</button>
+        <button class="btn" onclick="rensaSok()" id="mail-sok-rensa" style="display:none">✕ Rensa</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('Åre Strand')">Åre Strand</button>
+        <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('from:post@holidayclub.se')" title="Mejl från Holiday Club Åre (post@holidayclub.se, &quot;Sales Åre&quot;)">Holiday Club</button>
+        <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('SkiStar')">SkiStar</button>
+        <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('Andelsrätt')">Andelsrätt</button>
+        <button class="seg-btn" style="font-size:11px;padding:4px 10px" onclick="snabbSok('Gåvobrev')">Gåvobrev</button>
+      </div>
+      <div id="mail-inbox-info" style="font-size:11px;color:var(--text4);margin-bottom:10px"></div>
       <div id="mail-inbox-list"><div class="loading">Öppna fliken för att hämta inkorgen…</div></div>
     </div>
 
@@ -2815,14 +2832,23 @@ function switchMailTab(tab) {
   if (tab === 'queue' && !mailQueueLoaded) loadMailQueue();
 }
 
+// Inkorgen hämtas för INKORG_DAGAR dagar bakåt. Sökfältet filtrerar bland dem
+// direkt (ämne, avsändare, förhandsvisning); "Sök i hela brevlådan" frågar Graph
+// i alla mappar och all tid, även brödtext och bilagenamn.
+const INKORG_DAGAR = 30;
+let inkorgMejl = [];          // senaste inkorgshämtningen
+let inkorgInfo = null;        // { dagar, count, truncated }
+let sokResultat = null;       // { q, messages, truncated } när en brevlådesökning visas
+
 async function loadInbox(force) {
   const el = document.getElementById('mail-inbox-list');
   if (!el) return;
   if (inboxLoaded && !force) return;
-  el.innerHTML = '<div class="loading">Hämtar inkorgen via Microsoft Graph…</div>';
+  sokResultat = null;
+  el.innerHTML = `<div class="loading">Hämtar inkorgen för de senaste ${INKORG_DAGAR} dagarna via Microsoft Graph…</div>`;
   document.getElementById('mail-config-note').style.display = 'none';
   try {
-    const r = await fetch(FN.mailFetch + mbQuery('?'));
+    const r = await fetch(FN.mailFetch + mbQuery('?') + (mbQuery('?') ? '&' : '?') + 'dagar=' + INKORG_DAGAR);
     if (r.status === 404) { showMailConfigNote('Funktionen mail-fetch är inte driftsatt än.'); return; }
     if (!r.ok) {
       let msg = `HTTP ${r.status}`;
@@ -2831,12 +2857,77 @@ async function loadInbox(force) {
     }
     const data = await r.json();
     inboxLoaded = true;
-    const msgs = data.messages || [];
-    if (!msgs.length) { el.innerHTML = '<div class="loading">Inkorgen är tom. 🎉</div>'; return; }
-    el.innerHTML = msgs.map(renderInboxRow).join('');
+    inkorgMejl = data.messages || [];
+    inkorgInfo = { dagar: data.dagar || INKORG_DAGAR, count: inkorgMejl.length, truncated: !!data.truncated };
+    filtreraInkorg();
   } catch (e) {
     showMailConfigNote(e.message);
   }
+}
+
+// Ord för ord, utan skillnad på stora/små bokstäver: "åre strand 4a2" hittar
+// mejl där alla tre orden förekommer någonstans i ämne, avsändare eller text.
+// "from:adress" matchar bara avsändaren (samma syntax som brevlådesökningen).
+function matcharSok(m, q) {
+  const hay = `${m.subject} ${m.fromName} ${m.fromAddress} ${m.preview}`.toLowerCase();
+  const fran = `${m.fromName} ${m.fromAddress}`.toLowerCase();
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(ord =>
+    ord.startsWith('from:') ? fran.includes(ord.slice(5)) : hay.includes(ord));
+}
+
+function filtreraInkorg() {
+  const el = document.getElementById('mail-inbox-list');
+  const info = document.getElementById('mail-inbox-info');
+  const q = (document.getElementById('mail-sok').value || '').trim();
+  document.getElementById('mail-sok-rensa').style.display = q || sokResultat ? '' : 'none';
+  if (sokResultat) {
+    // En visad brevlådesökning ligger kvar tills fältet töms eller ny sökning görs.
+    if (q === sokResultat.q) return;
+    sokResultat = null;
+  }
+  if (!inboxLoaded) return;
+  const lista = q ? inkorgMejl.filter(m => matcharSok(m, q)) : inkorgMejl;
+  const period = `senaste ${inkorgInfo.dagar} dagarna`;
+  info.innerHTML = q
+    ? `${lista.length} av ${inkorgMejl.length} mejl i inkorgen (${period}) matchar "${esc(q)}". Tryck Enter eller <a href="#" onclick="sokBrevlada();return false">sök i hela brevlådan</a> för äldre mejl, andra mappar och text i bilagenamn.`
+    : `${inkorgMejl.length} mejl i inkorgen, ${period}.${inkorgInfo.truncated ? ' Fler finns — använd sökningen för att hitta äldre.' : ''}`;
+  if (!lista.length) {
+    el.innerHTML = `<div class="loading">${q ? 'Inga träffar bland de hämtade mejlen.' : 'Inga mejl de senaste ' + inkorgInfo.dagar + ' dagarna. 🎉'}</div>`;
+    return;
+  }
+  el.innerHTML = lista.map(renderInboxRow).join('');
+}
+
+async function sokBrevlada(fraga) {
+  const input = document.getElementById('mail-sok');
+  const q = (fraga != null ? fraga : input.value || '').trim();
+  if (!q) return;
+  input.value = q;
+  const el = document.getElementById('mail-inbox-list');
+  const info = document.getElementById('mail-inbox-info');
+  document.getElementById('mail-sok-rensa').style.display = '';
+  info.textContent = '';
+  el.innerHTML = `<div class="loading">Söker "${esc(q)}" i hela brevlådan…</div>`;
+  try {
+    const r = await fetch(FN.mailFetch + mbQuery('?') + (mbQuery('?') ? '&' : '?') + 'q=' + encodeURIComponent(q));
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    sokResultat = { q, messages: data.messages || [], truncated: !!data.truncated };
+    info.innerHTML = `${sokResultat.messages.length}${sokResultat.truncated ? '+' : ''} träffar på "${esc(q)}" i hela brevlådan (alla mappar, nyast först).${sokResultat.truncated ? ' Visar de 100 mest relevanta — förfina sökningen för fler.' : ''}`;
+    el.innerHTML = sokResultat.messages.length
+      ? sokResultat.messages.map(renderInboxRow).join('')
+      : '<div class="loading">Inga träffar.</div>';
+  } catch (e) {
+    el.innerHTML = `<div class="loading" style="color:var(--red-bright)">Sökningen misslyckades: ${esc(e.message)}</div>`;
+  }
+}
+
+function snabbSok(t) { sokBrevlada(t); }
+
+function rensaSok() {
+  document.getElementById('mail-sok').value = '';
+  sokResultat = null;
+  filtreraInkorg();
 }
 function showMailConfigNote(msg) {
   const note = document.getElementById('mail-config-note');
@@ -2852,8 +2943,8 @@ function renderInboxRow(m) {
       <div style="width:8px;height:8px;border-radius:50%;background:${unread ? 'var(--green)' : 'var(--muted)'};margin-top:6px;flex-shrink:0" title="${unread ? 'oläst' : 'läst'}"></div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
-          <div style="font-size:13px;font-weight:600;color:var(--text);${unread ? '' : 'font-weight:500;color:var(--text2)'}">${esc(m.subject)}</div>
-          <div style="font-size:10px;color:var(--text4);white-space:nowrap">${esc(m.received ? timeAgo(m.received) : '')}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);${unread ? '' : 'font-weight:500;color:var(--text2)'}">${m.hasAttachments ? '<span title="Har bilagor">📎 </span>' : ''}${esc(m.subject)}</div>
+          <div style="font-size:10px;color:var(--text4);white-space:nowrap" title="${esc(m.received ? new Date(m.received).toLocaleString('sv-SE') : '')}">${esc(m.received ? timeAgo(m.received) : '')}</div>
         </div>
         <div style="font-size:11px;color:var(--text3);margin:2px 0 6px">${esc(m.fromName || m.fromAddress)}${m.fromName && m.fromAddress ? ` · <span style="color:var(--text4)">${esc(m.fromAddress)}</span>` : ''}</div>
         <div style="font-size:11.5px;color:var(--text4);line-height:1.5">${esc((m.preview || '').slice(0, 220))}</div>
