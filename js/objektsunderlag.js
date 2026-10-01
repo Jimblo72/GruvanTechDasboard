@@ -20,6 +20,8 @@
   'use strict';
 
   const KALLA_URL = '/.netlify/functions/objekt-underlag-kalla';
+  const SOK_URL = '/.netlify/functions/mail-fetch';
+  const MAX_EXTRA = 2;   // + startmejlets tråd = 3 trådar (serverns tak)
   const MODELL = 'claude-opus-5-5';
   const SS_PREFIX = 'pf_underlag_';
 
@@ -88,7 +90,9 @@
     '- osaker = true om uppgiften är otydlig, motsägs någonstans eller kräver tolkning.\n' +
     '- Jimmys egna mejl i tråden kan innehålla uppgifter han redan fått bekräftade — de räknas som källa, men kundens egna uppgifter väger tyngst.\n' +
     '- En post i "saljare" per ägare. Ägarandel om den framgår (t.ex. 50 %).\n' +
-    '- saljartyp: "privat" om säljarna är privatpersoner, "skistar" om SkiStar/Fjällinvest säljer, "foretag" för annat bolag, annars "okand".\n\n' +
+    '- saljartyp: "privat" om säljarna är privatpersoner, "skistar" om SkiStar/Fjällinvest säljer, "foretag" för annat bolag, annars "okand".\n' +
+    '- Underlaget kan bestå av FLERA mejltrådar (TRÅD 1, TRÅD 2 …), t.ex. kundens mejl och ett utdrag om andelen från Holiday Club. Holiday Clubs utdrag är den auktoritativa källan för andelens fakta (enhet, vecka/veckor, lägenhetstyp, storlek, avgifter) och för vem som står som ägare. Kundens mejl är källan för kontaktuppgifter och önskemål (pris, tillträde). Skiljer sig uppgifterna åt: välj utdragets värde, sätt osaker = true och skriv avvikelsen i att_notera, t.ex. "Säljaren skriver v.18, Holiday Club anger v.19".\n' +
+    '- Ägarkontroll: finns ett utdrag som anger ägare, jämför med säljaren/säljarna. Stämmer inte namnen (eller saknas en ägare bland säljarna), skriv det som FÖRSTA punkt i att_notera.\n\n' +
     'SPÅR (välj ett):\n' +
     '- "are_strand": andelsrätt i Åre Strand (Holiday Club Åre). Enheter skrivs som t.ex. "1A2" (hus 1, trapphus A, lgh 2) eller "18:2"/"19:1" (strandvilla). Fyll andel.enhet i det formatet och andel.veckor med veckonummer.\n' +
     '- "skistar": andelsrätt i SkiStar Vacation Club (Åre Village, Snötorget, Timmerbyn, Sörgårdarna m.fl. i Åre, Sälen, Vemdalen). andel.omrade = "Åre", "Sälen" eller "Vemdalen"; andel.anlaggning = föreningen/byggnaden (t.ex. "Timmerbyn 3"); andel.kvm = lägenhetens storlek; andel.veckor som t.ex. "8, 30".\n' +
@@ -149,15 +153,18 @@
     if (!key) return visaNyckelruta(messageId, mailbox);
 
     // Omtolkning av samma mejl ska inte tappa texter som redan tagits emot.
-    const tidigareTexter = aktuellt && aktuellt.messageId === messageId && aktuellt.underlag && aktuellt.underlag.texter;
-    aktuellt = { messageId, mailbox: mailbox || null, underlag: null, kallaInfo: null };
-    status('Läser mejltråden och bilagorna…');
+    const samma = aktuellt && aktuellt.messageId === messageId;
+    const tidigareTexter = samma && aktuellt.underlag && aktuellt.underlag.texter;
+    // Mejl som matchats in (t.ex. Holiday Clubs utdrag) följer med vid omtolkning.
+    const extra = (samma && aktuellt.extra) || [];
+    aktuellt = { messageId, mailbox: mailbox || null, extra, underlag: null, kallaInfo: null };
+    status(extra.length ? `Läser ${extra.length + 1} mejltrådar och bilagorna…` : 'Läser mejltråden och bilagorna…');
     let kalla;
     try {
       const r = await fetch(KALLA_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mailbox ? { messageId, mailbox } : { messageId }),
+        body: JSON.stringify(Object.assign({ messageId }, mailbox ? { mailbox } : {}, extra.length ? { messageIds: extra.map(x => x.id) } : {})),
       });
       kalla = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(kalla.error || `HTTP ${r.status}`);
@@ -169,6 +176,7 @@
     aktuellt.kallaInfo = {
       subject: kalla.subject,
       antalMejl: kalla.messages.length,
+      tradar: kalla.tradar || [],
       bilagor: kalla.attachments.map(a => ({ name: a.name, last: !!a.data, skipped: a.skipped })),
     };
     status(`Tolkar ${kalla.messages.length} mejl${lasta.length ? ` och ${lasta.length} PDF-bilaga(or)` : ''} med Claude… (tar oftast 20–60 s)`);
@@ -203,13 +211,16 @@
       if (!a.data) continue;
       delar.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: a.data }, title: a.name });
     }
-    const trad = kalla.messages.map(m =>
-      `--- ${String(m.when).slice(0, 16).replace('T', ' ')} · ${m.from}${m.fromAddress ? ' <' + m.fromAddress + '>' : ''}\nÄmne: ${m.subject}\n${m.text}`
-    ).join('\n\n');
+    const rad = (m) =>
+      `--- ${String(m.when).slice(0, 16).replace('T', ' ')} · ${m.from}${m.fromAddress ? ' <' + m.fromAddress + '>' : ''}\nÄmne: ${m.subject}\n${m.text}`;
+    const tradar = kalla.tradar && kalla.tradar.length > 1 ? kalla.tradar : null;
+    const trad = tradar
+      ? tradar.map(t => `=== TRÅD ${t.nr}: ${t.subject} ===\n\n` + kalla.messages.filter(m => m.trad === t.nr).map(rad).join('\n\n')).join('\n\n')
+      : kalla.messages.map(rad).join('\n\n');
     const ejLasta = kalla.attachments.filter(a => !a.data).map(a => `- ${a.name} (ej läst: ${a.skipped || 'okänt'})`).join('\n');
     delar.push({
       type: 'text',
-      text: `MEJLTRÅD (äldst först):\n\n${trad}` +
+      text: `${tradar ? `${tradar.length} MEJLTRÅDAR (äldst först inom varje tråd)` : 'MEJLTRÅD (äldst först)'}:\n\n${trad}` +
         (ejLasta ? `\n\nBILAGOR SOM INTE KUNDE LÄSAS (nämn dem i att_notera om de verkar viktiga):\n${ejLasta}` : '') +
         '\n\nSammanställ underlaget enligt schemat.',
     });
@@ -279,7 +290,8 @@
   function rendera() {
     const u = aktuellt.underlag;
     const k = aktuellt.kallaInfo || {};
-    $('ou-sub').textContent = `${k.subject || ''} · ${k.antalMejl || 0} mejl`;
+    const antalTradar = (k.tradar || []).length;
+    $('ou-sub').textContent = `${k.subject || ''} · ${k.antalMejl || 0} mejl${antalTradar > 1 ? ` i ${antalTradar} trådar` : ''}`;
     const bil = (k.bilagor || []).map(b => `${escH(b.name)} ${b.last ? '<span style="color:var(--green)">· läst</span>' : `<span style="color:var(--text4)" title="${escH(b.skipped || '')}">· ej läst</span>`}`).join(' · ');
 
     const saljare = (u.saljare || []).map((s, i) => grupp(`Säljare ${i + 1}`, `saljare.${i}`, s, SALJARE_NYCKLAR)).join('')
@@ -294,6 +306,7 @@
         <span style="font-size:11.5px;color:var(--text3)">${escH(u.spar_motivering || '')}</span>
       </div>
       ${bil ? `<div style="font-size:11px;color:var(--text3);margin-top:8px">📎 ${bil}</div>` : ''}
+      ${kallRuta(u)}
       ${u.saknas && u.saknas.length ? `<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--amber);border-radius:9px"><div style="font-weight:600;font-size:12.5px">Saknas</div>${lista(u.saknas, 'var(--text2)')}</div>` : ''}
       ${u.att_notera && u.att_notera.length ? `<div style="margin-top:8px;padding:10px 12px;border:1px solid var(--border);border-radius:9px"><div style="font-weight:600;font-size:12.5px">Att notera</div>${lista(u.att_notera, 'var(--text3)')}</div>` : ''}
       ${saljare}
@@ -337,6 +350,93 @@
   }
 
   function statusRad(t) { const el = $('ou-status'); if (el) el.textContent = t; }
+
+  // ── Matcha med fler mejl ─────────────────────────────────────────────────
+  // Ett underlag kan bygga på flera trådar: kundens mejl + t.ex. Holiday Clubs
+  // utdrag om andelen. Sökningen går mot hela brevlådan (mail-fetch ?q=).
+  function forslagSok(u) {
+    if (u.spar === 'are_strand') return ['Holiday Club', normEnhet(v(u.andel && u.andel.enhet))].filter(Boolean).join(' ');
+    if (u.spar === 'skistar') return ['SkiStar', v(u.andel && u.andel.anlaggning)].filter(Boolean).join(' ');
+    const namn = v(u.saljare && u.saljare[0] && u.saljare[0].namn);
+    return namn ? namn.split(/\s+/).pop() : v(u.objekt && u.objekt.gatuadress);
+  }
+
+  function kallRuta(u) {
+    const extra = aktuellt.extra || [];
+    const rader = extra.map((x, i) => `<div style="display:flex;gap:8px;align-items:center;font-size:11.5px;margin-top:4px">
+        <span style="color:var(--text3)">＋</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(x.subject)} <span style="color:var(--text4)">· ${escH(x.fromName || x.fromAddress)} · ${escH(String(x.received).slice(0, 10))}</span></span>
+        <button class="btn" style="font-size:10.5px;padding:2px 8px" onclick="OU.taBortMejl(${i})" title="Ta bort och tolka om">✕</button>
+      </div>`).join('');
+    const kanLagga = extra.length < MAX_EXTRA;
+    const tips = u.spar === 'are_strand'
+      ? 'Tips: lägg till Holiday Clubs utdrag om andelen. Andelens fakta och ägaren kontrolleras då mot utdraget.'
+      : 'Lägg till fler mejl som rör samma objekt, så tolkas allt tillsammans.';
+    return `<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:9px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="font-weight:600;font-size:12.5px;flex:1">Källor <span style="font-weight:400;color:var(--text4)">· startmejlets tråd${extra.length ? ` + ${extra.length} till` : ''}</span></div>
+        ${kanLagga ? '<button class="btn" style="font-size:11px" onclick="OU.matcha()">＋ Matcha med annat mejl</button>' : `<span class="hint">max ${MAX_EXTRA + 1} trådar</span>`}
+      </div>
+      ${rader}
+      <div id="ou-matcha" style="display:none;margin-top:10px">
+        <div class="hint" style="margin-bottom:6px">${escH(tips)}</div>
+        <div style="display:flex;gap:8px">
+          <input class="input" id="ou-matcha-q" value="${escH(forslagSok(u))}" placeholder="Sök i hela brevlådan" autocomplete="off"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();OU.matchaSok();}" style="flex:1">
+          <button class="btn btn-solid" onclick="OU.matchaSok()">Sök</button>
+        </div>
+        <div id="ou-matcha-lista" style="margin-top:8px"></div>
+      </div>
+    </div>`;
+  }
+
+  let matchTraffar = [];
+
+  function matcha() {
+    const p = $('ou-matcha');
+    if (!p) return;
+    p.style.display = p.style.display === 'none' ? '' : 'none';
+    if (p.style.display === '') matchaSok();
+  }
+
+  async function matchaSok() {
+    const q = ($('ou-matcha-q').value || '').trim();
+    const lista = $('ou-matcha-lista');
+    if (!q) return;
+    lista.innerHTML = `<div class="loading" style="padding:6px 0">Söker "${escH(q)}"…</div>`;
+    try {
+      const mb = aktuellt.mailbox ? `&mailbox=${encodeURIComponent(aktuellt.mailbox)}` : '';
+      const r = await fetch(`${SOK_URL}?q=${encodeURIComponent(q)}${mb}`);
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      const valda = new Set([aktuellt.messageId, ...(aktuellt.extra || []).map(x => x.id)]);
+      matchTraffar = (d.messages || []).filter(m => !valda.has(m.id)).slice(0, 25);
+      lista.innerHTML = matchTraffar.length
+        ? matchTraffar.map((m, i) => `<div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--border)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600">${m.hasAttachments ? '📎 ' : ''}${escH(m.subject)}</div>
+              <div style="font-size:10.5px;color:var(--text4)">${escH(m.fromName || m.fromAddress)} · ${escH(String(m.received).slice(0, 10))}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">${escH((m.preview || '').slice(0, 160))}</div>
+            </div>
+            <button class="btn" style="font-size:11px;white-space:nowrap" onclick="OU.laggTillMejl(${i})">Lägg till</button>
+          </div>`).join('')
+        : '<div class="hint">Inga träffar. Prova färre ord, t.ex. bara enheten eller säljarens efternamn.</div>';
+    } catch (e) {
+      lista.innerHTML = `<div class="hint" style="color:var(--red-bright)">Sökningen misslyckades: ${escH(e.message)}</div>`;
+    }
+  }
+
+  function laggTillMejl(i) {
+    const m = matchTraffar[i];
+    if (!m || !aktuellt) return;
+    aktuellt.extra = (aktuellt.extra || []).concat([{ id: m.id, subject: m.subject, fromName: m.fromName, fromAddress: m.fromAddress, received: m.received }]).slice(0, MAX_EXTRA);
+    oppna(aktuellt.messageId, aktuellt.mailbox, true);
+  }
+
+  function taBortMejl(i) {
+    if (!aktuellt || !aktuellt.extra) return;
+    aktuellt.extra = aktuellt.extra.filter((_, j) => j !== i);
+    oppna(aktuellt.messageId, aktuellt.mailbox, true);
+  }
 
   // ── Steg 3: säljtexter ───────────────────────────────────────────────────
   // Texterna skrivs i de befintliga textmotorerna (Åre Strand-/andelsverktyget)
@@ -651,10 +751,12 @@
 
   window.OU = {
     oppna, stang, tillVerktyg, tillMaklargruvan, kopieraAllt, rensa, mspecsPaket,
+    matcha, matchaSok, laggTillMejl, taBortMejl,
     id: () => aktuellt && aktuellt.messageId,
     mb: () => aktuellt && aktuellt.mailbox,
     // för test:
     _mottaTexter: mottaTexter,
     _schema: SCHEMA, _normEnhet: normEnhet, _byggInnehall: byggInnehall, _byggPaket: byggPaket, _mspecsFalt: mspecsFalt,
+    _forslagSok: forslagSok, _system: SYSTEM,
   };
 })();
