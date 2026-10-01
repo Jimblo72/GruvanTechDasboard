@@ -14,7 +14,7 @@ Granskningssystemet är **spegel-komplett**. Tre AI-granskningsverktyg — **ai-
 
 ### 1. ai-review — diff-granskning
 - **Vad:** skickar PR-diffen till Gemini, postar strukturerade fynd (severity, fil/rad, förslag) som PR-kommentar (upsert).
-- **Var:** `scripts/ai-review.mjs` + `.github/workflows/ai-review.yml`. Kör på varje PR (`opened/synchronize/reopened`), skippar forkar. Icke-blockerande.
+- **Var:** `scripts/ai-review.mjs` + `.github/workflows/ai-review.yml`. **Manuell sedan 2026-10-01** (Jimmy): körs bara via workflow_dispatch med `inputs.pr` (Actions → Run workflow, eller `github-dispatch` med `{workflow:'ai-review.yml', inputs:{pr}}`). Claude startar den när en extern granskning gör nytta. Skippar forkar. Icke-blockerande.
 - **Status:** pilot ✓ · peakfast ✓
 
 ### 2. Kodstädning — knip + Gemini
