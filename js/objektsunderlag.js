@@ -491,9 +491,12 @@
     const enhet = andel ? (u.spar === 'are_strand' ? normEnhet(v(a.enhet)) : v(a.enhet)) : '';
     const veckor = andel ? v(a.veckor).replace(/vecka|v\.?/gi, '').replace(/\s*(och|&|\+)\s*/g, ', ').replace(/\s+/g, ' ').trim() : '';
     const lgh = andel && enhet ? `${enhet}${veckor ? ', V.' + veckor : ''}` : v(o.lagenhetsnummer);
-    const namn = andel
+    let namn = andel
       ? [v(o.gatuadress) || v(a.anlaggning), enhet && `lgh ${enhet}`, veckor && `vecka ${veckor.replace(/,\s*/g, ' & ')}`].filter(Boolean).join(', ')
       : [v(o.gatuadress), v(o.lagenhetsnummer) && `lgh ${v(o.lagenhetsnummer)}`].filter(Boolean).join(', ');
+    // Åre Strand är inget projekt i Mspecs: de fristående uppdragen hålls ihop av
+    // att namnet börjar med "Åre Strand" (MSPECS-KARTA §2).
+    if (u.spar === 'are_strand' && !/^åre strand/i.test(namn)) namn = ['Åre Strand', namn].filter(Boolean).join(', ');
     const pris = tal(v(a.insats) || v(o.onskat_pris));
     const rad = (etikett, ngModel, varde, kallaFalt) => ({
       etikett, ngModel, varde,
@@ -526,18 +529,28 @@
     ].filter(r => r && r.varde);
   }
 
+  // Var objektet skapas, enligt MSPECS-KARTA §2 (kontrollerat 2026-09-30):
+  // PeakFast har bara två projekt, SkiStar Åre och SkiStar Sälen. Åre Strand är
+  // fristående uppdrag. Andra SkiStar-områden har varken projekt eller uppdrag.
   function varSkapas(u) {
     const omr = v(u.andel && u.andel.omrade).toLowerCase();
     if (u.spar === 'skistar' && (omr === 'åre' || omr === 'sälen')) {
-      return `I projektet **SkiStar ${omr === 'åre' ? 'Åre' : 'Sälen'}** (projekt-ID i kartan §2): projektflödet → NYTT OBJEKT → "FYLL I FORMULÄRET MANUELLT" enligt kartan §4 och batch-receptet §11 (ett objekt). Objektskategori Bostadsrätt, kontor PeakFast.`;
+      return `I projektet **SkiStar ${omr === 'åre' ? 'Åre' : 'Sälen'}** (projekt-ID i kartan §2): projektflödet → NYTT OBJEKT → "FYLL I FORMULÄRET MANUELLT" enligt kartan §4 och batch-receptet §11 (ett objekt). Objektskategori Bostadsrätt, kontor PeakFast. Kryssa i det egna fältet **SkiStar Vacation Club** (kartan §6, se \`egnaFalt\`).`;
     }
     if (u.spar === 'skistar') {
-      return 'SkiStar-andel i ett område som kartan saknar projekt-ID för. **Fråga Jimmy** vilket projekt objektet ska ligga i innan du skapar något.';
+      return `SkiStar-andel i ${omr ? `**${v(u.andel.omrade)}**` : 'ett okänt område'}. PeakFast har bara projekten SkiStar Åre och SkiStar Sälen (kartan §2), och inga uppdrag finns för andra SkiStar-områden. **Fråga Jimmy** om objektet ska skapas som eget uppdrag eller i något av projekten innan du skapar något.`;
     }
     if (u.spar === 'are_strand') {
-      return 'Åre Strand-andel. Kartan saknar projekt-ID för Åre Strand. **Fråga Jimmy** om objektet ska ligga i ett projekt (och vilket) eller skapas som eget uppdrag via flödet → Nytt uppdrag → "Fyll i formuläret manuellt". Objektskategori Bostadsrätt, kontor PeakFast.';
+      return 'Åre Strand-andel. **Åre Strand är inget projekt i Mspecs** (kartan §2) — skapa ett **eget uppdrag**: flödet (`#/`) → Nytt uppdrag → "FYLL I FORMULÄRET MANUELLT" (kartan §4). Objektskategori Bostadsrätt, objektstyp Lägenhet om inget annat står i OBJEKTDATA, kontor PeakFast. Uppdragsnamnet börjar med "Åre Strand" så att det hamnar bland de befintliga Åre Strand-uppdragen. Kryssa i det egna fältet **Åre Strand Holiday Club** (kartan §6, se `egnaFalt`).';
     }
-    return 'Eget uppdrag: flödet (`#/`) → Nytt uppdrag → "FYLL I FORMULÄRET MANUELLT". Välj objektskategori efter objektstypen i OBJEKTDATA (kartan har bara id för Bostadsrätt — välj annars på etikett), kontor PeakFast. Stämmer inte kategorin med något alternativ: fråga Jimmy.';
+    return 'Eget uppdrag: flödet (`#/`) → Nytt uppdrag → "FYLL I FORMULÄRET MANUELLT". Välj objektskategori och objektstyp efter OBJEKTDATA med ID:na i kartan §4, kontor PeakFast. Passar objektet ingen kategori: fråga Jimmy.';
+  }
+
+  // Egna fält (MSPECS-KARTA §6) som spåret bestämmer. Kryssrutor = true.
+  function egnaFalt(u) {
+    if (u.spar === 'are_strand') return { 'Åre Strand Holiday Club': true };
+    if (u.spar === 'skistar') return { 'SkiStar Vacation Club': true };
+    return {};
   }
 
   function byggPaket(u, karta) {
@@ -558,8 +571,11 @@
       ngModel: Object.fromEntries(kanda.map(f => [f.ngModel, f.varde]).concat(texter)),
       efterEtikett: Object.fromEntries(okanda.map(f => [f.etikett, f.varde])),
     };
+    const egna = egnaFalt(u);
+    if (Object.keys(egna).length) data.egnaFalt = egna;
+    const ordning = ['telefon', ...SALJARE_NYCKLAR.filter(k => k !== 'telefon')];
     const saljare = (u.saljare || []).map((s, i) => {
-      const r = SALJARE_NYCKLAR.filter(k => v(s[k])).map(k => `- ${ETIKETT[k]}: ${v(s[k])}`);
+      const r = ordning.filter(k => v(s[k])).map(k => `- ${ETIKETT[k]}: ${v(s[k])}`);
       return r.length ? `### Säljare ${i + 1}\n${r.join('\n')}` : '';
     }).filter(Boolean).join('\n\n') || '_Inga säljare i underlaget._';
 
@@ -584,13 +600,18 @@
       varSkapas(u),
       '',
       '## OBJEKTDATA',
-      '`ngModel` = fält som kartan känner (fyll via §9). `efterEtikett` = fält som kartan inte beskriver — leta upp dem på etikett, och rapportera deras ng-model i kontrollistan så att kartan kan kompletteras.',
+      '`ngModel` = fält med känd ng-model (fyll via §9). `efterEtikett` = fält utan fast ng-model i paketet — leta först i kartan (t.ex. objektstyp i §4), annars på etikett, och rapportera ng-model för dem kartan saknar i kontrollistan så att kartan kan kompletteras.' + (data.egnaFalt ? ' `egnaFalt` = egna fält enligt kartan §6 (`field.value`, matchas på etikett); `true` = kryssa i.' : ''),
       '```json',
       JSON.stringify(data, null, 2),
       '```',
       '',
       '## SÄLJARE',
-      'Kartan beskriver inte säljar-/kontaktdelen än. Lägg till varje säljare på uppdraget (säljarfliken/kontakter på uppdraget) med uppgifterna nedan. Finns kontakten redan i Mspecs: koppla den befintliga i stället för att skapa en dubblett — och fråga Jimmy vid minsta tvekan. Visa Jimmy vad du tänker spara innan du sparar säljaren, och rapportera var fälten låg.',
+      'Lägg till varje säljare via **Säljare** i uppdragets vänstermeny → lägg till säljare (kartan §13). Gör så här för att inte skapa dubbletter:',
+      '1. **Sök först på säljarens mobilnummer** i sökfältet i "Lägg till säljare". Hittar du inget: prova numret utan mellanslag och bindestreck, och i formen +46 utan inledande nolla.',
+      '2. **En träff:** välj den befintliga kontakten. Stämmer inte namnet: fråga Jimmy. Fyll sedan bara i uppgifter som **saknas** på kontakten. Skriv aldrig över ett befintligt värde — skiljer det sig från underlaget, lista det för Jimmy.',
+      '3. **Ingen träff:** skapa en ny kontakt med uppgifterna nedan.',
+      '4. **Flera träffar**, eller inget mobilnummer i underlaget: fråga Jimmy innan du väljer eller skapar något.',
+      '5. Ägarandel blir säljarens andel på uppdraget. Visa Jimmy vad du tänker spara innan du sparar säljaren, och rapportera var fälten låg.',
       '',
       saljare,
       '',

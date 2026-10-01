@@ -1,0 +1,4 @@
+{
+  "//": "Netlify-funktionerna är CommonJS (require/exports). Rotens package.json har \"type\": \"module\" för scripts/*.mjs; den här filen gör att Node och Netlifys bundlare (zisi_error_cjs_in_esm_scope) behandlar funktionerna som CommonJS.",
+  "type": "commonjs"
+}
