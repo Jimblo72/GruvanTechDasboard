@@ -1119,8 +1119,8 @@ function updateAutoInfo() {
   const lghInp = document.getElementById('lgh');
   const fr = foreningFor(v, lghInp ? lghInp.value : '') || {};
   document.getElementById('ai-forening').textContent = fr.mspecs_namn
-    ? fr.mspecs_namn + (fr.orgnr ? ' · org.nr ' + fr.orgnr : '') + (fr.bildad ? ' · bildad ' + fr.bildad : '')
-    : d.brf + ' · org.nr saknas i referensdatan';
+    ? fr.mspecs_namn + (fr.orgnr ? ' · org.nr ' + fr.orgnr : '') + (fr.bildad ? ' · bildad ' + fr.bildad : '') + (fr.fastighet ? ' · ' + fr.fastighet : '')
+    : d.brf + (fr.orgnr ? ' · org.nr ' + fr.orgnr : ' · org.nr saknas i referensdatan') + (fr.fastighet ? ' · ' + fr.fastighet : '');
   document.getElementById('ai-adress').textContent = fr.adress
     ? [fr.adress, [fr.postnr, fr.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')
     : (fr.gata ? fr.gata + ' {lägenhet} — ange lägenheten ovan (' + d.lgh_nr + ')' : 'saknas i referensdatan');
