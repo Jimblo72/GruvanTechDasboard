@@ -338,7 +338,10 @@
         ['Rum', `${d.rooms} · ${d.bedrooms} · ${d.bed_count}`],
         ['Storlek', d.size_label],
       ];
-      if (d.extras) rader.push(['Övrigt', d.extras]);
+      // Typen anpassad till lägenheten när numret är känt (ingen balkong för
+      // Åre Village 905/919, "husdjur tillåtet" för husdjurstillåtna).
+      const dl = (typeof aptForLgh === 'function' && aptForLgh(typ.key, v(a.enhet))) || d;
+      if (dl.extras) rader.push(['Övrigt', dl.extras]);
       rader.push(['Lägenheter av typen', d.lgh_nr]);
       let manad = null;
       if (typeof calcBrfMonthly === 'function' && veckor) {
@@ -361,6 +364,7 @@
         ['Förening i Mspecs', fr.mspecs_namn ? `${fr.mspecs_namn}${fr.orgnr ? ` · org.nr ${fr.orgnr}` : ''}${fr.bildad ? ` · bildad ${fr.bildad}` : ''}` : ''],
         ['Byggår', fr.byggar ? `${fr.byggar}${fr.renovering ? ` · ${fr.renovering}` : ''}` : ''],
         ['Våningsplan', fr.vaningsplan != null ? `${fr.vaningsplan}${fr.vaningar ? ` av ${fr.vaningar}` : ''}${fr.balkong != null ? ` · ${fr.balkong ? 'balkong' : 'ingen balkong'}` : ''}` : ''],
+        ['Husdjur', fr.husdjur === true ? 'tillåtet i lägenheten' : fr.husdjur === false ? 'inte tillåtet i lägenheten' : ''],
         ['Kommun', [fr.kommun, fr.lan].filter(Boolean).join(' · ')],
         ['Fastighet', fr.fastighet || ''],
       ].filter(r => r[1]);
@@ -991,7 +995,7 @@
         // typ = APT_DATA-nyckeln; verktyget väljer den direkt när den finns.
         typ: typ ? typ.key : '',
         // Lägenhetsnumret ger adressen i verktyget. Objektfakta, ingen personuppgift.
-        enhet: typeof lghKod === 'function' ? lghKod(v(a.enhet)) : '',
+        enhet: typeof lghNummer === 'function' ? lghNummer(v(a.enhet)) : '',
         omrade: v(a.omrade) || (typ ? APT[typ.key].area : ''),
         brf: v(a.anlaggning) || v(u.objekt.forening),
         kvm: v(a.kvm) || v(u.objekt.boarea),
@@ -1123,6 +1127,7 @@
       rad('Renovering', 'object.renovateDescription', fr.renovering || '', fr.renovering ? fbKalla : null),
       rad('Antal våningar i byggnaden', null, fr.vaningar ? String(fr.vaningar) : '', fr.vaningar ? fbKalla : null),
       rad('Balkong', null, fr.balkong == null ? '' : (fr.balkong ? 'Ja' : 'Nej'), fr.balkong == null ? null : fbKalla),
+      rad('Husdjur tillåtet', null, fr.husdjur == null ? '' : (fr.husdjur ? 'Ja' : 'Nej'), fr.husdjur == null ? null : fbKalla),
       rad('Fastighetsbeteckning', null, ...ur(o.fastighetsbeteckning, 'fastighetsbeteckning')),
       rad('Tomtarea', null, tal(v(o.tomtarea)), o.tomtarea),
       rad('Föreningens org.nr', null, ...ur(o.forening_orgnr, 'forening_orgnr')),

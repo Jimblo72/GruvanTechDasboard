@@ -1060,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var help = document.getElementById('lghHelp');
     if (typ && !at.value) at.value = typ;
     if (help) help.textContent = !l.value.trim() ? 'Ger adressen (t.ex. Timmerbyn 121B). Väljer lägenhetstypen åt dig när numret bara finns i en typ.'
-      : typ ? (at.value === typ ? 'Lgh ' + lghKod(l.value) + ' = ' + APT_DATA[typ].name + '.' : 'OBS: lgh ' + lghKod(l.value) + ' hör till ' + APT_DATA[typ].name + ', inte den valda typen.')
+      : typ ? (at.value === typ ? 'Lgh ' + lghNummer(l.value) + ' = ' + APT_DATA[typ].name + '.' : 'OBS: lgh ' + lghNummer(l.value) + ' hör till ' + APT_DATA[typ].name + ', inte den valda typen.')
       : 'Numret pekar inte ut en enda lägenhetstyp — välj typen själv.';
     updateAutoInfo();
   });
@@ -1121,9 +1121,18 @@ function updateAutoInfo() {
   document.getElementById('ai-forening').textContent = fr.mspecs_namn
     ? fr.mspecs_namn + (fr.orgnr ? ' · org.nr ' + fr.orgnr : '') + (fr.bildad ? ' · bildad ' + fr.bildad : '') + (fr.byggar ? ' · byggår ' + fr.byggar : '') + (fr.fastighet ? ' · ' + fr.fastighet : '')
     : d.brf + (fr.orgnr ? ' · org.nr ' + fr.orgnr : ' · org.nr saknas i referensdatan') + (fr.fastighet ? ' · ' + fr.fastighet : '');
-  document.getElementById('ai-adress').textContent = fr.adress
+  // Lägenhetens egna fakta (SkiStars annonser) när numret är känt: våning,
+  // husdjur och balkong.
+  const lghFakta = fr.enhet ? [
+    'lgh ' + fr.enhet,
+    fr.vaningsplan != null ? 'vån ' + fr.vaningsplan : '',
+    fr.husdjur === true ? 'husdjur tillåtet' : fr.husdjur === false ? 'inga husdjur' : 'husdjur okänt',
+    fr.balkong === true ? 'balkong' : fr.balkong === false ? 'ingen balkong' : '',
+  ].filter(Boolean).join(' · ') : '';
+  document.getElementById('ai-adress').textContent = (fr.adress
     ? [fr.adress, [fr.postnr, fr.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ')
-    : (fr.gata ? fr.gata + ' {lägenhet} — ange lägenheten ovan (' + d.lgh_nr + ')' : 'saknas i referensdatan');
+    : (fr.gata ? fr.gata + ' {lägenhet} — ange lägenheten ovan (' + d.lgh_nr + ')' : 'saknas i referensdatan'))
+    + (lghFakta ? ' · ' + lghFakta : '');
   let brfTxt;
   if (calc.weeks > 0) {
     brfTxt = calc.total.toLocaleString('sv-SE') + ' kr/år · ' + calc.monthly.toLocaleString('sv-SE') + ' kr/mån';
@@ -1195,15 +1204,26 @@ function generateTexts() {
     return;
   }
   const sellerType = currentSeller || 'skistar';
-  const res = buildFullTexts(type, weeks, sellerType, usp);
+  const lghInp = document.getElementById('lgh');
+  const res = buildFullTexts(type, weeks, sellerType, usp, lghInp ? lghInp.value : '');
   if (!res) { alert('Kunde inte generera text.'); return; }
   renderResult({ shortText: res.shortText, longText: res.longText, charsShort: res.shortText.length });
 }
 
 // ── KÄRNGENERATOR — kan anropas både från UI och bulk ──────────
-function buildFullTexts(type, weeksStr, sellerType, usp) {
-  const d = APT_DATA[type];
-  if (!d) return null;
+// enhet = lägenhetsnumret (valfritt). Är lägenheten känd anpassas texten till
+// den: ingen balkong för Åre Village 905/919, och "husdjur tillåtet" när den
+// är husdjurstillåten. husdjur = uppgift från Excel som går före förteckningen
+// (true/false; null/undefined = förteckningen).
+function buildFullTexts(type, weeksStr, sellerType, usp, enhet, husdjur) {
+  if (!APT_DATA[type]) return null;
+  // Husdjuren går in som säljpunkt (usp) — den syns i båda säljarlägena — och
+  // därför inte i extras, så att de inte nämns två gånger.
+  const d = aptForLgh(type, enhet, false);
+  const fr = foreningFor(type, enhet) || {};
+  const djur = husdjur != null ? husdjur : fr.husdjur;
+  usp = String(usp || '').trim();
+  if (djur === true && !/husdjur/i.test(usp)) usp = usp ? usp.replace(/[.\s]+$/, '') + ', husdjur tillåtet' : 'husdjur tillåtet';
   const brfCalc = calcBrfMonthly(type, weeksStr);
   const wkInfo = categorizeWeeks(weeksStr);
   const { ws, cats } = wkInfo;
@@ -2286,7 +2306,8 @@ function signAutoFillFromApt(){
   if(!grabbed && typeof buildFullTexts === "function" && weeks){
     try {
       var sellerType = (typeof currentSeller !== "undefined" ? currentSeller : "skistar");
-      var res = buildFullTexts(aptSel.value, weeks, sellerType, "");
+      var lghEl = document.getElementById("lgh");
+      var res = buildFullTexts(aptSel.value, weeks, sellerType, "", lghEl ? lghEl.value : "");
       if(res && res.shortText) grabbed = res.shortText;
     } catch(e) { console.warn("Kunde inte bygga säljtext:", e); }
   }
@@ -3381,7 +3402,7 @@ function categorizeWeeksForAI(weeksStr){
    weeks, sellerType, calc, hook }. */
 function buildAndelsPrompt(o){
   var d=o.d, areas=o.areas;
-  var extras=d.extras+(o.husdjur?', husdjur tillåtet':'');
+  var extras=[d.extras, o.husdjur===true?'husdjur tillåtet':''].filter(Boolean).join(', ');
   return `Du skriver säljtexter för andelsrätter i fjällanläggningar. Direkt konkret svenska, inga högtravande fraser. Förbjudna ord: erbjuder, inbjuder, unikt, fantastisk, exklusivt. Inled INTE med Välkommen.${SPRAKREGLER}
 
 Skriv exakt två texter ÅTSKILDA med texten ---KORT---:
@@ -3411,7 +3432,11 @@ function generateWithClaude(){
   if(!apiKey){showApiPanel();document.getElementById("apiKeyStatus").textContent="Ange API-nyckel ovan";return;}
   var aptSel=document.getElementById("apt-type");
   if(!aptSel||!aptSel.value){alert("Välj lägenhetstyp först.");return;}
-  var d=APT_DATA[aptSel.value];
+  // Lägenhetsnumret anpassar texten (balkong, husdjur) och nämns i prompten.
+  var lghEl=document.getElementById("lgh");
+  var enhet=lghEl&&lghEl.value.trim()?lghNummer(lghEl.value):null;
+  var d=aptForLgh(aptSel.value, enhet, false);
+  var frL=foreningFor(aptSel.value, enhet)||{};
   var sellerType=(currentSeller||'skistar');
   var weeks=document.getElementById("weeks").value.trim();
   var calc=calcBrfMonthly(aptSel.value,weeks);
@@ -3420,7 +3445,7 @@ function generateWithClaude(){
   var areas={"Åre":"Skandinaviens största skidort med 90 nedfarter och levande byliv året runt",
     "Sälen":"Lindvallen i Sälen med direkt access till liftar och Experium-anläggningen",
     "Vemdalen":"Vemdalsskalet med generös snöperiod och lugn fjällkaraktär"};
-  var prompt = buildAndelsPrompt({d:d, areas:areas, enhet:null, husdjur:false, weeks:weeks, sellerType:sellerType, calc:calc, hook:hook});
+  var prompt = buildAndelsPrompt({d:d, areas:areas, enhet:enhet, husdjur:frL.husdjur===true, weeks:weeks, sellerType:sellerType, calc:calc, hook:hook});
   
   var btn=document.getElementById("claudeBtn");btn.disabled=true;btn.textContent="Genererar…";
   anropaClaudeTvaTexter(prompt, apiKey).then(function(res){
@@ -3638,7 +3663,9 @@ function parseBulkExcel() {
               brf_avg_man: rec['brf avg/mån'] || rec['brf avg/man'],
               sovrum: sovrum,
               kvm: kvm,
-              husdjur: rec['husdjur'],
+              // Excel-kolumnen går före; tom → SkiStars förteckning per lägenhet.
+              husdjur: bulkHusdjur(rec['husdjur'], aptKey, enhet),
+              husdjur_excel: rec['husdjur'] == null ? '' : String(rec['husdjur']),
               weeksStr: weeks.join(', '),
               aptKey: aptKey,
               aptName: aptKey && APT_DATA[aptKey] ? APT_DATA[aptKey].name : '(ingen matchning)',
@@ -3674,7 +3701,7 @@ function renderBulkList() {
     html += '<tr style="border-bottom:1px solid var(--line);">';
     html += '<td style="padding:6px;">' + (i + 1) + '</td>';
     html += '<td>' + (p.section || '') + '</td>';
-    html += '<td><strong>' + p.enhet + '</strong>' + (p.husdjur ? ' 🐾' : '') + '</td>';
+    html += '<td><strong>' + p.enhet + '</strong>' + (p.husdjur === true ? ' 🐾' : '') + '</td>';
     html += '<td>' + p.weeksStr + '</td>';
     html += '<td>' + p.sovrum + '</td>';
     html += '<td>' + p.kvm + '</td>';
@@ -3687,13 +3714,23 @@ function renderBulkList() {
   out.innerHTML = html;
 }
 
+// Husdjur för ett bulkpaket: true/false/null, eller Excel-texten när den inte
+// går att tolka. Tidigare räckte det att cellen inte var tom — "Nej" gav
+// "husdjur tillåtet" i texten.
+function bulkHusdjur(cell, aptKey, enhet) {
+  const tolkat = husdjurSvar(cell);
+  if (tolkat != null) return tolkat;
+  if (cell != null && String(cell).trim()) return String(cell).trim();
+  const fr = aptKey ? (foreningFor(aptKey, enhet) || {}) : {};
+  return fr.husdjur != null ? fr.husdjur : null;
+}
+
 // Generera mall-text för ett paket
 function genMallForPaket(p) {
   if (!p.aptKey || !APT_DATA[p.aptKey]) return null;
   // Använd samma kärngenerator som single-läget — full text inkl. hook, body, area, seller, RCI, avgifter, benefits
   var sellerType = currentSeller || 'skistar';
-  var usp = p.husdjur ? 'husdjur tillåtet' : '';
-  var res = buildFullTexts(p.aptKey, p.weeksStr, sellerType, usp);
+  var res = buildFullTexts(p.aptKey, p.weeksStr, sellerType, '', p.enhet, husdjurSvar(p.husdjur));
   if (!res) return null;
   return { longText: res.longText, shortText: res.shortText, charsShort: res.shortText.length };
 }
@@ -3701,8 +3738,8 @@ function genMallForPaket(p) {
 // Generera Claude-text för ett paket
 function genClaudeForPaket(p, apiKey) {
   return new Promise(function(resolve, reject) {
-    var d = APT_DATA[p.aptKey];
-    if (!d) { reject('Ingen lägenhetstyp'); return; }
+    if (!APT_DATA[p.aptKey]) { reject('Ingen lägenhetstyp'); return; }
+    var d = aptForLgh(p.aptKey, p.enhet, false);
     var brfCalc = calcBrfMonthly(p.aptKey, p.weeksStr);
     var sellerType = currentSeller || 'skistar';
     var weeks = p.weeksStr;
@@ -3715,7 +3752,7 @@ function genClaudeForPaket(p, apiKey) {
       'Sälen': 'Lindvallen i Sälen med direkt access till liftar och Experium-anläggningen',
       'Vemdalen': 'Vemdalsskalet med generös snöperiod och lugn fjällkaraktär'
     };
-    var prompt = buildAndelsPrompt({ d: d, areas: areas, enhet: p.enhet, husdjur: !!p.husdjur, weeks: weeks, sellerType: sellerType, calc: brfCalc, hook: hook });
+    var prompt = buildAndelsPrompt({ d: d, areas: areas, enhet: p.enhet, husdjur: p.husdjur === true, weeks: weeks, sellerType: sellerType, calc: brfCalc, hook: hook });
     anropaClaudeTvaTexter(prompt, apiKey).then(resolve).catch(function(e){ reject(e.message || String(e)); });
   });
 }
@@ -3921,10 +3958,13 @@ function exportBulkResults() {
 
     // Bytesdag — SkiStar använder söndag som standardbytesdag för andelsveckor
     var bytesdag = 'Söndag';
+    var husdjurCell = p.husdjur === true ? 'Ja' : p.husdjur === false ? 'Nej' : (p.husdjur || '');
+    // Typen anpassad till lägenheten (ingen balkong för 905/919 osv.).
+    if (d) d = aptForLgh(p.aptKey, p.enhet, false);
 
     if (!p.result || p.result.error) {
       data.push([
-        p.section, p.enhet, p.weeksStr, norm.numeric, specialStr, bytesdag, p.husdjur || '',
+        p.section, p.enhet, p.weeksStr, norm.numeric, specialStr, bytesdag, husdjurCell,
         p.aptName, d ? d.area : '', d ? d.brf : '', p.aptKey || '',
         p.kvm, d ? d.rooms : '', p.sovrum, d ? d.bed_count : '', d ? d.extras : '', d ? d.lgh_nr : '',
         p.insats || '', d ? d.brf_avgift : '', bc ? bc.total : '', bc ? bc.monthly : '', brfBerakning,
@@ -3935,7 +3975,7 @@ function exportBulkResults() {
     }
 
     data.push([
-      p.section, p.enhet, p.weeksStr, norm.numeric, specialStr, bytesdag, p.husdjur || '',
+      p.section, p.enhet, p.weeksStr, norm.numeric, specialStr, bytesdag, husdjurCell,
       p.aptName, d ? d.area : '', d ? d.brf : '', p.aptKey || '',
       p.kvm, d ? d.rooms : '', p.sovrum, d ? d.bed_count : '', d ? d.extras : '', d ? d.lgh_nr : '',
       p.insats || '', d ? d.brf_avgift : '', bc ? bc.total : '', bc ? bc.monthly : '', brfBerakning,
@@ -3987,13 +4027,9 @@ function buildBulkJSONData() {
     const specials = norm.tokens.filter(function(t) { return !/^\d+$/.test(t); });
 
     // Husdjur som boolean (true/false/null)
-    let husdjur = null;
-    if (p.husdjur) {
-      const h = String(p.husdjur).toLowerCase().trim();
-      if (h === 'ja' || h === 'tillåtet' || h === 'yes') husdjur = true;
-      else if (h === 'nej' || h === 'no') husdjur = false;
-      else husdjur = String(p.husdjur);  // okänt → behåll original
-    }
+    // (bulkHusdjur har redan tolkat Excel och fyllt på ur förteckningen.)
+    let husdjur = husdjurSvar(p.husdjur);
+    if (husdjur == null && p.husdjur) husdjur = String(p.husdjur);  // okänt → behåll original
 
     const forening = foreningFor(p.aptKey, p.enhet) || {};
     const obj = {
@@ -4045,8 +4081,9 @@ function buildBulkJSONData() {
       rum_kok: d.rooms,
       sovrum: parseInt(String(d.bedrooms).match(/\d+/) || ['0'], 10),
       baddar: parseInt(String(d.bed_count).match(/\d+/) || ['0'], 10),
-      bekvamligheter: d.extras,
+      bekvamligheter: aptForLgh(p.aptKey, p.enhet, false).extras,
       husdjur: husdjur,
+      balkong: forening.balkong != null ? forening.balkong : null,
       // Ekonomi (rena tal — inga "kr"-suffix)
       pris_insats_sek: p.insats ? parseInt(String(p.insats).replace(/\s/g,'').replace(/[^0-9]/g,''), 10) || null : null,
       brf_kr_vecka: d.brf_avgift,
