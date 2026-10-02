@@ -200,9 +200,10 @@ const SKISTAR_FORENINGAR = {
   }),
   // Åre Village: gatuadressen enligt Mspecs-projektet; org.nr, fastighet, byggår
   // och renovering ur de ekonomiska planerna. Postnummer och föreningens namn i
-  // Mspecs saknas än.
-  'Brf Åre Village 1': { mspecs_namn: null, orgnr: '769635-7289', bildad: 2017, fastighet: 'Åre Lien 2:70', gata: 'Årevägen', adress_mall: 'Årevägen 150', postnr: null, ort: 'Åre', kommun: 'Åre', lan: 'Jämtland', byggar: 2003, renovering: 'omfattande renovering 2017–2018', vaningar: 3 },
-  'Brf Åre Village 2': { mspecs_namn: null, orgnr: '769637-8178', bildad: 2019, fastighet: 'Åre Lien 2:71', gata: 'Årevägen', adress_mall: 'Årevägen 150', postnr: null, ort: 'Åre', kommun: 'Åre', lan: 'Jämtland', byggar: 2004, renovering: 'omfattande renovering 2019', vaningar: 3 },
+  // Mspecs enligt Jimmy 2026-10-02. Balkong: alla utom 905 och 919 (per lägenhet
+  // i SKISTAR_LAGENHETER, enligt SkiStars annonser).
+  'Brf Åre Village 1': { mspecs_namn: 'Åre village 1', orgnr: '769635-7289', bildad: 2017, fastighet: 'Åre Lien 2:70', gata: 'Årevägen', adress_mall: 'Årevägen 150', postnr: '837 52', ort: 'Åre', kommun: 'Åre', lan: 'Jämtland', byggar: 2003, renovering: 'omfattande renovering 2017–2018', vaningar: 3, balkong: true },
+  'Brf Åre Village 2': { mspecs_namn: 'Åre village 2', orgnr: '769637-8178', bildad: 2019, fastighet: 'Åre Lien 2:71', gata: 'Årevägen', adress_mall: 'Årevägen 150', postnr: '837 52', ort: 'Åre', kommun: 'Åre', lan: 'Jämtland', byggar: 2004, renovering: 'omfattande renovering 2019', vaningar: 3, balkong: true },
   // Vemdalen ("Kv Höjen"): adressen är Sörgårdarna {lgh-nr} enligt planen.
   'Brf Sörgårdarna SAK 2': { mspecs_namn: 'Brf Sörgårdarna SAK 2', orgnr: '769637-8004', bildad: 2019, fastighet: 'Vemdalens Kyrkby 56:67', gata: 'Sörgårdarna', adress_mall: 'Sörgårdarna {enhet}', postnr: '840 92', ort: 'Vemdalen', omrade: 'Vemdalsskalet', kommun: 'Härjedalen', lan: 'Jämtland', byggar: 2005, renovering: 'genomgripande renovering 2019', vaningar: 2 },
 };
@@ -210,13 +211,21 @@ const SKISTAR_FORENINGAR = {
 // Lägenhetsnumret ur fritext: "Timmerbyn 121 B" → "121B", "lgh 1d" → "1D".
 // Korta tal utan bokstav ("2" i "Timmerbyn 2") räknas inte.
 function lghKod(enhet) {
+  return lghKoder(enhet)[0] || '';
+}
+
+// Alla tänkbara lägenhetsnummer i fritexten, i ordning. "Årevägen 150, lgh 919"
+// → ["150", "919"]: gatunumret ser ut som ett lägenhetsnummer, så den som slår
+// upp (lagenhetFor) väljer det som finns i förteckningen.
+function lghKoder(enhet) {
   const s = String(enhet || '').toUpperCase();
   const re = /(\d{1,4})\s*([A-Z])?(?![A-Z0-9])/g;
+  const ut = [];
   let m;
   while ((m = re.exec(s))) {
-    if (m[2] || m[1].length >= 3) return m[1] + (m[2] || '');
+    if (m[2] || m[1].length >= 3) ut.push(m[1] + (m[2] || ''));
   }
-  return '';
+  return ut;
 }
 
 // Föreningens fakta för en lägenhetstyp (+ lägenhet om den är känd), med
@@ -226,7 +235,8 @@ function foreningFor(aptKey, enhet) {
   const f = d && SKISTAR_FORENINGAR[d.brf];
   if (!f) return null;
   const lghRad = typeof lagenhetFor === 'function' ? lagenhetFor(enhet) : null;
-  const kod = lghKod(enhet) || (lghRad ? lghRad.kod : '');
+  // Gällande beteckning: ett alias ur en äldre plan (111A, 2E) blir 111B, 1B.
+  const kod = (lghRad ? (lghRad.planKod || lghRad.kod) : '') || lghKod(enhet);
   const ut = {};
   for (const k of Object.keys(f)) {
     if (f[k] == null || typeof f[k] === 'object' || k === 'adress_mall') continue;
@@ -239,6 +249,9 @@ function foreningFor(aptKey, enhet) {
   if (f.vaningsplan_per_enhet && kod && f.vaningsplan_per_enhet[kod] != null) ut.vaningsplan = f.vaningsplan_per_enhet[kod];
   if (lghRad && lghRad.plan != null && ut.vaningsplan == null) ut.vaningsplan = lghRad.plan;
   if (f.balkong_per_typ && f.balkong_per_typ[aptKey] != null) ut.balkong = f.balkong_per_typ[aptKey];
+  // Per lägenhet (SkiStars annonser) går före föreningen och typen.
+  if (lghRad && lghRad.balkong != null) ut.balkong = lghRad.balkong;
+  if (lghRad && lghRad.husdjur != null) ut.husdjur = lghRad.husdjur;
   if (kod) ut.enhet = kod;
   return ut;
 }
@@ -274,10 +287,24 @@ function lghPoster(lgh) {
 // Åre Village: planen numrerar 1–14 per förening. Verktygets nummer är 900 + n
 // (ÅV1) och 914 + n (ÅV2) — samma mönster som 50- och 83-kvm-lägenheterna i
 // lgh_nr redan följde (903/908/913, 904/909/914 …). Därmed skiljs 85 och 87 kvm åt.
+//
+// husdjur: true = husdjurstillåten, false = inte, null = okänt. Källa: SkiStars
+// annonser under skistar.com/sv/skistar-vacation-club/andelsboende/ och
+// översiktsbilderna för Åre Village 1 och 2 (kontrollerat 2026-10-02). Varje
+// annons räknar upp de husdjurstillåtna lägenheterna; övriga i samma förening är
+// alltså inte det. Timmerbyn 1:s annonser pekar inte ut någon lägenhet → null.
+// balkong: bara där lägenheten avviker från föreningen (Åre Village 905 och 919).
+const SKISTAR_HUSDJUR = ['114B', '114C', '148A', '148C', '115A', '115C', '119A', '119C',
+  '1C', '3A', '3B', '3C', '3D', '904', '905', '915', '916', '917', '918', '919', '57'];
+const SKISTAR_UTAN_BALKONG = ['905', '919'];
 const SKISTAR_LAGENHETER = (function () {
   const ut = {};
   const lagg = (kod, typ, kvm, rok, plan, alias) => {
-    ut[kod] = { typ, kvm, rok, plan: plan || null, alias: alias || null };
+    ut[kod] = {
+      typ, kvm, rok, plan: plan || null, alias: alias || null,
+      husdjur: /^timmerbyn-1-/.test(typ) ? null : SKISTAR_HUSDJUR.indexOf(kod) !== -1,
+      balkong: SKISTAR_UTAN_BALKONG.indexOf(kod) !== -1 ? false : null,
+    };
   };
   // Timmerbyn 1: 106–110, A = stor, C = liten.
   [106, 107, 108, 109, 110].forEach(n => { lagg(n + 'A', 'timmerbyn-1-100', 100, 4); lagg(n + 'C', 'timmerbyn-1-46', 46, 3); });
@@ -311,15 +338,50 @@ const SKISTAR_LAGENHETER = (function () {
   return ut;
 })();
 
+// Lägenhetsnumret att visa och skicka vidare: förteckningens gällande
+// beteckning när lägenheten finns där ("Årevägen 150, lgh 919" → "919",
+// "Timmerbyn 111A" → "111B"), annars det som står i texten.
+function lghNummer(enhet) {
+  const r = lagenhetFor(enhet);
+  return r ? (r.planKod || r.kod) : lghKod(enhet);
+}
+
+// Lägenhetstypen anpassad till en känd lägenhet: en kopia av APT_DATA[aptKey]
+// där extras saknar balkongen om just den lägenheten saknar balkong (Åre Village
+// 905/919) och har "husdjur tillåtet" när lägenheten är husdjurstillåten.
+// husdjur = uppgift från annat håll (Excel-importen) som går före förteckningen;
+// undefined/null = använd förteckningen. Okänd lägenhet → typen oförändrad.
+function aptForLgh(aptKey, enhet, husdjur) {
+  const d = APT_DATA[aptKey];
+  if (!d) return null;
+  const fr = foreningFor(aptKey, enhet) || {};
+  const djur = husdjur != null ? husdjur : fr.husdjur;
+  let delar = String(d.extras || '').split(',').map(x => x.trim()).filter(Boolean);
+  if (fr.balkong === false) delar = delar.filter(x => !/balkong/i.test(x));
+  delar = delar.filter(x => !/husdjur/i.test(x));
+  if (djur === true) delar.push('husdjur tillåtet');
+  return Object.assign({}, d, { extras: delar.join(', ') });
+}
+
+// Husdjur ur fritext ("Ja", "nej", "tillåtet") → true/false, annars null.
+function husdjurSvar(x) {
+  if (x === true || x === false) return x;
+  const h = String(x == null ? '' : x).toLowerCase().trim();
+  if (h === 'ja' || h === 'tillåtet' || h === 'yes' || h === 'x') return true;
+  if (h === 'nej' || h === 'no') return false;
+  return null;
+}
+
 // Lägenheten i förteckningen (koden eller ett alias), eller null.
 function lagenhetFor(enhet) {
   // Tvåsiffriga nummer (Sörgårdarna 57–60) räknas bara om de finns i förteckningen.
-  const tva = (String(enhet || '').match(/\b\d{2}\b/g) || []).find(x => SKISTAR_LAGENHETER[x]);
-  const kod = lghKod(enhet) || tva || '';
-  if (!kod) return null;
-  if (SKISTAR_LAGENHETER[kod]) return Object.assign({ kod }, SKISTAR_LAGENHETER[kod]);
-  for (const k of Object.keys(SKISTAR_LAGENHETER)) {
-    if (SKISTAR_LAGENHETER[k].alias === kod) return Object.assign({ kod, planKod: k }, SKISTAR_LAGENHETER[k]);
+  const tva = (String(enhet || '').match(/\b\d{2}\b/g) || []).filter(x => SKISTAR_LAGENHETER[x]);
+  // Första numret som finns i förteckningen vinner (gatunummer hoppas över).
+  for (const kod of lghKoder(enhet).concat(tva)) {
+    if (SKISTAR_LAGENHETER[kod]) return Object.assign({ kod }, SKISTAR_LAGENHETER[kod]);
+    for (const k of Object.keys(SKISTAR_LAGENHETER)) {
+      if (SKISTAR_LAGENHETER[k].alias === kod) return Object.assign({ kod, planKod: k }, SKISTAR_LAGENHETER[k]);
+    }
   }
   return null;
 }

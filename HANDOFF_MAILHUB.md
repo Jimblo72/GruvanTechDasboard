@@ -84,8 +84,29 @@ Jimmys första test (en gammal SkiStar-förfrågan, Timmerbyn 111B v.29 + 121B v
 ## Ett objekt per lägenhet + föreningarnas adresser (2026-10-01, kväll)
 - **Uppdelningen sker i koden** (`delaAndelar` i `normalisera`), inte bara i prompten. En post som rymmer flera lägenhetsnummer ("Timmerbyn 111B; Timmerbyn 121B") blir en andel per lägenhet. Veckorna fördelas efter `29 (111B), 8 (121B)`, efter `111B: 29, 30; 121B: 8` eller i tur och ordning när antalet stämmer. Annars får alla andelar alla veckorna, markerade osäkra. Uppdelningen noteras i "Att notera".
 - **`SKISTAR_FORENINGAR`** i `js/data/skistar-andelar.js` innehåller per förening adressmall (`Timmerbyn {enhet}`, `Experiumtorget {enhet}`), postnummer/ort/område/kommun/län, org.nr, bildat år, byggår, renovering, våningsplan och balkong. Där finns också **namnet exakt som i Mspecs** (`Bfr Timmerbyn 4`, `BRF Timmerbyn 3` …), eftersom namnet är BRF-kopplingen. Källa: peakfast-verktyg (`HANDOFF.md` 2026-06-30, `salen/`), alltså uppgifterna de 44 Sälen-objekten lades upp med.
-  - **Saknas:** Åre Village (postnummer, org.nr, Mspecs-namn, husnummer per lgh) och Sörgårdarna SAK 2 (adress, org.nr), samt Timmerbyn 5:s bildat-år. Fyll i dem där när uppgifterna finns.
+  - **Kompletterat sedan dess:** Åre Village har postnummer 837 52 och Mspecs-namnen "Åre village 1" och "Åre village 2" (Jimmy 2026-10-02). Org.nr och fastighet kommer ur planerna. Sörgårdarna har adress och org.nr ur planen. Se avsnittet 2026-10-02 nedan.
 - Hjälpfunktionerna `lghKod`, `foreningFor(aptKey, enhet)` och `typForLgh(enhet, omrade)` ligger i samma fil och används av både andelsverktyget och objektsunderlaget.
 - **Objektsunderlaget** fyller gatuadress, postnummer, ort, kommun, org.nr, byggår, våningsplan och föreningens Mspecs-namn ur datan. Mspecs-paketet får även område, län, bildat år, renovering, antal våningar och balkong. Uppdragsnamnet blir "Timmerbyn, lgh 121B, vecka 8". Objektstyp för andelar är alltid **Lägenhet**.
 - **Andelsverktyget** har fältet **Lägenhet**. Det väljer typen när numret bara finns i en typ (och varnar om en annan typ är vald) och visar förening och adress i faktarutan. Bulk-exporten får `adress`, `postnummer`, `ort`, `brf_mspecs` och `brf_orgnr` per objekt. Förifyllningen från underlaget skickar `enhet`.
 - **Snötorget 45 kvm rättad:** `APT_DATA` har nu 3 rum och kök och 2 sovrum, enligt SkiStars Excel (Jimmy 2026-10-01). Tidigare stod 2 rok och 1 sovrum.
+
+## Husdjur och balkong per lägenhet, Åre Village komplett (2026-10-02)
+- **Källa:** SkiStars annonser under `skistar.com/sv/skistar-vacation-club/andelsboende/` och översiktsbilderna för Åre Village 1 och 2, kontrollerade 2026-10-02. Varje annons räknar upp de husdjurstillåtna lägenheterna. Bilderna finns i datarepot under `kunskap/skistar-brf/are-village-*/`, och tabellen står i `kunskap/skistar-brf/LAGENHETER.md`.
+- **`SKISTAR_HUSDJUR`** i `js/data/skistar-andelar.js` listar de husdjurstillåtna lägenheterna:
+  - Timmerbyn: 114B, 114C, 148A, 148C, 115A, 115C, 119A och 119C.
+  - Snötorget: 1C och 3A–3D.
+  - Åre Village: 904, 905, 915, 916, 917, 918 och 919.
+  - Sörgårdarna: 57.
+  - Övriga lägenheter i föreningarna har `husdjur: false`. Timmerbyn 1:s annonser pekar inte ut någon lägenhet, så de har `null` (okänt).
+- **`SKISTAR_UTAN_BALKONG`** innehåller Åre Village 905 och 919. Alla andra lägenheter i Åre Village har balkong.
+- `foreningFor` ger nu `husdjur` och `balkong` per lägenhet.
+- **`aptForLgh(aptKey, enhet, husdjur)`** ger lägenhetstypen anpassad till lägenheten. Balkongen tas bort ur extras när lägenheten saknar balkong, och "husdjur tillåtet" läggs till när lägenheten är husdjurstillåten. Skicka `false` som tredje argument för att utesluta husdjuren.
+- **`lghNummer(enhet)`** ger förteckningens gällande beteckning ("Årevägen 150, lgh 919" → 919, "111A" → 111B).
+- **Gatunummerfelet:** "Årevägen 150, lgh 919" tolkades förut som lägenhet 150. `lagenhetFor` väljer nu det första numret som finns i förteckningen (`lghKoder`).
+- **Andelsverktyget:**
+  - Faktarutan visar lgh, våning, husdjur och balkong.
+  - Malltexterna och Claude-prompten anpassas till lägenhetsnumret, både i enskilt läge och i bulk.
+  - I bulk går Excel-kolumnen Husdjur före. Är den tom används förteckningen.
+  - **Rättat fel:** förut räckte det att Excel-cellen inte var tom, så "Nej" gav "husdjur tillåtet". Nu tolkas den med `husdjurSvar`. Bulk-JSON fick också fältet `balkong`.
+- **Objektsunderlaget:** referensdatan har raden Husdjur, och Mspecs-paketet har "Husdjur tillåtet". "Övrigt" följer lägenheten.
+
