@@ -110,3 +110,4 @@ Jimmys första test (en gammal SkiStar-förfrågan, Timmerbyn 111B v.29 + 121B v
   - **Rättat fel:** förut räckte det att Excel-cellen inte var tom, så "Nej" gav "husdjur tillåtet". Nu tolkas den med `husdjurSvar`. Bulk-JSON fick också fältet `balkong`.
 - **Objektsunderlaget:** referensdatan har raden Husdjur, och Mspecs-paketet har "Husdjur tillåtet". "Övrigt" följer lägenheten.
 
+- **Snötorget 45 kvm har balkong** (Jimmy 2026-10-02): en liten balkong vid entrén. `balkong_per_typ` är `true`, och extras säger "liten balkong vid entrén", så texterna anger var balkongen sitter.
